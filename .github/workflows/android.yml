@@ -78,6 +78,38 @@ jobs:
             echo "::warning::RELEASE_KEYSTORE_BASE64 is not set, the APK will be signed with the public test key."
           fi
 
+      - name: Check release signing secrets
+        # Diagnostic only: reports which secret is wrong without ever printing a value. Never fails the job.
+        if: ${{ env.RELEASE_KEYSTORE_FILE != '' }}
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set +e
+          check_value() {
+            local name="$1" value="${!1}"
+            if [ -z "$value" ]; then
+              echo "::error::Secret $name is EMPTY or missing."
+            elif [ "$value" != "$(printf '%s' "$value" | tr -d '[:space:]')" ]; then
+              echo "::error::Secret $name contains a space or line break (usually a trailing one from copy/paste). Re-enter it by hand."
+            else
+              echo "Secret $name: present, no whitespace."
+            fi
+          }
+          check_value RELEASE_STORE_PASSWORD
+          check_value RELEASE_KEY_ALIAS
+          check_value RELEASE_KEY_PASSWORD
+
+          if [ ! -s "$RELEASE_KEYSTORE_FILE" ]; then
+            echo "::error::The decoded keystore file is empty. RELEASE_KEYSTORE_BASE64 is wrong or truncated."
+            exit 0
+          fi
+          echo "Keystore file decoded: $(stat -c %s "$RELEASE_KEYSTORE_FILE") bytes."
+
+          java .github/workflows/CheckSigning.java
+          exit 0
+
       - name: Build Release APK
         env:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
