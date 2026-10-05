@@ -1,6 +1,10 @@
 package pro.sketchware.control;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -23,6 +27,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,40 +48,67 @@ import pro.sketchware.utility.Network;
  * The manifest (update.json) lives at the repository root and is served raw from GitHub:
  * {"versionCode": N, "versionName": "...", "mandatory": true, "apkUrl": "...", "url": "...", "notes": "..."}.
  * "apkUrl" is downloaded in-app with a progress bar and then handed to the package installer; when it
- * is missing, "url" is opened in the browser instead.
+ * is missing, "url" is opened in the browser instead. Optional "sha256" is the hex digest of the APK.
+ *
+ * Downloaded APKs are only handed to the installer after they pass these checks: https download URL,
+ * matching SHA-256 (when the manifest has one), same package name, a higher versionCode than the
+ * installed build, and the same signing certificate as the installed app. The last mandatory manifest
+ * is cached, so the update prompt keeps showing while the device is offline.
  */
 public class UpdateChecker {
 
     private static final String MANIFEST_URL =
             "https://raw.githubusercontent.com/prozizou/Sketchware-Pro/main/update.json";
 
+    private static final String PREFS = "update_checker";
+    private static final String KEY_MANDATORY_MANIFEST = "mandatory_manifest";
+
     private final Network network = new Network();
 
     public void check(AppCompatActivity activity) {
+        SharedPreferences prefs = activity.getSharedPreferences(PREFS, AppCompatActivity.MODE_PRIVATE);
         network.get(MANIFEST_URL, response -> {
-            if (response == null || activity.isFinishing() || activity.isDestroyed()) {
+            if (activity.isFinishing() || activity.isDestroyed()) {
                 return;
             }
-            try {
-                JSONObject manifest = new JSONObject(response);
-                int latest = manifest.optInt("versionCode", -1);
-                if (latest <= BuildConfig.VERSION_CODE) {
-                    return;
-                }
-                boolean mandatory = manifest.optBoolean("mandatory", false);
-                String versionName = manifest.optString("versionName", "");
-                String notes = manifest.optString("notes", "");
-                String url = manifest.optString("url", "");
-                String apkUrl = manifest.optString("apkUrl", "");
-                showUpdateDialog(activity, mandatory, versionName, notes, url, apkUrl);
-            } catch (Exception ignored) {
-                // Malformed or unreachable manifest: fail silently, never block the app on our own bug.
+            if (response == null) {
+                // Offline or GitHub unreachable: keep enforcing the last mandatory update we saw.
+                handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false);
+            } else {
+                handle(activity, prefs, response, true);
             }
         });
     }
 
+    private void handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh) {
+        if (raw == null) {
+            return;
+        }
+        try {
+            JSONObject manifest = new JSONObject(raw);
+            int latest = manifest.optInt("versionCode", -1);
+            if (latest <= BuildConfig.VERSION_CODE) {
+                if (fresh) prefs.edit().remove(KEY_MANDATORY_MANIFEST).apply();
+                return;
+            }
+            boolean mandatory = manifest.optBoolean("mandatory", false);
+            if (fresh) {
+                if (mandatory) {
+                    prefs.edit().putString(KEY_MANDATORY_MANIFEST, raw).apply();
+                } else {
+                    prefs.edit().remove(KEY_MANDATORY_MANIFEST).apply();
+                }
+            }
+            showUpdateDialog(activity, mandatory, manifest.optString("versionName", ""),
+                    manifest.optString("notes", ""), manifest.optString("url", ""),
+                    manifest.optString("apkUrl", ""), manifest.optString("sha256", ""));
+        } catch (Exception ignored) {
+            // Malformed manifest: fail silently, never block the app on our own bug.
+        }
+    }
+
     private void showUpdateDialog(AppCompatActivity activity, boolean mandatory,
-                                  String versionName, String notes, String url, String apkUrl) {
+                                  String versionName, String notes, String url, String apkUrl, String sha256) {
         StringBuilder message = new StringBuilder();
         if (!versionName.isEmpty()) {
             message.append("Version ").append(versionName).append('\n');
@@ -124,6 +158,11 @@ public class UpdateChecker {
                 openUrl(activity, url);
                 return;
             }
+            if (!apkUrl.startsWith("https://")) {
+                status.setVisibility(View.VISIBLE);
+                status.setText("Update rejected: the download link is not secure (https).");
+                return;
+            }
             File apk = new File(updatesDir(activity), "update.apk");
             if (apk.isFile() && button.getTag() == Boolean.TRUE) {
                 install(activity, apk);
@@ -134,7 +173,7 @@ public class UpdateChecker {
             progress.setVisibility(View.VISIBLE);
             status.setVisibility(View.VISIBLE);
             status.setText("Starting download\u2026");
-            download(activity, apkUrl, apk, (percent, text) -> {
+            download(activity, apkUrl, sha256, apk, (percent, text) -> {
                 if (percent >= 0) {
                     progress.setIndeterminate(false);
                     progress.setProgressCompat(percent, true);
@@ -174,7 +213,7 @@ public class UpdateChecker {
         return dir;
     }
 
-    private void download(AppCompatActivity activity, String apkUrl, File target,
+    private void download(AppCompatActivity activity, String apkUrl, String expectedSha256, File target,
                           ProgressListener progressListener, DoneListener doneListener) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
@@ -189,12 +228,14 @@ public class UpdateChecker {
                     long total = response.body().contentLength();
                     try (InputStream in = response.body().byteStream();
                          OutputStream out = new FileOutputStream(partial)) {
+                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
                         byte[] buffer = new byte[16 * 1024];
                         long done = 0;
                         int lastPercent = -2;
                         int read;
                         while ((read = in.read(buffer)) != -1) {
                             out.write(buffer, 0, read);
+                            digest.update(buffer, 0, read);
                             done += read;
                             int percent = total > 0 ? (int) (done * 100 / total) : -1;
                             if (percent != lastPercent) {
@@ -205,7 +246,15 @@ public class UpdateChecker {
                                 activity.runOnUiThread(() -> progressListener.onProgress(percent, text));
                             }
                         }
+                        out.flush();
+                        if (!expectedSha256.isEmpty() && !toHex(digest.digest()).equalsIgnoreCase(expectedSha256.trim())) {
+                            throw new SecurityException("checksum mismatch, the file is corrupted or was tampered with");
+                        }
                     }
+                }
+                String rejection = verifyApk(activity, partial);
+                if (rejection != null) {
+                    throw new SecurityException(rejection);
                 }
                 if (target.exists() && !target.delete()) {
                     throw new IllegalStateException("Cannot replace previous download");
@@ -217,11 +266,69 @@ public class UpdateChecker {
                 //noinspection ResultOfMethodCallIgnored
                 partial.delete();
                 error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                if (e instanceof SecurityException) {
+                    error = "update rejected: " + error;
+                }
             }
             String result = error;
             activity.runOnUiThread(() -> doneListener.onDone(result));
             executor.shutdown();
         });
+    }
+
+    private static String toHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) sb.append(String.format(Locale.US, "%02x", b));
+        return sb.toString();
+    }
+
+    /** @return null when the downloaded APK may be installed, otherwise the reason it was rejected. */
+    private String verifyApk(AppCompatActivity activity, File apk) {
+        PackageManager pm = activity.getPackageManager();
+        int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
+        PackageInfo downloaded = pm.getPackageArchiveInfo(apk.getPath(), flags);
+        if (downloaded == null) {
+            return "the downloaded file is not a valid APK";
+        }
+        if (!activity.getPackageName().equals(downloaded.packageName)) {
+            return "the APK belongs to another app (" + downloaded.packageName + ")";
+        }
+        long downloadedVersion = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? downloaded.getLongVersionCode() : downloaded.versionCode;
+        if (downloadedVersion <= BuildConfig.VERSION_CODE) {
+            return "the APK is not newer than the installed version";
+        }
+        try {
+            PackageInfo installed = pm.getPackageInfo(activity.getPackageName(), flags);
+            if (!signers(downloaded).equals(signers(installed)) || signers(installed).isEmpty()) {
+                return "the APK is signed with a different key than the installed app";
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            return "cannot read the installed app signature";
+        }
+        return null;
+    }
+
+    private static Set<String> signers(PackageInfo info) {
+        Signature[] signatures = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (info.signingInfo != null) {
+                signatures = info.signingInfo.getApkContentsSigners();
+            }
+        } else {
+            signatures = info.signatures;
+        }
+        Set<String> result = new HashSet<>();
+        if (signatures != null) {
+            for (Signature signature : signatures) {
+                try {
+                    result.add(toHex(MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return result;
     }
 
     private void install(AppCompatActivity activity, File apk) {
