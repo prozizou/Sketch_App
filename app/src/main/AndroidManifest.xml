@@ -83,6 +83,10 @@
             android:windowSoftInputMode="stateHidden"
             android:theme="@style/Theme.SketchwarePro.SmallToolbar" />
         <activity
+            android:name="pro.sketchware.activities.onboarding.OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SketchwarePro" />
+        <activity
             android:name="pro.sketchware.activities.main.activities.MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"

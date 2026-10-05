@@ -7,4 +7,8 @@
         android:id="@+id/app_settings"
         android:icon="@drawable/ic_mtrl_settings"
         android:title="@string/common_word_settings" />
+    <item
+        android:id="@+id/community_telegram"
+        android:icon="@drawable/ic_mtrl_group"
+        android:title="@string/community_telegram" />
 </menu>
