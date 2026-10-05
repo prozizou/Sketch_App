@@ -273,6 +273,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (isStoragePermissionGranted() && storageAccessDenied != null && storageAccessDenied.isShown()) {
             storageAccessDenied.dismiss();
         }
+        pro.sketchware.control.LegacyDataImporter.runIfNeeded(this, isStoragePermissionGranted(), this::n);
         Bundle bundle = new Bundle();
         bundle.putString(FirebaseAnalytics.Param.SCREEN_NAME, "MainActivity");
         bundle.putString(FirebaseAnalytics.Param.SCREEN_CLASS, "MainActivity");
