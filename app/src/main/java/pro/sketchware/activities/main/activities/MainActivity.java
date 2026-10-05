@@ -61,6 +61,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private Fragment activeFragment;
     private final androidx.activity.result.ActivityResultLauncher<Intent> onboardingLauncher = registerForActivityResult(
             new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                pro.sketchware.control.WhatsNewDialog.markSeen(this);
                 checkStorageAccess();
                 n();
             });
@@ -168,6 +169,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             onboardingLauncher.launch(new Intent(this, pro.sketchware.activities.onboarding.OnboardingActivity.class));
         } else {
             checkStorageAccess();
+            if (isStoragePermissionGranted()) {
+                pro.sketchware.control.WhatsNewDialog.showIfNeeded(this);
+            }
         }
 
         if (Intent.ACTION_VIEW.equals(getIntent().getAction())) {
@@ -255,6 +259,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             Intent intent = null;
             if (id == R.id.app_settings) {
                 intent = new Intent(this, mod.hilal.saif.activities.tools.AppSettings.class);
+            } else if (id == R.id.whats_new) {
+                pro.sketchware.control.WhatsNewDialog.show(this);
+                return true;
             } else if (id == R.id.community_telegram) {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(pro.sketchware.activities.onboarding.OnboardingActivity.TELEGRAM_URL)));
                 return true;

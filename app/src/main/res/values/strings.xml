@@ -925,6 +925,16 @@ ACTION_VIEW
     <string name="onboarding_projects_text">Coming from another version? Back up your projects there, then restore them here with the Backup and Restore feature.</string>
     <string name="onboarding_join_telegram">Join our Telegram group</string>
     <string name="community_telegram">Telegram community</string>
+    <string name="whats_new_title">What\'s new in %1$s</string>
+    <string name="whats_new_got_it">Got it</string>
+    <string name="whats_new_menu">What\'s new</string>
+    <string-array name="whats_new_items">
+        <item>A guided first launch: welcome, file access and how to restore your old projects.</item>
+        <item>A lighter View editor: slimmer widget palette, collapsed categories and a Focus preview mode for a full-screen preview.</item>
+        <item>A redesigned View Manager with search, a view counter, a MAIN badge and a per-view menu.</item>
+        <item>Safer updates: the downloaded APK is verified (checksum, app and signing key) before it is installed.</item>
+        <item>New app identity and data folders. Use Backup and Restore to bring projects from the previous version.</item>
+    </string-array>
     <string name="view_toggle_widgets">Widgets</string>
     <string name="view_focus_preview">Focus preview</string>
     <string name="view_widget_new_compact">Widget</string>
