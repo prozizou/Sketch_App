@@ -20,10 +20,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.besome.sketch.editor.manage.library.LibraryCategoryView;
-import com.besome.sketch.editor.manage.library.LibraryItemView;
 import com.besome.sketch.help.SystemSettingActivity;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.google.android.material.divider.MaterialDivider;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.jetbrains.annotations.NotNull;
@@ -41,12 +40,15 @@ import mod.alucard.tn.apksigner.ApkSigner;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
 import mod.khaled.logcat.LogReaderActivity;
+import pro.sketchware.BuildConfig;
 import pro.sketchware.R;
 import pro.sketchware.activities.editor.component.ManageCustomComponentActivity;
+import pro.sketchware.activities.onboarding.OnboardingActivity;
 import pro.sketchware.activities.settings.SettingsActivity;
 import pro.sketchware.databinding.ActivityAppSettingsBinding;
 import pro.sketchware.databinding.DialogSelectApkToSignBinding;
 import pro.sketchware.utility.FileUtil;
+import pro.sketchware.control.WhatsNewDialog;
 import pro.sketchware.utility.SketchwareUtil;
 
 public class AppSettings extends BaseAppCompatActivity {
@@ -79,8 +81,8 @@ public class AppSettings extends BaseAppCompatActivity {
             int bottom = view.getPaddingBottom();
 
             ViewCompat.setOnApplyWindowInsetsListener(view, (v, i) -> {
-                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(left, top, right, bottom + insets.bottom);
+                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+                v.setPadding(left + insets.left, top, right + insets.right, bottom + insets.bottom);
                 return i;
             });
         }
@@ -90,30 +92,75 @@ public class AppSettings extends BaseAppCompatActivity {
     }
 
     private void setupPreferences(ViewGroup content) {
-        var preferences = new ArrayList<LibraryCategoryView>();
+        ViewGroup managers = addSection(content, getString(R.string.settings_section_managers));
+        addItem(managers, R.drawable.ic_mtrl_block, "Block manager", "Manage your own blocks to use in Logic Editor", new ActivityLauncher(BlocksManager.class));
+        addItem(managers, R.drawable.ic_mtrl_pull_down, "Block selector menu manager", "Manage your own block selector menus", openSettingsActivity(SettingsActivity.BLOCK_SELECTOR_MANAGER_FRAGMENT));
+        addItem(managers, R.drawable.ic_mtrl_component, "Component manager", "Manage your own components", new ActivityLauncher(ManageCustomComponentActivity.class));
+        addItem(managers, R.drawable.ic_mtrl_list, "Event manager", "Manage your own events", openSettingsActivity(SettingsActivity.EVENTS_MANAGER_FRAGMENT));
+        addItem(managers, R.drawable.ic_mtrl_box, "Local library manager", "Manage and download local libraries", new ActivityLauncher(ManageLocalLibraryActivity.class, new Pair<>("sc_id", "system")));
 
-        LibraryCategoryView managersCategory = new LibraryCategoryView(this);
-        managersCategory.setTitle("Managers");
-        preferences.add(managersCategory);
+        ViewGroup general = addSection(content, getString(R.string.settings_section_general));
+        addItem(general, R.drawable.ic_mtrl_settings_applications, "App settings", "Change general app settings", new ActivityLauncher(ConfigActivity.class));
+        addItem(general, R.drawable.ic_mtrl_palette, Helper.getResString(R.string.settings_appearance), Helper.getResString(R.string.settings_appearance_description), openSettingsActivity(SettingsActivity.SETTINGS_APPEARANCE_FRAGMENT));
+        addItem(general, R.drawable.ic_mtrl_settings, Helper.getResString(R.string.main_drawer_title_system_settings), "Auto-save and vibrations", new ActivityLauncher(SystemSettingActivity.class));
 
-        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_block, "Block manager", "Manage your own blocks to use in Logic Editor", new ActivityLauncher(BlocksManager.class)), true);
-        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_pull_down, "Block selector menu manager", "Manage your own block selector menus", openSettingsActivity(SettingsActivity.BLOCK_SELECTOR_MANAGER_FRAGMENT)), true);
-        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_component, "Component manager", "Manage your own components", new ActivityLauncher(ManageCustomComponentActivity.class)), true);
-        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_list, "Event manager", "Manage your own events", openSettingsActivity(SettingsActivity.EVENTS_MANAGER_FRAGMENT)), true);
-        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library manager", "Manage and download local libraries", new ActivityLauncher(ManageLocalLibraryActivity.class, new Pair<>("sc_id", "system"))), true);
-        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_article, Helper.getResString(R.string.design_drawer_menu_title_logcat_reader), Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader), new ActivityLauncher(LogReaderActivity.class)), false);
+        ViewGroup developer = addSection(content, getString(R.string.settings_section_developer));
+        addItem(developer, R.drawable.ic_mtrl_folder, "Open working directory", "Browse the app's data folder and edit files in it", v -> openWorkingDirectory());
+        addItem(developer, R.drawable.ic_mtrl_apk_document, "Sign an APK file with testkey", "Sign an existing APK file with testkey, signature schemes up to V4", v -> signApkFileDialog());
+        addItem(developer, R.drawable.ic_mtrl_article, Helper.getResString(R.string.design_drawer_menu_title_logcat_reader), Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader), new ActivityLauncher(LogReaderActivity.class));
 
-        LibraryCategoryView generalCategory = new LibraryCategoryView(this);
-        generalCategory.setTitle("General");
-        preferences.add(generalCategory);
+        ViewGroup about = addSection(content, getString(R.string.settings_section_about));
+        addItem(about, R.drawable.ic_mtrl_history, getString(R.string.whats_new_menu), "See what changed in this version", v -> WhatsNewDialog.show(this));
+        addItem(about, R.drawable.ic_mtrl_group, getString(R.string.community_telegram), "Join the community, ask questions and share projects", v -> {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(OnboardingActivity.TELEGRAM_URL)));
+            } catch (Exception ignored) {
+            }
+        });
+        addItem(about, R.drawable.ic_mtrl_info, getString(R.string.settings_about_version), BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")", null);
 
-        generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings_applications, "App settings", "Change general app settings", new ActivityLauncher(ConfigActivity.class)), true);
-        generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_palette, Helper.getResString(R.string.settings_appearance), Helper.getResString(R.string.settings_appearance_description), openSettingsActivity(SettingsActivity.SETTINGS_APPEARANCE_FRAGMENT)), true);
-        generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_folder, "Open working directory", "Open Sketchware Pro's directory and edit files in it", v -> openWorkingDirectory()), true);
-        generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_apk_document, "Sign an APK file with testkey", "Sign an already existing APK file with testkey and signature schemes up to V4", v -> signApkFileDialog()), true);
-        generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings, Helper.getResString(R.string.main_drawer_title_system_settings), "Auto-save and vibrations", new ActivityLauncher(SystemSettingActivity.class)), false);
+        TextView footer = new TextView(this);
+        footer.setText(getString(R.string.settings_footer, BuildConfig.VERSION_NAME));
+        footer.setGravity(android.view.Gravity.CENTER);
+        footer.setAlpha(0.7f);
+        footer.setTextColor(com.google.android.material.color.MaterialColors.getColor(footer, R.attr.colorOnSurfaceVariant));
+        footer.setTextSize(12);
+        float dip = getResources().getDisplayMetrics().density;
+        footer.setPadding(0, (int) (24 * dip), 0, (int) (8 * dip));
+        content.addView(footer);
+    }
 
-        preferences.forEach(content::addView);
+    /** Adds a titled rounded card to the page and returns the container its rows go into. */
+    private ViewGroup addSection(ViewGroup content, String title) {
+        View section = getLayoutInflater().inflate(R.layout.settings_section, content, false);
+        ((TextView) section.findViewById(R.id.section_title)).setText(title);
+        content.addView(section);
+        return section.findViewById(R.id.section_items);
+    }
+
+    /** Adds one row (icon, title, description, chevron); rows without a listener are informational. */
+    private void addItem(ViewGroup items, int icon, CharSequence title, CharSequence description, @Nullable View.OnClickListener listener) {
+        float dip = getResources().getDisplayMetrics().density;
+        if (items.getChildCount() > 0) {
+            MaterialDivider divider = new MaterialDivider(this);
+            divider.setAlpha(0.5f);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.setMarginStart((int) (72 * dip));
+            items.addView(divider, params);
+        }
+
+        View row = getLayoutInflater().inflate(R.layout.settings_item, items, false);
+        ((android.widget.ImageView) row.findViewById(R.id.settings_icon)).setImageResource(icon);
+        ((TextView) row.findViewById(R.id.settings_title)).setText(title);
+        ((TextView) row.findViewById(R.id.settings_description)).setText(description);
+        if (listener != null) {
+            row.setOnClickListener(listener);
+        } else {
+            row.setClickable(false);
+            row.setBackground(null);
+            row.findViewById(R.id.settings_chevron).setVisibility(View.GONE);
+        }
+        items.addView(row);
     }
 
     private View.OnClickListener openSettingsActivity(String fragmentTag) {
@@ -122,16 +169,6 @@ public class AppSettings extends BaseAppCompatActivity {
             intent.putExtra(SettingsActivity.FRAGMENT_TAG_EXTRA, fragmentTag);
             v.getContext().startActivity(intent);
         };
-    }
-
-    private LibraryItemView createPreference(int icon, String title, String desc, View.OnClickListener listener) {
-        LibraryItemView preference = new LibraryItemView(this);
-        preference.enabled.setVisibility(View.GONE);
-        preference.icon.setImageResource(icon);
-        preference.title.setText(title);
-        preference.description.setText(desc);
-        preference.setOnClickListener(listener);
-        return preference;
     }
 
     private void openWorkingDirectory() {

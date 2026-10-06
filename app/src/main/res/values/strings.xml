@@ -942,6 +942,12 @@ ACTION_VIEW
     <string name="src_restore_title">Restore the generated version?</string>
     <string name="src_restore_message">Your hand-edited %1$s will be deleted and the generated version will be used again.</string>
     <string name="src_restore_action">Restore generated</string>
+    <string name="settings_section_managers">Managers</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_section_developer">Developer tools</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_footer">NewWorld Sketchware \u2022 %1$s</string>
     <string name="view_toggle_widgets">Widgets</string>
     <string name="view_focus_preview">Focus preview</string>
     <string name="view_widget_new_compact">Widget</string>
