@@ -810,7 +810,7 @@ public class FileUtil {
 
         ZipEntry entry = input.getNextEntry();
         while (entry != null) {
-            String entryPathExtracted = new File(outPath, entry.getName()).getAbsolutePath();
+            String entryPathExtracted = ZipSafety.resolveEntry(outDir, entry.getName()).getAbsolutePath();
 
             if (!entry.isDirectory()) {
                 new File(entryPathExtracted).getParentFile().mkdirs();

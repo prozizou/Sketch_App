@@ -54,6 +54,7 @@ import mod.jbk.export.GetKeyStoreCredentialsDialog;
 import mod.jbk.util.TestkeySignBridge;
 import pro.sketchware.R;
 import pro.sketchware.databinding.ExportProjectBinding;
+import pro.sketchware.settings.BuildHistory;
 import pro.sketchware.utility.AnalyticsHelper;
 import pro.sketchware.utility.FilePathUtil;
 import pro.sketchware.utility.FileUtil;
@@ -264,7 +265,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
         export_aab_button.setOnClickListener(view -> {
             MaterialAlertDialogBuilder confirmationDialog = new MaterialAlertDialogBuilder(this);
             confirmationDialog.setTitle("Important note");
-            confirmationDialog.setMessage("The generated .aab file must be signed.\nCopy your keystore to /Internal storage/sketch_nws/keystore/release_key.jks and enter the alias' password.");
+            confirmationDialog.setMessage("The generated .aab file must be signed.\nCopy your keystore to /Internal storage/sketch_nws/keystore/release_key.jks (or choose another file in App Settings > Build & Signing) and enter the alias' password.");
             confirmationDialog.setIcon(R.drawable.ic_mtrl_info);
 
             confirmationDialog.setPositiveButton("Understood", (v, which) -> {
@@ -286,7 +287,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     task.setSignWithTestkey(true);
                 } else {
                     task.configureResultJarSigning(
-                            wq.j(),
+                            wq.getSigningKeystorePath(),
                             credentials.getKeyStorePassword().toCharArray(),
                             credentials.getKeyAlias(),
                             credentials.getKeyPassword().toCharArray(),
@@ -333,7 +334,8 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             confirmationDialog.setTitle("Important note");
             confirmationDialog.setMessage("""
                     To sign an APK, you need a keystore. Use your already created one, and copy it to \
-                    /Internal storage/sketch_nws/keystore/release_key.jks and enter the alias's password.
+                    /Internal storage/sketch_nws/keystore/release_key.jks (or choose another file in \
+                    App Settings > Build & Signing) and enter the alias's password.
                     
                     Note that this only signs your APK using signing scheme V1, to target Android 11+ for example, \
                     use a 3rd-party tool (for now).""");
@@ -365,7 +367,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     task.setSignWithTestkey(true);
                 } else {
                     task.configureResultJarSigning(
-                            wq.j(),
+                            wq.getSigningKeystorePath(),
                             credentials.getKeyStorePassword().toCharArray(),
                             credentials.getKeyAlias(),
                             credentials.getKeyPassword().toCharArray(),
@@ -435,6 +437,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
         private char[] signingAliasPassword = null;
         private String signingAlgorithm = null;
         private boolean signWithTestkey = false;
+        private final long startedAt = System.currentTimeMillis();
 
         public BuildingAsyncTask(ExportProjectActivity exportProjectActivity, yq.ExportType exportType) {
             super(exportProjectActivity);
@@ -662,7 +665,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                         Security.addProvider(new BouncyCastleProvider());
                         CustomKeySigner.signZip(
                                 new ZipSigner(),
-                                wq.j(),
+                                wq.getSigningKeystorePath(),
                                 signingKeystorePassword,
                                 signingAliasName,
                                 signingKeystorePassword,
@@ -679,7 +682,9 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                         "Incorrect password, or integrity check failed.".equals(throwable.getMessage())) {
                     activity.get().runOnUiThread(() -> SketchwareUtil.showAnErrorOccurredDialog(activity.get(),
                             "Either an incorrect password was entered, or your key store is corrupt."));
+                    recordExport(BuildHistory.STATUS_FAILED, "Incorrect keystore password or corrupt keystore");
                 } else {
+                    recordExport(BuildHistory.STATUS_FAILED, String.valueOf(throwable));
                     Log.e("AppExporter", throwable.getMessage(), throwable);
                     activity.get().runOnUiThread(() -> SketchwareUtil.showAnErrorOccurredDialog(activity.get(),
                             Log.getStackTraceString(throwable)));
@@ -740,6 +745,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             activity.get().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             // Dismiss the ProgressDialog
             activity.get().i();
+            recordExport(BuildHistory.STATUS_SUCCESS, null);
 
             if (new File(getCorrectResultFilename(project_metadata.releaseApkPath)).exists()) {
                 activity.get().f(getCorrectResultFilename(project_metadata.projectName + "_release.apk"));
@@ -778,6 +784,30 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             }
             loading_sign_apk.setVisibility(View.GONE);
             activity.get().sign_apk_button.setVisibility(View.VISIBLE);
+        }
+
+        /**
+         * Adds this export to the build history in App Settings and applies version code auto-increment.
+         */
+        private void recordExport(String status, String detail) {
+            try {
+                BuildHistory.Entry entry = new BuildHistory.Entry();
+                entry.time = System.currentTimeMillis();
+                entry.scId = activity.get().sc_id;
+                entry.project = project_metadata.projectName;
+                entry.status = status;
+                entry.mode = buildingAppBundle ? "release (aab)" : "release (apk)";
+                entry.versionName = project_metadata.versionName;
+                entry.versionCode = project_metadata.versionCode;
+                entry.durationMs = entry.time - startedAt;
+                entry.detail = detail;
+                String nextVersionCode = BuildHistory.recordFinishedBuild(entry);
+                if (nextVersionCode != null) {
+                    project_metadata.versionCode = nextVersionCode;
+                }
+            } catch (Throwable t) {
+                Log.e("AppExporter", "Couldn't record export", t);
+            }
         }
 
         public void enableAppBundleBuild() {

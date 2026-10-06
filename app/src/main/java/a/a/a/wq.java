@@ -5,6 +5,7 @@ import android.os.Environment;
 
 import java.io.File;
 
+import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.SketchApplication;
 
 public class wq {
@@ -198,6 +199,15 @@ public class wq {
 
     public static String j() {
         return getAbsolutePathOf(D);
+    }
+
+    /**
+     * @return the keystore chosen in App Settings, or the default {@link #j()} location when none was chosen.
+     * New keystores are always created at {@link #j()}, never over the chosen file.
+     */
+    public static String getSigningKeystorePath() {
+        String chosen = ConfigActivity.getKeystorePath();
+        return chosen.isEmpty() ? j() : chosen;
     }
 
     public static String k() {

@@ -1,7 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Only the folders the app actually hands out through FileProvider URIs. The whole of external storage
+    ("path=.") is deliberately not shared. Each entry is relative to /Internal storage/.
+-->
 <paths>
+    <!-- Project icons, images, sounds and fonts shown in the editors and used by the icon picker. -->
     <external-path
-        name="external_files"
-        path="." />
+        name="project_resources"
+        path=".sketch_nws/resources/" />
+    <!-- Build output: the debug APK offered for installation. -->
+    <external-path
+        name="project_build_output"
+        path=".sketch_nws/mysc/" />
+    <!-- "Export source code" archives shared from the export screen. -->
+    <external-path
+        name="exported_sources"
+        path="sketch_nws/export_src/" />
+    <!-- App Settings exports shared from Advanced > Export settings. -->
+    <external-path
+        name="exported_settings"
+        path="sketch_nws/settings/" />
+    <!-- Updates downloaded by the in-app updater. -->
     <external-files-path
         name="updates"
         path="updates/" />

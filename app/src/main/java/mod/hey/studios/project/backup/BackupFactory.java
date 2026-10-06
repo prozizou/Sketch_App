@@ -49,6 +49,7 @@ import mod.hey.studios.util.Helper;
 import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
+import pro.sketchware.utility.ZipSafety;
 
 public class BackupFactory {
     public static final String EXTENSION = "swb";
@@ -139,12 +140,19 @@ public class BackupFactory {
     public static boolean unzip(File zipFile, File destinationDir) {
         int DEFAULT_BUFFER = 2048;
         try (ZipFile zip = new ZipFile(zipFile)) {
+            // Validate every entry name before writing anything, so a malicious archive leaves no partial extraction.
+            Enumeration<? extends ZipEntry> namesToCheck = zip.entries();
+            while (namesToCheck.hasMoreElements()) {
+                ZipSafety.resolveEntry(destinationDir, namesToCheck.nextElement().getName());
+            }
+
             destinationDir.mkdirs();
             Enumeration<? extends ZipEntry> zipFileEntries = zip.entries();
             while (zipFileEntries.hasMoreElements()) {
                 ZipEntry entry = zipFileEntries.nextElement();
                 String entryName = entry.getName();
-                File destFile = new File(destinationDir, entryName);
+                // Backups are imported from arbitrary files: never trust the entry names (Zip Slip).
+                File destFile = ZipSafety.resolveEntry(destinationDir, entryName);
                 File destinationParent = destFile.getParentFile();
                 if (destinationParent != null && !destinationParent.exists()) {
                     destinationParent.mkdirs();

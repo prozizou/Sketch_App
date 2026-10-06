@@ -4,6 +4,30 @@ apply plugin: "com.android.application"
 apply plugin: "com.google.gms.google-services"
 apply plugin: "com.google.firebase.crashlytics"
 
+// Release signing comes from the environment (CI secrets or a local shell), never from the repository.
+// A release is never signed with the public test key: if the real key is missing or is the test key,
+// every task that produces a release artifact fails (see the task graph check at the end of this file).
+// Debug builds, lint and unit tests don't need the key.
+def releaseKeystoreFile = System.getenv("RELEASE_KEYSTORE_FILE")
+def publicTestKeystore = rootProject.file("testkey.keystore")
+def fileSha256 = { File file ->
+    java.security.MessageDigest.getInstance("SHA-256").digest(file.bytes).encodeHex().toString()
+}
+def releaseKeyProblem = {
+    if (!releaseKeystoreFile) return "RELEASE_KEYSTORE_FILE is not set"
+    def keystore = new File(releaseKeystoreFile)
+    if (!keystore.isFile()) return "RELEASE_KEYSTORE_FILE does not point to an existing file"
+    for (name in ["RELEASE_STORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD"]) {
+        if (!System.getenv(name)) return "$name is not set"
+    }
+    if (System.getenv("RELEASE_KEY_ALIAS") == "testkey") return "the key alias is the public test key's"
+    if (publicTestKeystore.isFile() && fileSha256(keystore) == fileSha256(publicTestKeystore)) {
+        return "the keystore is the public test key"
+    }
+    return null
+}.call()
+def hasReleaseKey = releaseKeyProblem == null
+
 android {
     compileSdk = 37
 
@@ -20,18 +44,6 @@ android {
         versionName = "v7.1.0"
 
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash}\"")
-    }
-
-    // Release signing comes from the environment (CI secrets or a local shell), never from the repository.
-    // Without it, release builds fall back to the public test key, which is fine for forks and local
-    // experiments but must not be shipped: users could not trust updates signed with a public key.
-    def releaseKeystoreFile = System.getenv("RELEASE_KEYSTORE_FILE")
-    def hasReleaseKey = releaseKeystoreFile && new File(releaseKeystoreFile).isFile() &&
-            System.getenv("RELEASE_STORE_PASSWORD") && System.getenv("RELEASE_KEY_ALIAS") &&
-            System.getenv("RELEASE_KEY_PASSWORD")
-    if (!hasReleaseKey) {
-        logger.warn("WARNING: no release key configured (RELEASE_KEYSTORE_FILE, RELEASE_STORE_PASSWORD, " +
-                "RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD); signing the release build with the public test key.")
     }
 
     signingConfigs {
@@ -55,7 +67,8 @@ android {
         release {
             minifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+            // No fallback to the debug/test key: without the real key the release task graph is refused below.
+            signingConfig = hasReleaseKey ? signingConfigs.release : null
         }
     }
 
@@ -80,6 +93,19 @@ android {
         buildConfig = true
     }
 
+    lint {
+        // Issues that already existed when lint was added to CI are recorded in the baseline; lint fails the
+        // build only on new ones. Fix issues and refresh the file with `./gradlew :app:updateLintBaseline`.
+        baseline = file("lint-baseline.xml")
+    }
+
+    testOptions {
+        unitTests {
+            // Unit tests run on the JVM; Android framework calls that aren't under test return defaults.
+            returnDefaultValues = true
+        }
+    }
+
 
     configurations.implementation {
         exclude group: 'javax.inject', module: 'javax.inject'
@@ -99,6 +125,8 @@ configurations.configureEach { configuration ->
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
+
+    testImplementation libs.junit
 
     implementation libs.bundles.ui
 
@@ -155,4 +183,15 @@ dependencies {
 }
 
 apply from: "$rootDir/gradle/custom-tasks.gradle"
+
+// Refuse to produce any release artifact (APK, bundle, install) without the real private release key.
+gradle.taskGraph.whenReady { graph ->
+    def releaseArtifactTask = ~/^(assemble|bundle|package|install)(\w*)Release$/
+    def requested = graph.allTasks.findAll { it.project == project && it.name ==~ releaseArtifactTask }
+    if (!requested.isEmpty() && releaseKeyProblem != null) {
+        throw new GradleException("Refusing to build a release without the real release key: ${releaseKeyProblem}. " +
+                "Set RELEASE_KEYSTORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD. " +
+                "Releases are never signed with the public test key.")
+    }
+}
 

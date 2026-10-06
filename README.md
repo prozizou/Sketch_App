@@ -64,6 +64,20 @@ Examples:
 > [!IMPORTANT]
 > If you want to add new features that don't require editing other packages other than `pro.sketchware`, make your changes in `pro.sketchware` package, and respect the directories and files structure and names. Also, even though the project compiles just fine with Kotlin classes that you might add, try to make your changes or additions in Java, not Kotlin unless it is more than necessary.
 
+## Building
+
+Debug builds, lint and unit tests need no secrets:
+
+```
+./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest
+```
+
+A **release** is only built with the private release key and is never signed with the public test key. Set
+`RELEASE_KEYSTORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS` and `RELEASE_KEY_PASSWORD`
+(`scripts/generate-release-key.sh` creates a key and prints the values). Without them, `assembleRelease`,
+`bundleRelease` and friends stop with an explanatory error. CI does the same: pull requests only run build,
+lint and tests, while pushes also build the signed release APK and fail if a secret is missing.
+
 ## Thanks for Contributing
 
 Thank you for contributing to Sketchware Pro! Your contributions help keep Sketchware Pro alive. Each accepted contribution will be noted down in the "About Team" activity. We'll use your GitHub name and profile picture initially, but they can be changed, of course.

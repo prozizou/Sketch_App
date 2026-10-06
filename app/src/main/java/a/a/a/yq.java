@@ -98,7 +98,8 @@ public class yq {
     public final int colorPrimaryDark;
     public final int colorControlHighlight;
     public final int colorControlNormal;
-    public final String versionCode;
+    /** Not final: auto-increment bumps it after a successful build so the next build in this session uses the new code. */
+    public String versionCode;
     public final String versionName;
     /**
      * Package name of current project,

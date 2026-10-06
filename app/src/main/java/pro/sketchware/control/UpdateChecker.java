@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Locale;
@@ -38,8 +39,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.BuildConfig;
 import pro.sketchware.utility.Network;
+import pro.sketchware.utility.SketchwareUtil;
 
 /**
  * Checks a remote manifest for a newer app version and, when the update is marked mandatory,
@@ -57,8 +60,8 @@ import pro.sketchware.utility.Network;
  */
 public class UpdateChecker {
 
-    private static final String MANIFEST_URL =
-            "https://raw.githubusercontent.com/prozizou/Sketch_App/main/update.json";
+    private static final String BASE_URL = "https://raw.githubusercontent.com/prozizou/Sketch_App/main/";
+    private static final String MANIFEST_URL = BASE_URL + "update.json";
 
     private static final String PREFS = "update_checker";
     private static final String KEY_MANDATORY_MANIFEST = "mandatory_manifest";
@@ -66,32 +69,76 @@ public class UpdateChecker {
     private final Network network = new Network();
 
     public void check(AppCompatActivity activity) {
+        check(activity, false);
+    }
+
+    /**
+     * @param manual true when the user asked for the check: they then also get told when nothing is new.
+     */
+    public void check(AppCompatActivity activity, boolean manual) {
         SharedPreferences prefs = activity.getSharedPreferences(PREFS, AppCompatActivity.MODE_PRIVATE);
         network.get(MANIFEST_URL, response -> {
             if (activity.isFinishing() || activity.isDestroyed()) {
                 return;
             }
+            boolean shown;
             if (response == null) {
                 // Offline or GitHub unreachable: keep enforcing the last mandatory update we saw.
-                handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false);
+                shown = handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false, true);
+                if (!shown && manual) {
+                    SketchwareUtil.toast("Couldn't reach the update server");
+                    return;
+                }
             } else {
-                handle(activity, prefs, response, true);
+                shown = handle(activity, prefs, response, true, true);
+            }
+            if (!shown) {
+                checkChannel(activity, prefs, manual);
             }
         });
     }
 
-    private void handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh) {
-        if (raw == null) {
+    /**
+     * Beta and Dev builds are announced in their own manifest. The stable manifest is always checked first,
+     * so a mandatory stable update can't be skipped by switching channel, and channel updates are never mandatory.
+     */
+    private void checkChannel(AppCompatActivity activity, SharedPreferences prefs, boolean manual) {
+        String channelUrl = switch (ConfigActivity.getStringSetting(ConfigActivity.SETTING_UPDATE_CHANNEL)) {
+            case "beta" -> BASE_URL + "update-beta.json";
+            case "dev" -> BASE_URL + "update-dev.json";
+            default -> null;
+        };
+        if (channelUrl == null) {
+            if (manual) SketchwareUtil.toast("You're up to date");
             return;
+        }
+        network.get(channelUrl, response -> {
+            if (activity.isFinishing() || activity.isDestroyed()) {
+                return;
+            }
+            boolean shown = response != null && handle(activity, prefs, response, false, false);
+            if (!shown && manual) {
+                SketchwareUtil.toast(response == null ? "Couldn't reach the update server" : "You're up to date");
+            }
+        });
+    }
+
+    /**
+     * @param allowMandatory false for channel manifests, whose updates are always optional.
+     * @return true if an update dialog was shown.
+     */
+    private boolean handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh, boolean allowMandatory) {
+        if (raw == null) {
+            return false;
         }
         try {
             JSONObject manifest = new JSONObject(raw);
             int latest = manifest.optInt("versionCode", -1);
             if (latest <= BuildConfig.VERSION_CODE) {
                 if (fresh) prefs.edit().remove(KEY_MANDATORY_MANIFEST).apply();
-                return;
+                return false;
             }
-            boolean mandatory = manifest.optBoolean("mandatory", false);
+            boolean mandatory = allowMandatory && manifest.optBoolean("mandatory", false);
             if (fresh) {
                 if (mandatory) {
                     prefs.edit().putString(KEY_MANDATORY_MANIFEST, raw).apply();
@@ -102,8 +149,10 @@ public class UpdateChecker {
             showUpdateDialog(activity, mandatory, manifest.optString("versionName", ""),
                     manifest.optString("notes", ""), manifest.optString("url", ""),
                     manifest.optString("apkUrl", ""), manifest.optString("sha256", ""));
+            return true;
         } catch (Exception ignored) {
             // Malformed manifest: fail silently, never block the app on our own bug.
+            return false;
         }
     }
 
@@ -158,9 +207,16 @@ public class UpdateChecker {
                 openUrl(activity, url);
                 return;
             }
-            if (!apkUrl.startsWith("https://")) {
+            if (!UpdatePolicy.isSecureUrl(apkUrl)) {
                 status.setVisibility(View.VISIBLE);
                 status.setText("Update rejected: the download link is not secure (https).");
+                return;
+            }
+            if (!UpdatePolicy.isValidSha256(sha256)) {
+                // Without a checksum the download can't be verified, so don't install it in-app.
+                status.setVisibility(View.VISIBLE);
+                status.setText("This update has no checksum, so it can't be installed here. Opening the download page instead.");
+                openUrl(activity, url);
                 return;
             }
             File apk = new File(updatesDir(activity), "update.apk");
@@ -221,7 +277,9 @@ public class UpdateChecker {
             String error = null;
             try {
                 Request request = new Request.Builder().url(apkUrl).build();
-                try (Response response = new OkHttpClient().newCall(request).execute()) {
+                // No https -> http (or http -> https) redirects: a downgrade would defeat the https-only rule.
+                OkHttpClient client = new OkHttpClient.Builder().followSslRedirects(false).build();
+                try (Response response = client.newCall(request).execute()) {
                     if (!response.isSuccessful() || response.body() == null) {
                         throw new IllegalStateException("HTTP " + response.code());
                     }
@@ -247,7 +305,7 @@ public class UpdateChecker {
                             }
                         }
                         out.flush();
-                        if (!expectedSha256.isEmpty() && !toHex(digest.digest()).equalsIgnoreCase(expectedSha256.trim())) {
+                        if (!UpdatePolicy.checksumMatches(digest.digest(), expectedSha256)) {
                             throw new SecurityException("checksum mismatch, the file is corrupted or was tampered with");
                         }
                     }
@@ -276,12 +334,6 @@ public class UpdateChecker {
         });
     }
 
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) sb.append(String.format(Locale.US, "%02x", b));
-        return sb.toString();
-    }
-
     /** @return null when the downloaded APK may be installed, otherwise the reason it was rejected. */
     private String verifyApk(AppCompatActivity activity, File apk) {
         PackageManager pm = activity.getPackageManager();
@@ -289,25 +341,17 @@ public class UpdateChecker {
                 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
         PackageInfo downloaded = pm.getPackageArchiveInfo(apk.getPath(), flags);
         if (downloaded == null) {
-            return "the downloaded file is not a valid APK";
-        }
-        if (!activity.getPackageName().equals(downloaded.packageName)) {
-            return "the APK belongs to another app (" + downloaded.packageName + ")";
+            return UpdatePolicy.rejectionReason(activity.getPackageName(), null, 0, 0, Collections.emptySet(), Collections.emptySet());
         }
         long downloadedVersion = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                 ? downloaded.getLongVersionCode() : downloaded.versionCode;
-        if (downloadedVersion <= BuildConfig.VERSION_CODE) {
-            return "the APK is not newer than the installed version";
-        }
         try {
             PackageInfo installed = pm.getPackageInfo(activity.getPackageName(), flags);
-            if (!signers(downloaded).equals(signers(installed)) || signers(installed).isEmpty()) {
-                return "the APK is signed with a different key than the installed app";
-            }
+            return UpdatePolicy.rejectionReason(activity.getPackageName(), downloaded.packageName,
+                    BuildConfig.VERSION_CODE, downloadedVersion, signers(installed), signers(downloaded));
         } catch (PackageManager.NameNotFoundException e) {
             return "cannot read the installed app signature";
         }
-        return null;
     }
 
     private static Set<String> signers(PackageInfo info) {
@@ -323,7 +367,7 @@ public class UpdateChecker {
         if (signatures != null) {
             for (Signature signature : signatures) {
                 try {
-                    result.add(toHex(MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));
+                    result.add(UpdatePolicy.signerDigest(signature.toByteArray()));
                 } catch (Exception ignored) {
                 }
             }
@@ -349,11 +393,11 @@ public class UpdateChecker {
     }
 
     private void openUrl(AppCompatActivity activity, String url) {
-        if (url == null || url.isEmpty()) {
+        if (!UpdatePolicy.isSecureUrl(url)) {
             return;
         }
         try {
-            activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url.trim())));
         } catch (Exception ignored) {
         }
     }

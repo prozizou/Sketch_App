@@ -96,6 +96,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
+      - name: Run the unit tests
+        run: gradle :app:testDebugUnitTest --console=plain
+
       - name: Build the release APK
         run: gradle assembleRelease
 
@@ -165,7 +168,8 @@ jobs:
               "versionName": tag,
               "mandatory": os.environ["MANDATORY"] == "true",
               "url": f"https://github.com/{repo}/releases/tag/{tag}",
-              "apkUrl": f"https://github.com/{repo}/releases/latest/download/{os.environ['APK_NAME']}",
+              # Immutable: points at this tag's asset, never at "latest" (which moves with every release).
+              "apkUrl": f"https://github.com/{repo}/releases/download/{tag}/{os.environ['APK_NAME']}",
               "sha256": os.environ["SHA"],
               "notes": os.environ["NOTES"],
           }

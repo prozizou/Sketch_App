@@ -1,56 +1,293 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
-    <SwitchPreferenceCompat
-        app:iconSpaceReserved="false"
-        app:key="built-in-blocks"
-        app:summary="May slow down loading blocks in Logic Editor."
-        app:title="Built-in blocks" />
 
-    <SwitchPreferenceCompat
+    <PreferenceCategory
         app:iconSpaceReserved="false"
-        app:key="always-show-blocks"
-        app:summary="All variable blocks will be visible, even if you don't have variables for them."
-        app:title="Show all variable blocks" />
+        app:key="category-editor"
+        app:title="Editor">
 
-    <SwitchPreferenceCompat
-        app:iconSpaceReserved="false"
-        app:key="show-every-single-block"
-        app:summary="Every single available block will be shown. Will slow down opening palettes!"
-        app:title="Show all blocks of palettes" />
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="built-in-blocks"
+            app:summary="Show built-in blocks in Logic Editor. Slower to load."
+            app:title="Built-in blocks" />
 
-    <Preference
-        app:iconSpaceReserved="false"
-        app:key="backup-dir"
-        app:summary="The default directory is /Internal storage/.sketch_nws/backups/."
-        app:title="@string/common_word_backup_directory" />
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="always-show-blocks"
+            app:summary="Show variable blocks even without variables."
+            app:title="Show all variable blocks" />
 
-    <SwitchPreferenceCompat
-        app:iconSpaceReserved="false"
-        app:key="root-auto-install-projects"
-        app:summary="Automatically installs project APKs after building using root access."
-        app:title="Install projects with root access" />
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="use-asd-highlighter"
+            app:summary="Highlight syntax in block text inputs."
+            app:title="Block text highlighting" />
 
-    <SwitchPreferenceCompat
-        app:iconSpaceReserved="false"
-        app:key="root-auto-open-after-installing"
-        app:summary="Opens projects automatically after auto-installation using root."
-        app:title="Launch projects after installing" />
+        <ListPreference
+            app:defaultValue="0"
+            app:entries="@array/app_settings_auto_save_interval_entries"
+            app:entryValues="@array/app_settings_auto_save_interval_values"
+            app:iconSpaceReserved="false"
+            app:key="auto-save-interval"
+            app:title="Auto-save"
+            app:useSimpleSummaryProvider="true" />
 
-    <SwitchPreferenceCompat
-        app:iconSpaceReserved="false"
-        app:key="use-new-version-control"
-        app:summary="Enables custom version code and name for projects."
-        app:title="Use new Version Control" />
+        <ListPreference
+            app:defaultValue="snapshot"
+            app:entries="@array/app_settings_auto_save_mode_entries"
+            app:entryValues="@array/app_settings_auto_save_mode_values"
+            app:iconSpaceReserved="false"
+            app:key="auto-save-mode"
+            app:title="Auto-save method"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
 
-    <SwitchPreferenceCompat
+    <PreferenceCategory
         app:iconSpaceReserved="false"
-        app:key="use-asd-highlighter"
-        app:summary="Enables syntax highlighting while editing blocks' text parameters."
-        app:title="Enable block text input highlighting" />
+        app:key="category-projects"
+        app:title="Projects">
 
-    <Preference
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="use-new-version-control"
+            app:summary="Set a custom version code and name per project."
+            app:title="Version control" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="auto-version-code"
+            app:summary="Add 1 to the version code after each successful build."
+            app:title="Auto-increment version code" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="root-auto-install-projects"
+            app:summary="Install built APKs automatically using root."
+            app:title="Install with root" />
+
+        <SwitchPreferenceCompat
+            app:dependency="root-auto-install-projects"
+            app:iconSpaceReserved="false"
+            app:key="root-auto-open-after-installing"
+            app:summary="Open the app after a root install."
+            app:title="Launch after install" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="health-check"
+            app:summary="Scan projects for common problems."
+            app:title="Project health check" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:iconSpaceReserved="false"
-        app:key="backup-filename"
-        app:summary="Default is &quot;$projectName v$versionName ($pkgName, $versionCode) $time(yyyy-MM-dd'T'HHmmss)&quot;"
-        app:title="Backup filename format" />
+        app:key="category-backup"
+        app:title="Backup &amp; Recovery">
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="auto-backup"
+            app:summary="Back up a project when you save and close it."
+            app:title="Automatic backup" />
+
+        <ListPreference
+            app:defaultValue="daily"
+            app:dependency="auto-backup"
+            app:entries="@array/app_settings_backup_frequency_entries"
+            app:entryValues="@array/app_settings_backup_frequency_values"
+            app:iconSpaceReserved="false"
+            app:key="auto-backup-frequency"
+            app:title="Backup frequency"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="5"
+            app:dependency="auto-backup"
+            app:entries="@array/app_settings_backup_retention_entries"
+            app:entryValues="@array/app_settings_backup_retention_values"
+            app:iconSpaceReserved="false"
+            app:key="backup-retention"
+            app:title="Keep per project"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="restore-backup"
+            app:summary="Latest backup or pick a file."
+            app:title="Restore a backup" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="crash-recovery"
+            app:summary="Offer recovery after an unexpected close."
+            app:title="Crash recovery" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="backup-dir"
+            app:title="@string/common_word_backup_directory" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="backup-filename"
+            app:summary="Naming pattern of backup files."
+            app:title="Backup filename format" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-build"
+        app:title="Build &amp; Signing">
+
+        <ListPreference
+            app:defaultValue="debug"
+            app:entries="@array/app_settings_build_mode_entries"
+            app:entryValues="@array/app_settings_build_mode_values"
+            app:iconSpaceReserved="false"
+            app:key="build-mode"
+            app:title="Build mode" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="keystore-path"
+            app:title="Keystore file" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="keystore-alias"
+            app:title="Key alias" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="keystore-verify"
+            app:summary="Check password, aliases and expiry."
+            app:title="Verify keystore" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="keystore-create"
+            app:summary="Generate a new signing key."
+            app:title="Create keystore" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="build-history"
+            app:summary="Recent builds and their results."
+            app:title="Build history" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-storage"
+        app:title="Storage">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="clear-cache"
+            app:title="Clear cache" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="storage-usage"
+            app:summary="See what takes up space."
+            app:title="Storage usage" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-performance"
+        app:title="Performance">
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="show-every-single-block"
+            app:summary="Show every palette block. Slower to open palettes."
+            app:title="Show all palette blocks" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="memory-alerts"
+            app:summary="Warn and save a snapshot when memory runs low."
+            app:title="Memory alerts" />
+
+        <ListPreference
+            app:defaultValue="85"
+            app:dependency="memory-alerts"
+            app:entries="@array/app_settings_memory_threshold_entries"
+            app:entryValues="@array/app_settings_memory_threshold_values"
+            app:iconSpaceReserved="false"
+            app:key="memory-alert-threshold"
+            app:title="Alert threshold"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-updates"
+        app:title="Updates">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="app-version"
+            app:selectable="false"
+            app:title="Current version" />
+
+        <ListPreference
+            app:defaultValue="stable"
+            app:entries="@array/app_settings_update_channel_entries"
+            app:entryValues="@array/app_settings_update_channel_values"
+            app:iconSpaceReserved="false"
+            app:key="update-channel"
+            app:title="Update channel"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="check-updates"
+            app:summary="Look for a newer version now."
+            app:title="Check for updates" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-diagnostics"
+        app:title="Diagnostics">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="view-logs"
+            app:summary="View, share or clear app logs."
+            app:title="Logs" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="diagnostic-report"
+            app:summary="Device and app info to share."
+            app:title="Diagnostic report" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-advanced"
+        app:title="Advanced">
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="export-settings"
+            app:summary="Save these settings to a file."
+            app:title="Export settings" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="import-settings"
+            app:summary="Load settings from an exported file."
+            app:title="Import settings" />
+
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="reset-settings"
+            app:summary="Restore every option to its default."
+            app:title="Reset settings" />
+    </PreferenceCategory>
 </PreferenceScreen>

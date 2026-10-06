@@ -3,7 +3,9 @@ package mod.hilal.saif.activities.tools;
 import static pro.sketchware.utility.GsonUtils.getGson;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -11,15 +13,20 @@ import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceDataStore;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceGroup;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.besome.sketch.tools.NewKeyStoreActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
@@ -27,16 +34,21 @@ import com.google.gson.JsonParseException;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+import a.a.a.wq;
 import mod.hey.studios.util.Helper;
 import mod.jbk.util.LogUtil;
+import pro.sketchware.BuildConfig;
 import pro.sketchware.R;
+import pro.sketchware.control.UpdateChecker;
 import pro.sketchware.databinding.DialogCreateNewFileLayoutBinding;
 import pro.sketchware.databinding.PreferenceActivityBinding;
+import pro.sketchware.settings.AppSettingsDialogs;
+import pro.sketchware.settings.AutoBackup;
+import pro.sketchware.settings.StorageTools;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 
@@ -55,6 +67,55 @@ public class ConfigActivity extends BaseAppCompatActivity {
     public static final String SETTING_CRITICAL_UPDATE_REMINDER = "critical-update-reminder";
     public static final String SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH = "palletteDir";
     public static final String SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH = "blockDir";
+    /** Seconds between auto-saves, "0" turns auto-save off. */
+    public static final String SETTING_AUTO_SAVE_INTERVAL = "auto-save-interval";
+    /** "snapshot" (silent recovery snapshot) or "save" (full project save). */
+    public static final String SETTING_AUTO_SAVE_MODE = "auto-save-mode";
+    public static final String SETTING_AUTO_VERSION_CODE = "auto-version-code";
+    public static final String SETTING_AUTO_BACKUP = "auto-backup";
+    /** "always", "daily" or "weekly". */
+    public static final String SETTING_AUTO_BACKUP_FREQUENCY = "auto-backup-frequency";
+    /** How many auto-backups to keep per project, "0" means all of them. */
+    public static final String SETTING_BACKUP_RETENTION = "backup-retention";
+    public static final String SETTING_CRASH_RECOVERY = "crash-recovery";
+    /** "debug" or "release". */
+    public static final String SETTING_BUILD_MODE = "build-mode";
+    /** Absolute path of the signing keystore, empty for the default location. */
+    public static final String SETTING_KEYSTORE_PATH = "keystore-path";
+    public static final String SETTING_KEYSTORE_ALIAS = "keystore-alias";
+    public static final String SETTING_MEMORY_ALERTS = "memory-alerts";
+    /** Heap usage in percent from which a memory alert is raised. */
+    public static final String SETTING_MEMORY_THRESHOLD = "memory-alert-threshold";
+    /** "stable", "beta" or "dev". */
+    public static final String SETTING_UPDATE_CHANNEL = "update-channel";
+
+    private static final Map<String, Object> DEFAULTS = new LinkedHashMap<>();
+
+    static {
+        DEFAULTS.put(SETTING_ALWAYS_SHOW_BLOCKS, false);
+        DEFAULTS.put(SETTING_BACKUP_DIRECTORY, "/.sketch_nws/backups/");
+        DEFAULTS.put(SETTING_ROOT_AUTO_INSTALL_PROJECTS, false);
+        DEFAULTS.put(SETTING_ROOT_AUTO_OPEN_AFTER_INSTALLING, true);
+        DEFAULTS.put(SETTING_SHOW_BUILT_IN_BLOCKS, false);
+        DEFAULTS.put(SETTING_SHOW_EVERY_SINGLE_BLOCK, false);
+        DEFAULTS.put(SETTING_USE_NEW_VERSION_CONTROL, false);
+        DEFAULTS.put(SETTING_USE_ASD_HIGHLIGHTER, false);
+        DEFAULTS.put(SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH, "/.sketch_nws/resources/block/My Block/palette.json");
+        DEFAULTS.put(SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH, "/.sketch_nws/resources/block/My Block/block.json");
+        DEFAULTS.put(SETTING_AUTO_SAVE_INTERVAL, "0");
+        DEFAULTS.put(SETTING_AUTO_SAVE_MODE, "snapshot");
+        DEFAULTS.put(SETTING_AUTO_VERSION_CODE, false);
+        DEFAULTS.put(SETTING_AUTO_BACKUP, false);
+        DEFAULTS.put(SETTING_AUTO_BACKUP_FREQUENCY, "daily");
+        DEFAULTS.put(SETTING_BACKUP_RETENTION, "5");
+        DEFAULTS.put(SETTING_CRASH_RECOVERY, true);
+        DEFAULTS.put(SETTING_BUILD_MODE, "debug");
+        DEFAULTS.put(SETTING_KEYSTORE_PATH, "");
+        DEFAULTS.put(SETTING_KEYSTORE_ALIAS, "");
+        DEFAULTS.put(SETTING_MEMORY_ALERTS, true);
+        DEFAULTS.put(SETTING_MEMORY_THRESHOLD, "85");
+        DEFAULTS.put(SETTING_UPDATE_CHANNEL, "stable");
+    }
 
     public static String getBackupPath() {
         return DataStore.getInstance().getString(SETTING_BACKUP_DIRECTORY, "/.sketch_nws/backups/");
@@ -77,6 +138,29 @@ public class ConfigActivity extends BaseAppCompatActivity {
 
     public static String getBackupFileName() {
         return DataStore.getInstance().getString(SETTING_BACKUP_FILENAME, "$projectName v$versionName ($pkgName, $versionCode) $time(yyyy-MM-dd'T'HHmmss)");
+    }
+
+    /**
+     * @return the stored value of a text setting, or its default.
+     */
+    public static String getStringSetting(String key) {
+        Object fallback = DEFAULTS.get(key);
+        return DataStore.getInstance().getString(key, fallback instanceof String d ? d : "");
+    }
+
+    public static int getIntSetting(String key, int fallback) {
+        try {
+            return Integer.parseInt(getStringSetting(key).trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    /**
+     * @return the user's keystore path, or an empty string when the default location is used.
+     */
+    public static String getKeystorePath() {
+        return getStringSetting(SETTING_KEYSTORE_PATH).trim();
     }
 
     public static boolean isSettingEnabled(String keyName) {
@@ -127,38 +211,15 @@ public class ConfigActivity extends BaseAppCompatActivity {
 
     private static void restoreDefaultSettings(HashMap<String, Object> settings) {
         settings.clear();
-
-        List<String> keys = Arrays.asList(SETTING_ALWAYS_SHOW_BLOCKS,
-                SETTING_BACKUP_DIRECTORY,
-                SETTING_ROOT_AUTO_INSTALL_PROJECTS,
-                SETTING_ROOT_AUTO_OPEN_AFTER_INSTALLING,
-                SETTING_SHOW_BUILT_IN_BLOCKS,
-                SETTING_SHOW_EVERY_SINGLE_BLOCK,
-                SETTING_USE_NEW_VERSION_CONTROL,
-                SETTING_USE_ASD_HIGHLIGHTER,
-                SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH,
-                SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH);
-
-        for (String key : keys) {
-            settings.put(key, getDefaultValue(key));
-        }
+        settings.putAll(DEFAULTS);
         FileUtil.writeFile(SETTINGS_FILE.getAbsolutePath(), getGson().toJson(settings));
     }
 
     public static Object getDefaultValue(String key) {
-        return switch (key) {
-            case SETTING_ALWAYS_SHOW_BLOCKS,
-                 SETTING_ROOT_AUTO_INSTALL_PROJECTS, SETTING_SHOW_BUILT_IN_BLOCKS,
-                 SETTING_SHOW_EVERY_SINGLE_BLOCK, SETTING_USE_NEW_VERSION_CONTROL,
-                 SETTING_USE_ASD_HIGHLIGHTER -> false;
-            case SETTING_BACKUP_DIRECTORY -> "/.sketch_nws/backups/";
-            case SETTING_ROOT_AUTO_OPEN_AFTER_INSTALLING -> true;
-            case SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH ->
-                    "/.sketch_nws/resources/block/My Block/palette.json";
-            case SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH ->
-                    "/.sketch_nws/resources/block/My Block/block.json";
-            default -> throw new IllegalArgumentException("Unknown key '" + key + "'!");
-        };
+        if (!DEFAULTS.containsKey(key)) {
+            throw new IllegalArgumentException("Unknown key '" + key + "'!");
+        }
+        return DEFAULTS.get(key);
     }
 
     @Override
@@ -214,8 +275,98 @@ public class ConfigActivity extends BaseAppCompatActivity {
             dataStore = DataStore.getInstance();
             getPreferenceManager().setPreferenceDataStore(dataStore);
             setPreferencesFromResource(R.xml.preferences_config_activity, rootKey);
-            Preference backupDir = findPreference("backup-dir");
-            assert backupDir != null;
+            applyCompactLayout(getPreferenceScreen());
+
+            setUpEditor();
+            setUpProjects();
+            setUpBackupAndRecovery();
+            setUpBuildAndSigning();
+            setUpStorage();
+            setUpUpdates();
+            setUpDiagnostics();
+            setUpAdvanced();
+        }
+
+        /**
+         * Gives every row the compact Material 3 layouts and lets titles wrap instead of being cut off.
+         */
+        private void applyCompactLayout(PreferenceGroup group) {
+            for (int i = 0; i < group.getPreferenceCount(); i++) {
+                Preference preference = group.getPreference(i);
+                if (preference instanceof PreferenceCategory) {
+                    preference.setLayoutResource(R.layout.preference_category_compact);
+                } else {
+                    preference.setLayoutResource(R.layout.preference_compact);
+                    preference.setSingleLineTitle(false);
+                }
+                if (preference instanceof PreferenceGroup child) {
+                    applyCompactLayout(child);
+                }
+            }
+        }
+
+        @NonNull
+        private <T extends Preference> T require(String key) {
+            T preference = findPreference(key);
+            if (preference == null) {
+                throw new IllegalStateException("Missing preference " + key);
+            }
+            return preference;
+        }
+
+        private void onClick(String key, Runnable action) {
+            Preference preference = require(key);
+            preference.setOnPreferenceClickListener(clicked -> {
+                action.run();
+                return true;
+            });
+        }
+
+        private AppCompatActivity host() {
+            return (AppCompatActivity) requireActivity();
+        }
+
+        /* ------------------------------------------------------------ Editor */
+
+        private void setUpEditor() {
+            ListPreference interval = require(SETTING_AUTO_SAVE_INTERVAL);
+            Preference mode = require(SETTING_AUTO_SAVE_MODE);
+            mode.setEnabled(!"0".equals(interval.getValue()));
+            interval.setOnPreferenceChangeListener((preference, newValue) -> {
+                mode.setEnabled(!"0".equals(newValue));
+                return true;
+            });
+        }
+
+        /* ------------------------------------------------------------ Projects */
+
+        private void setUpProjects() {
+            SwitchPreferenceCompat installWithRoot = require(SETTING_ROOT_AUTO_INSTALL_PROJECTS);
+            installWithRoot.setOnPreferenceClickListener(preference -> {
+                if (installWithRoot.isChecked()) {
+                    Shell.getShell(shell -> {
+                        if (!shell.isRoot()) {
+                            Snackbar.make(snackbarView, "Couldn't acquire root access", BaseTransientBottomBar.LENGTH_SHORT).show();
+                            installWithRoot.setChecked(false);
+                        }
+                    });
+                }
+                return true;
+            });
+
+            onClick("health-check", () -> AppSettingsDialogs.showHealthCheck(requireActivity()));
+        }
+
+        /* ------------------------------------------------------------ Backup & Recovery */
+
+        private String describeBackupDirectory() {
+            String path = getBackupPath();
+            return "/Internal storage" + (path.startsWith("/") ? "" : "/") + path;
+        }
+
+        private void setUpBackupAndRecovery() {
+            Preference backupDir = require(SETTING_BACKUP_DIRECTORY);
+            backupDir.setSummary(describeBackupDirectory());
             backupDir.setOnPreferenceClickListener(preference -> {
                 DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
                 binding.inputText.setText(getBackupPath());
@@ -234,6 +385,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                     Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     positiveButton.setOnClickListener(view -> {
                         getDataStore().putString(SETTING_BACKUP_DIRECTORY, Helper.getText(binding.inputText));
+                        backupDir.setSummary(describeBackupDirectory());
                         dialog.dismiss();
                     });
 
@@ -244,22 +396,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 return true;
             });
 
-            SwitchPreferenceCompat installWithRoot = findPreference("root-auto-install-projects");
-            assert installWithRoot != null;
-            installWithRoot.setOnPreferenceClickListener(preference -> {
-                if (installWithRoot.isChecked()) {
-                    Shell.getShell(shell -> {
-                        if (!shell.isRoot()) {
-                            Snackbar.make(snackbarView, "Couldn't acquire root access", BaseTransientBottomBar.LENGTH_SHORT).show();
-                            installWithRoot.setChecked(false);
-                        }
-                    });
-                }
-                return true;
-            });
-
-            Preference backupFilename = findPreference("backup-filename");
-            assert backupFilename != null;
+            Preference backupFilename = require(SETTING_BACKUP_FILENAME);
             backupFilename.setOnPreferenceClickListener(preference -> {
                 DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
                 binding.chipGroupTypes.setVisibility(View.GONE);
@@ -300,6 +437,154 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 dialog.show();
                 return true;
             });
+
+            // A smaller retention takes effect right away instead of at the next backup.
+            Preference retention = require(SETTING_BACKUP_RETENTION);
+            retention.setOnPreferenceChangeListener((preference, newValue) -> {
+                getDataStore().putString(SETTING_BACKUP_RETENTION, (String) newValue);
+                new Thread(AutoBackup::pruneAll).start();
+                return true;
+            });
+
+            onClick("restore-backup", () ->
+                    AppSettingsDialogs.showRestoreBackup(requireActivity(), getParentFragmentManager()));
+        }
+
+        /* ------------------------------------------------------------ Build & Signing */
+
+        private String describeKeystore() {
+            String path = getKeystorePath();
+            if (path.isEmpty()) {
+                return "Default · /Internal storage/" + wq.D;
+            }
+            return new File(path).isFile() ? path : path + " (missing)";
+        }
+
+        private void setUpBuildAndSigning() {
+            ListPreference buildMode = require(SETTING_BUILD_MODE);
+            buildMode.setSummaryProvider((Preference.SummaryProvider<ListPreference>) preference ->
+                    "release".equals(preference.getValue())
+                            ? "Release · exports default to your keystore"
+                            : "Debug · exports default to the test key");
+
+            Preference keystore = require(SETTING_KEYSTORE_PATH);
+            keystore.setSummary(describeKeystore());
+            keystore.setOnPreferenceClickListener(preference -> {
+                AppSettingsDialogs.pickKeystore(requireActivity(), getParentFragmentManager(),
+                        () -> keystore.setSummary(describeKeystore()));
+                return true;
+            });
+
+            Preference alias = require(SETTING_KEYSTORE_ALIAS);
+            alias.setSummary(describeAlias());
+            alias.setOnPreferenceClickListener(preference -> {
+                DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
+                binding.chipGroupTypes.setVisibility(View.GONE);
+                binding.textInputLayout.setHint("Key alias");
+                binding.inputText.setText(getStringSetting(SETTING_KEYSTORE_ALIAS));
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setView(binding.getRoot())
+                        .setTitle("Key alias")
+                        .setMessage("Pre-filled when you sign an export. The password is never stored.")
+                        .setNegativeButton(R.string.common_word_cancel, null)
+                        .setPositiveButton(R.string.common_word_save, (dialog, which) -> {
+                            getDataStore().putString(SETTING_KEYSTORE_ALIAS, Helper.getText(binding.inputText).trim());
+                            alias.setSummary(describeAlias());
+                        })
+                        .show();
+                return true;
+            });
+
+            onClick("keystore-verify", () -> {
+                if (!new File(wq.getSigningKeystorePath()).isFile()) {
+                    SketchwareUtil.toastError("Keystore file not found");
+                    return;
+                }
+                DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
+                binding.chipGroupTypes.setVisibility(View.GONE);
+                binding.textInputLayout.setHint("Keystore password");
+                binding.inputText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setView(binding.getRoot())
+                        .setTitle("Verify keystore")
+                        .setMessage("Used once to open the file; it isn't stored.")
+                        .setNegativeButton(R.string.common_word_cancel, null)
+                        .setPositiveButton("Verify", (dialog, which) -> AppSettingsDialogs.verifyKeystore(
+                                requireActivity(), Helper.getText(binding.inputText).toCharArray()))
+                        .show();
+            });
+
+            onClick("keystore-create", () -> {
+                Snackbar.make(snackbarView, "New keystores are saved to the default location.", BaseTransientBottomBar.LENGTH_LONG).show();
+                startActivity(new Intent(requireContext(), NewKeyStoreActivity.class));
+            });
+
+            onClick("build-history", () -> AppSettingsDialogs.showBuildHistory(requireActivity()));
+        }
+
+        private String describeAlias() {
+            String alias = getStringSetting(SETTING_KEYSTORE_ALIAS).trim();
+            return alias.isEmpty() ? "Not set" : alias;
+        }
+
+        /* ------------------------------------------------------------ Storage */
+
+        private void setUpStorage() {
+            onClick("clear-cache", () -> AppSettingsDialogs.confirmClearCache(requireActivity(), this::refreshCacheSummary));
+            onClick("storage-usage", () -> AppSettingsDialogs.showStorageUsage(requireActivity()));
+            refreshCacheSummary();
+        }
+
+        private void refreshCacheSummary() {
+            Preference clearCache = require("clear-cache");
+            clearCache.setSummary("Calculating…");
+            var appContext = requireContext().getApplicationContext();
+            new Thread(() -> {
+                long size = StorageTools.cacheSize(appContext);
+                var activity = getActivity();
+                if (activity != null) {
+                    activity.runOnUiThread(() -> {
+                        if (isAdded()) {
+                            clearCache.setSummary(size == 0 ? "Nothing to clear" : FileUtil.formatFileSize(size) + " can be freed");
+                        }
+                    });
+                }
+            }).start();
+        }
+
+        /* ------------------------------------------------------------ Updates */
+
+        private void setUpUpdates() {
+            Preference version = require("app-version");
+            version.setSummary(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+            onClick("check-updates", () -> new UpdateChecker().check(host(), true));
+        }
+
+        /* ------------------------------------------------------------ Diagnostics */
+
+        private void setUpDiagnostics() {
+            onClick("view-logs", () -> AppSettingsDialogs.showLogs(requireActivity()));
+            onClick("diagnostic-report", () -> AppSettingsDialogs.showDiagnosticReport(requireActivity()));
+        }
+
+        /* ------------------------------------------------------------ Advanced */
+
+        private void setUpAdvanced() {
+            onClick("export-settings", () -> AppSettingsDialogs.exportSettings(requireActivity()));
+            onClick("import-settings", () -> AppSettingsDialogs.importSettings(
+                    requireActivity(), getParentFragmentManager(), this::reload));
+            onClick("reset-settings", () -> AppSettingsDialogs.confirmReset(requireActivity(), this::reload));
+        }
+
+        /**
+         * Rebuilds the screen so every row shows the values that were just imported or reset.
+         */
+        private void reload() {
+            if (!isAdded()) {
+                return;
+            }
+            setPreferenceScreen(null);
+            onCreatePreferences(null, null);
         }
 
         public DataStore getDataStore() {
@@ -341,6 +626,55 @@ public class ConfigActivity extends BaseAppCompatActivity {
             FileUtil.writeFile(SETTINGS_FILE.getAbsolutePath(), getGson().toJson(settings));
         }
 
+        /**
+         * Puts every setting back to its default value and persists.
+         */
+        public synchronized void resetToDefaults() {
+            settings.clear();
+            settings.putAll(DEFAULTS);
+            persist();
+        }
+
+        /**
+         * @return a copy of the user-facing settings. Internal bookkeeping such as last-backup times is left out.
+         */
+        public synchronized Map<String, Object> exportableSettings() {
+            Map<String, Object> exported = new LinkedHashMap<>();
+            for (String key : DEFAULTS.keySet()) {
+                if (settings.containsKey(key)) {
+                    exported.put(key, settings.get(key));
+                }
+            }
+            if (settings.get(SETTING_BACKUP_FILENAME) instanceof String format) {
+                exported.put(SETTING_BACKUP_FILENAME, format);
+            }
+            return exported;
+        }
+
+        /**
+         * Applies the entries of {@code values} that are known settings with the right type, ignoring the rest.
+         *
+         * @return how many settings were applied.
+         */
+        public synchronized int importSettings(Map<?, ?> values) {
+            int applied = 0;
+            for (Map.Entry<?, ?> entry : values.entrySet()) {
+                if (!(entry.getKey() instanceof String key)) {
+                    continue;
+                }
+                Object value = entry.getValue();
+                Object expected = SETTING_BACKUP_FILENAME.equals(key) ? "" : DEFAULTS.get(key);
+                boolean valid = (expected instanceof Boolean && value instanceof Boolean)
+                        || (expected instanceof String && value instanceof String);
+                if (valid) {
+                    settings.put(key, value);
+                    applied++;
+                }
+            }
+            persist();
+            return applied;
+        }
+
         @Override
         public void putString(String key, @Nullable String value) {
             if (value == null) {
@@ -358,7 +692,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
             if (value instanceof String s) {
                 return s;
             }
-            return defValue;
+            return DEFAULTS.get(key) instanceof String d ? d : defValue;
         }
 
         @Override
@@ -373,7 +707,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
             if (value instanceof Boolean b) {
                 return b;
             }
-            return defValue;
+            return DEFAULTS.get(key) instanceof Boolean d ? d : defValue;
         }
     }
 }
