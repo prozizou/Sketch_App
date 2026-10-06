@@ -58,7 +58,7 @@ import pro.sketchware.utility.Network;
 public class UpdateChecker {
 
     private static final String MANIFEST_URL =
-            "https://raw.githubusercontent.com/prozizou/Sketchware-Pro/main/update.json";
+            "https://raw.githubusercontent.com/prozizou/Sketch_App/main/update.json";
 
     private static final String PREFS = "update_checker";
     private static final String KEY_MANDATORY_MANIFEST = "mandatory_manifest";
