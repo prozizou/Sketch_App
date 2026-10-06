@@ -310,8 +310,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             if (!optOutFile.exists() && !granted) {
                 MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
                 dialog.setIcon(R.drawable.ic_expire_48dp);
-                dialog.setTitle("Android 11 storage access");
-                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid " + "taking ages to build projects. Don't worry, we can't do more to storage than " + "with current granted permissions.");
+                dialog.setTitle("Faster builds on Android 11+");
+                dialog.setMessage("Optional: \"All files access\" makes building projects much faster on Android 11 and newer. " + "Everything else works without it, and you can turn it off again in system settings.");
                 dialog.setPositiveButton(Helper.getResString(R.string.common_word_settings), (v, which) -> {
                     FileUtil.requestAllFilesAccessPermission(this);
                     v.dismiss();

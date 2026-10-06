@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11 and lower (android:fullBackupContent). Projects, backups and settings live in
+    /Internal storage/.sketch_nws and are never part of Android's backup; only small preferences in the
+    app's private storage are. Anything device-specific or re-creatable is excluded.
+-->
+<full-backup-content>
+    <!-- Extracted compiler libraries, icon packs and crash markers are rebuilt on demand. -->
+    <exclude domain="file" />
+    <exclude domain="database" />
+    <exclude domain="external" />
+    <exclude domain="root" />
+    <!-- Updater state and Firebase identifiers must not move to another device. -->
+    <exclude domain="sharedpref" path="update_checker.xml" />
+    <exclude domain="sharedpref" path="com.google.android.gms.appid.xml" />
+    <exclude domain="sharedpref" path="FirebaseAppHeartBeat.xml" />
+    <exclude domain="sharedpref" path="com.google.firebase.crashlytics.xml" />
+</full-backup-content>

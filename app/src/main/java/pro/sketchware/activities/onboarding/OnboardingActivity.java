@@ -6,9 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +27,6 @@ import androidx.viewpager.widget.ViewPager;
 import com.google.android.material.button.MaterialButton;
 
 import pro.sketchware.R;
-import pro.sketchware.utility.FileUtil;
 
 /**
  * First-launch guide: welcome, file access (with a button that actually requests it) and where to get
@@ -138,10 +135,13 @@ public class OnboardingActivity extends AppCompatActivity {
         findViewById(R.id.btn_skip).setVisibility(last ? View.INVISIBLE : View.VISIBLE);
     }
 
+    /**
+     * The editor only needs the regular storage permission. "All files access" is optional (it makes builds
+     * faster on Android 11+) and is offered separately, and skippably, by the main screen.
+     */
     private boolean hasFileAccess() {
-        boolean basic = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-        return Build.VERSION.SDK_INT > Build.VERSION_CODES.Q ? basic && Environment.isExternalStorageManager() : basic;
     }
 
     private void refreshAccessButton() {
@@ -154,9 +154,6 @@ public class OnboardingActivity extends AppCompatActivity {
     private void requestFileAccess() {
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_STORAGE);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-            FileUtil.requestAllFilesAccessPermission(this);
-        }
     }
 
     private void openTelegram() {
