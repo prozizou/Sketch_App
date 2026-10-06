@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -17,6 +18,20 @@
             android:spinnerMode="dialog" />
 
         <ImageView
+            android:id="@+id/edit_file"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="8dp"
+            android:clickable="true"
+            android:contentDescription="@string/src_edit_action"
+            android:focusable="true"
+            android:padding="4dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_mtrl_edit"
+            android:visibility="gone"
+            app:tint="@color/event_accent" />
+
+        <ImageView
             android:id="@+id/change_font_size"
             android:layout_width="32dp"
             android:layout_height="32dp"
@@ -28,6 +43,37 @@
             android:src="@drawable/ic_mtrl_formattext" />
     </LinearLayout>
     
+    <LinearLayout
+        android:id="@+id/override_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/event_accent_container"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/src_override_banner"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/restore_generated"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="8dp"
+            android:text="@string/src_restore_action"
+            android:textColor="@color/event_accent"
+            android:textSize="12sp" />
+    </LinearLayout>
+
     <io.github.rosemoe.sora.widget.CodeEditor
         android:id="@+id/editor"
         style="@style/AppTheme.Et"

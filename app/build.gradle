@@ -16,17 +16,46 @@ android {
         //noinspection ExpiredTargetSdkVersion since we don't target getting Sketchware Pro on Google Play.
         targetSdk = 28
         minSdk = 26
-        versionCode = 150
+        versionCode = 151
         versionName = "v7.1.0"
 
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash}\"")
+    }
+
+    // Release signing comes from the environment (CI secrets or a local shell), never from the repository.
+    // Without it, release builds fall back to the public test key, which is fine for forks and local
+    // experiments but must not be shipped: users could not trust updates signed with a public key.
+    def releaseKeystoreFile = System.getenv("RELEASE_KEYSTORE_FILE")
+    def hasReleaseKey = releaseKeystoreFile && new File(releaseKeystoreFile).isFile() &&
+            System.getenv("RELEASE_STORE_PASSWORD") && System.getenv("RELEASE_KEY_ALIAS") &&
+            System.getenv("RELEASE_KEY_PASSWORD")
+    if (!hasReleaseKey) {
+        logger.warn("WARNING: no release key configured (RELEASE_KEYSTORE_FILE, RELEASE_STORE_PASSWORD, " +
+                "RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD); signing the release build with the public test key.")
+    }
+
+    signingConfigs {
+        debug {
+            storeFile = file("../testkey.keystore")
+            storePassword = "testkey"
+            keyAlias = "testkey"
+            keyPassword = "testkey"
+        }
+        if (hasReleaseKey) {
+            release {
+                storeFile = file(releaseKeystoreFile)
+                storePassword = System.getenv("RELEASE_STORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.debug
+            signingConfig = hasReleaseKey ? signingConfigs.release : signingConfigs.debug
         }
     }
 
@@ -44,15 +73,6 @@ android {
 
     androidResources {
         additionalParameters.addAll("--stable-ids", "${rootDir}/public-stable-ids.txt")
-    }
-
-    signingConfigs {
-        debug {
-            storeFile = file("../testkey.keystore")
-            storePassword = "testkey"
-            keyAlias = "testkey"
-            keyPassword = "testkey"
-        }
     }
 
     buildFeatures {

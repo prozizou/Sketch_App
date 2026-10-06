@@ -1,5 +1,6 @@
 package com.besome.sketch.common;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -13,21 +14,30 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.besome.sketch.beans.ProjectFileBean;
 import com.besome.sketch.beans.SrcCodeBean;
 import com.besome.sketch.ctrls.CommonSpinnerItem;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import a.a.a.ProjectBuilder;
 import a.a.a.bB;
+import a.a.a.hC;
 import a.a.a.jC;
 import a.a.a.yq;
+import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.databinding.SrcViewerBinding;
 import pro.sketchware.utility.EditorUtils;
+import pro.sketchware.utility.FilePathUtil;
+import pro.sketchware.utility.FileUtil;
 
 public class SrcViewerActivity extends BaseAppCompatActivity {
 
@@ -37,6 +47,19 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
 
     private String currentFileName;
     private int editorFontSize = 12;
+
+    private static final String MANIFEST_NAME = "AndroidManifest.xml";
+    /** Generated helper classes that are replaced when a file of the same name exists in the project's Java folder. */
+    private static final Set<String> REPLACEABLE_HELPERS = new HashSet<>(Arrays.asList(
+            "SketchwareUtil.java", "FileUtil.java", "RequestNetwork.java", "RequestNetworkController.java",
+            "BluetoothConnect.java", "BluetoothController.java", "GoogleMapController.java"));
+    private final FilePathUtil filePathUtil = new FilePathUtil();
+    /** Generated Java files the user may take over by hand (activities and the helper classes above). */
+    private final Set<String> replaceableJava = new HashSet<>();
+    /** Names of replaceable files that currently have a hand-edited version. */
+    private final Set<String> overriddenJava = new HashSet<>();
+    private boolean manifestOverridden;
+    private boolean returningFromEditor;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,6 +78,8 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
         configureEditor();
 
         binding.changeFontSize.setOnClickListener(v -> showChangeFontSizeDialog());
+        binding.editFile.setOnClickListener(v -> editCurrentFile());
+        binding.restoreGenerated.setOnClickListener(v -> confirmRestoreGenerated());
 
         binding.filesListSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -67,6 +92,7 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
                 } else {
                     EditorUtils.loadJavaConfig(binding.editor);
                 }
+                updateEditControls();
             }
 
             @Override
@@ -74,6 +100,10 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
             }
         });
 
+        loadSources();
+    }
+
+    private void loadSources() {
         k(); // show loading
 
         new Thread(() -> {
@@ -85,6 +115,7 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
             ProjectBuilder builder = new ProjectBuilder(this, yq);
             builder.buildBuiltInLibraryInformation();
             sourceCodeBeans = yq.a(fileManager, dataManager, builder.getBuiltInLibraryManager());
+            collectReplaceableFiles(fileManager);
 
             try {
                 runOnUiThread(() -> {
@@ -106,6 +137,97 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
                 // May occur if the activity is killed
             }
         }).start();
+    }
+
+    /**
+     * Finds out which generated files the user may edit by hand, which of them already were, and lists the hand-edited
+     * Java files too (the generator leaves a Java file out when the project's Java folder has a file with that name).
+     */
+    private void collectReplaceableFiles(hC fileManager) {
+        replaceableJava.clear();
+        overriddenJava.clear();
+        for (ProjectFileBean projectFile : fileManager.b()) {
+            replaceableJava.add(projectFile.getJavaName());
+        }
+        replaceableJava.addAll(REPLACEABLE_HELPERS);
+
+        File[] customFiles = new File(filePathUtil.getPathJava(sc_id)).listFiles();
+        if (customFiles != null && sourceCodeBeans != null) {
+            for (File file : customFiles) {
+                if (file.isFile() && replaceableJava.contains(file.getName())) {
+                    overriddenJava.add(file.getName());
+                    sourceCodeBeans.add(new SrcCodeBean(file.getName(), FileUtil.readFile(file.getAbsolutePath())));
+                }
+            }
+        }
+        manifestOverridden = FileUtil.isExistFile(filePathUtil.getPathManifestOverride(sc_id));
+    }
+
+    private boolean isCurrentFileOverridden() {
+        return MANIFEST_NAME.equals(currentFileName) ? manifestOverridden : overriddenJava.contains(currentFileName);
+    }
+
+    private void updateEditControls() {
+        boolean editable = MANIFEST_NAME.equals(currentFileName) || replaceableJava.contains(currentFileName);
+        binding.editFile.setVisibility(editable ? View.VISIBLE : View.GONE);
+        binding.overrideBanner.setVisibility(editable && isCurrentFileOverridden() ? View.VISIBLE : View.GONE);
+    }
+
+    private String targetPathOf(String fileName) {
+        return MANIFEST_NAME.equals(fileName)
+                ? filePathUtil.getPathManifestOverride(sc_id)
+                : filePathUtil.getPathJava(sc_id) + File.separator + fileName;
+    }
+
+    private void editCurrentFile() {
+        if (isCurrentFileOverridden()) {
+            openInEditor(currentFileName);
+            return;
+        }
+        String fileName = currentFileName;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.src_edit_title)
+                .setMessage(getString(R.string.src_edit_message, fileName))
+                .setPositiveButton(R.string.src_edit_action, (dialog, which) -> {
+                    int position = binding.filesListSpinner.getSelectedItemPosition();
+                    String target = targetPathOf(fileName);
+                    new File(target).getParentFile().mkdirs();
+                    FileUtil.writeFile(target, sourceCodeBeans.get(position).source);
+                    openInEditor(fileName);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void openInEditor(String fileName) {
+        returningFromEditor = true;
+        Intent intent = new Intent(this, SrcCodeEditor.class);
+        intent.putExtra(fileName.endsWith(".xml") ? "xml" : "java", "");
+        intent.putExtra("title", fileName);
+        intent.putExtra("content", targetPathOf(fileName));
+        startActivity(intent);
+    }
+
+    private void confirmRestoreGenerated() {
+        String fileName = currentFileName;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.src_restore_title)
+                .setMessage(getString(R.string.src_restore_message, fileName))
+                .setPositiveButton(R.string.src_restore_action, (dialog, which) -> {
+                    FileUtil.deleteFile(targetPathOf(fileName));
+                    loadSources();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (returningFromEditor) {
+            returningFromEditor = false;
+            loadSources();
+        }
     }
 
     private void configureEditor() {

@@ -857,12 +857,27 @@ public class yq {
             }
         }
 
-        srcCodeBeans.add(new SrcCodeBean("AndroidManifest.xml", CommandBlock.applyCommands("AndroidManifest.xml", ix.a())));
+        String manifestOverride = readManifestOverride();
+        srcCodeBeans.add(new SrcCodeBean("AndroidManifest.xml",
+                manifestOverride != null ? manifestOverride : CommandBlock.applyCommands("AndroidManifest.xml", ix.a())));
         srcCodeBeans.add(new SrcCodeBean("styles.xml", getXMLStyle()));
         srcCodeBeans.add(new SrcCodeBean("colors.xml", getXMLColor()));
         srcCodeBeans.add(new SrcCodeBean("strings.xml", getXMLString()));
         CommandBlock.x();
         return srcCodeBeans;
+    }
+
+    /**
+     * @return The hand-edited AndroidManifest.xml of this project, or null when the generated one is used.
+     * @see pro.sketchware.utility.FilePathUtil#getPathManifestOverride(String)
+     */
+    private String readManifestOverride() {
+        String path = new pro.sketchware.utility.FilePathUtil().getPathManifestOverride(sc_id);
+        if (!FileUtil.isExistFile(path)) {
+            return null;
+        }
+        String content = FileUtil.readFile(path);
+        return content == null || content.trim().isEmpty() ? null : content;
     }
 
     private boolean isViewBindingEnable() {
@@ -910,6 +925,10 @@ public class yq {
         }
 
         if (isManifestFile) {
+            String manifestOverride = readManifestOverride();
+            if (manifestOverride != null) {
+                return manifestOverride;
+            }
             ProjectBuilder builder = new ProjectBuilder(SketchApplication.getContext(), this);
             builder.buildBuiltInLibraryInformation();
             Ix ix = new Ix(N, projectFileManager.b(), builder.getBuiltInLibraryManager());

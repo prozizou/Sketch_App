@@ -67,8 +67,67 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::RELEASE_KEYSTORE_BASE64 is not set, the APK will be signed with the public test key."
+          fi
+
+      - name: Check release signing secrets
+        # Diagnostic only: reports which secret is wrong without ever printing a value. Never fails the job.
+        if: ${{ env.RELEASE_KEYSTORE_FILE != '' }}
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set +e
+          check_value() {
+            local name="$1" value="${!1}"
+            if [ -z "$value" ]; then
+              echo "::error::Secret $name is EMPTY or missing."
+            elif [ "$value" != "$(printf '%s' "$value" | tr -d '[:space:]')" ]; then
+              echo "::error::Secret $name contains a space or line break (usually a trailing one from copy/paste). Re-enter it by hand."
+            else
+              echo "Secret $name: present, no whitespace."
+            fi
+          }
+          check_value RELEASE_STORE_PASSWORD
+          check_value RELEASE_KEY_ALIAS
+          check_value RELEASE_KEY_PASSWORD
+
+          if [ ! -s "$RELEASE_KEYSTORE_FILE" ]; then
+            echo "::error::The decoded keystore file is empty. RELEASE_KEYSTORE_BASE64 is wrong or truncated."
+            exit 0
+          fi
+          echo "Keystore file decoded: $(stat -c %s "$RELEASE_KEYSTORE_FILE") bytes."
+
+          java .github/workflows/CheckSigning.java
+          exit 0
+
       - name: Build Release APK
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: gradle assembleRelease
+
+      - name: Check the pinned resource ID
+        # Precompiled classes refer to string/root_spec_common_when by its number (see public-stable-ids.txt).
+        # If aapt2 stops honouring it (e.g. after an applicationId change) the Logic editor crashes at runtime.
+        run: |
+          aapt2=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/aapt2 | sort -V | tail -1)
+          dump=$("$aapt2" dump resources app/build/outputs/apk/release/app-release.apk | grep 'string/root_spec_common_when' || true)
+          echo "$dump"
+          if ! echo "$dump" | grep -q '0x7f0e082a'; then
+            echo "::error::string/root_spec_common_when is not 0x7f0e082a in the APK: the Logic editor would crash. Check public-stable-ids.txt (one line per package name used by aapt2)."
+            exit 1
+          fi
 
       - name: Set short SHA
         id: set_sha

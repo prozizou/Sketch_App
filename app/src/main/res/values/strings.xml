@@ -912,6 +912,36 @@ ACTION_VIEW
     <string name="view_manager_select">Select</string>
     <string name="view_manager_views_count">%1$d views</string>
     <string name="view_manager_widgets_count">%1$d widgets</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_welcome_title">Welcome to New World Sketchware</string>
+    <string name="onboarding_welcome_text">Design screens, add logic with blocks and build real Android apps, all from your phone.</string>
+    <string name="onboarding_access_title">Allow file access</string>
+    <string name="onboarding_access_text">Your projects, resources and exported apps are stored on your device. Without file access the app cannot save or open them.</string>
+    <string name="onboarding_access_button">Allow access</string>
+    <string name="onboarding_access_granted">Access granted</string>
+    <string name="onboarding_projects_title">Bring your old projects</string>
+    <string name="onboarding_projects_text">Coming from another version? Back up your projects there, then restore them here with the Backup and Restore feature.</string>
+    <string name="onboarding_join_telegram">Join our Telegram group</string>
+    <string name="community_telegram">Telegram community</string>
+    <string name="whats_new_title">What\'s new in %1$s</string>
+    <string name="whats_new_got_it">Got it</string>
+    <string name="whats_new_menu">What\'s new</string>
+    <string-array name="whats_new_items">
+        <item>A guided first launch: welcome, file access and how to restore your old projects.</item>
+        <item>A lighter View editor: slimmer widget palette, collapsed categories and a Focus preview mode for a full-screen preview.</item>
+        <item>A redesigned View Manager with search, a view counter, a MAIN badge and a per-view menu.</item>
+        <item>Safer updates: the downloaded APK is verified (checksum, app and signing key) before it is installed.</item>
+        <item>New app identity and data folders. Use Backup and Restore to bring projects from the previous version.</item>
+    </string-array>
+    <string name="src_edit_title">Edit this file by hand?</string>
+    <string name="src_edit_message">%1$s will be replaced by your own version on every build. Changes you make later in views or blocks will not appear in it until you restore the generated version.</string>
+    <string name="src_edit_action">Edit</string>
+    <string name="src_override_banner">Edited by hand: this file replaces the generated one.</string>
+    <string name="src_restore_title">Restore the generated version?</string>
+    <string name="src_restore_message">Your hand-edited %1$s will be deleted and the generated version will be used again.</string>
+    <string name="src_restore_action">Restore generated</string>
     <string name="view_toggle_widgets">Widgets</string>
     <string name="view_focus_preview">Focus preview</string>
     <string name="view_widget_new_compact">Widget</string>

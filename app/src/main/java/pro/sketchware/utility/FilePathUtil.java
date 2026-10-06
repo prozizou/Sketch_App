@@ -45,6 +45,13 @@ public class FilePathUtil {
         return new File(SKETCHWARE_DATA, sc_id + "/files/java").getAbsolutePath();
     }
 
+    /**
+     * A hand-edited AndroidManifest.xml; when present, it replaces the generated manifest in builds and in the source viewer.
+     */
+    public String getPathManifestOverride(String sc_id) {
+        return new File(SKETCHWARE_DATA, sc_id + "/files/manifest/AndroidManifest.xml").getAbsolutePath();
+    }
+
     public String getPathKotlinCompilerPlugins(String sc_id) {
         return new File(SKETCHWARE_DATA, sc_id + "/files/kt_plugins").getAbsolutePath();
     }

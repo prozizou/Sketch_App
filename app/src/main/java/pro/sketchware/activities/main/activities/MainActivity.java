@@ -59,6 +59,12 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private MainBinding binding;
     private ProjectsFragment projectsFragment;
     private Fragment activeFragment;
+    private final androidx.activity.result.ActivityResultLauncher<Intent> onboardingLauncher = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                pro.sketchware.control.WhatsNewDialog.markSeen(this);
+                checkStorageAccess();
+                n();
+            });
 
     private static boolean isFirebaseInitialized(Context context) {
         try {
@@ -159,12 +165,13 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         binding.toolbar.setNavigationContentDescription(R.string.common_word_settings);
         binding.toolbar.setNavigationOnClickListener(v -> showActionsMenu(v));
 
-        boolean hasStorageAccess = isStoragePermissionGranted();
-        if (!hasStorageAccess) {
-            showNoticeNeedStorageAccess();
-        }
-        if (hasStorageAccess) {
-            allFilesAccessCheck();
+        if (pro.sketchware.activities.onboarding.OnboardingActivity.isNeeded(this)) {
+            onboardingLauncher.launch(new Intent(this, pro.sketchware.activities.onboarding.OnboardingActivity.class));
+        } else {
+            checkStorageAccess();
+            if (isStoragePermissionGranted()) {
+                pro.sketchware.control.WhatsNewDialog.showIfNeeded(this);
+            }
         }
 
         if (Intent.ACTION_VIEW.equals(getIntent().getAction())) {
@@ -213,6 +220,15 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         navigateToProjectsFragment();
     }
 
+    /** Asks for storage access when it is still missing; the first-launch guide may already have obtained it. */
+    private void checkStorageAccess() {
+        if (isStoragePermissionGranted()) {
+            allFilesAccessCheck();
+        } else {
+            showNoticeNeedStorageAccess();
+        }
+    }
+
     private void navigateToProjectsFragment() {
         if (projectsFragment == null) {
             projectsFragment = new ProjectsFragment();
@@ -243,6 +259,12 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             Intent intent = null;
             if (id == R.id.app_settings) {
                 intent = new Intent(this, mod.hilal.saif.activities.tools.AppSettings.class);
+            } else if (id == R.id.whats_new) {
+                pro.sketchware.control.WhatsNewDialog.show(this);
+                return true;
+            } else if (id == R.id.community_telegram) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(pro.sketchware.activities.onboarding.OnboardingActivity.TELEGRAM_URL)));
+                return true;
             } else if (id == R.id.create_release_keystore) {
                 intent = new Intent(this, com.besome.sketch.tools.NewKeyStoreActivity.class);
             }
