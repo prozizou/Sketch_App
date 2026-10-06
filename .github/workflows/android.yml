@@ -117,6 +117,18 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: gradle assembleRelease
 
+      - name: Check the pinned resource ID
+        # Precompiled classes refer to string/root_spec_common_when by its number (see public-stable-ids.txt).
+        # If aapt2 stops honouring it (e.g. after an applicationId change) the Logic editor crashes at runtime.
+        run: |
+          aapt2=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/aapt2 | sort -V | tail -1)
+          dump=$("$aapt2" dump resources app/build/outputs/apk/release/app-release.apk | grep 'string/root_spec_common_when' || true)
+          echo "$dump"
+          if ! echo "$dump" | grep -q '0x7f0e082a'; then
+            echo "::error::string/root_spec_common_when is not 0x7f0e082a in the APK: the Logic editor would crash. Check public-stable-ids.txt (one line per package name used by aapt2)."
+            exit 1
+          fi
+
       - name: Set short SHA
         id: set_sha
         run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
