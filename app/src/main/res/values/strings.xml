@@ -935,6 +935,13 @@ ACTION_VIEW
         <item>Safer updates: the downloaded APK is verified (checksum, app and signing key) before it is installed.</item>
         <item>New app identity and data folders. Use Backup and Restore to bring projects from the previous version.</item>
     </string-array>
+    <string name="src_edit_title">Edit this file by hand?</string>
+    <string name="src_edit_message">%1$s will be replaced by your own version on every build. Changes you make later in views or blocks will not appear in it until you restore the generated version.</string>
+    <string name="src_edit_action">Edit</string>
+    <string name="src_override_banner">Edited by hand: this file replaces the generated one.</string>
+    <string name="src_restore_title">Restore the generated version?</string>
+    <string name="src_restore_message">Your hand-edited %1$s will be deleted and the generated version will be used again.</string>
+    <string name="src_restore_action">Restore generated</string>
     <string name="view_toggle_widgets">Widgets</string>
     <string name="view_focus_preview">Focus preview</string>
     <string name="view_widget_new_compact">Widget</string>
