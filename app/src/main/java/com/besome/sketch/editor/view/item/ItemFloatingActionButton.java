@@ -56,9 +56,9 @@ public class ItemFloatingActionButton extends FloatingActionButton implements It
     @Override
     public void onDraw(Canvas canvas) {
         if (isSelected) {
-            setBackgroundTintList(ColorStateList.valueOf(0x9599d5d0));
+            setBackgroundTintList(ColorStateList.valueOf(0x99ff6b5b));
         } else {
-            ColorStateList colorStateList = ColorStateList.valueOf(getResources().getColor(R.color.color_accent));
+            ColorStateList colorStateList = ColorStateList.valueOf(getResources().getColor(R.color.preview_fab_default));
             if (maincolor != 0) {
                 colorStateList = ColorStateList.valueOf(maincolor);
             }

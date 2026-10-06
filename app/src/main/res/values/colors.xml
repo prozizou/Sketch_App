@@ -1,27 +1,29 @@
 <resources>
-    <color name="color_accent">#ff008dcd</color>
-    <color name="color_btn_blue_highlight">#ff005e8a</color>
-    <color name="color_btn_blue_normal">#ff008dce</color>
+    <!-- Default accent of the app being designed (preview of a floating action button); not the IDE accent. -->
+    <color name="preview_fab_default">#ff008dcd</color>
+    <color name="color_accent">#ffcc4437</color>
+    <color name="color_btn_blue_highlight">#ffa93428</color>
+    <color name="color_btn_blue_normal">#ffcc4437</color>
     <color name="color_btn_green_highlight">#ff1d7a73</color>
-    <color name="color_btn_ltblue_highlight">#ff0b96d9</color>
-    <color name="color_btn_ltblue_normal">#ff33b8f5</color>
+    <color name="color_btn_ltblue_highlight">#ffd96a5e</color>
+    <color name="color_btn_ltblue_normal">#ffe8857a</color>
     <color name="color_btn_ltorange_normal">#ffffb055</color>
     <color name="color_btn_ltpink_highlight">#ffff3f3a</color>
     <color name="color_btn_ltpink_normal">#ffff5955</color>
     <color name="color_chk_white_highlight">#ffffccbc</color>
     <color name="color_error_bg">#FFF2F1</color>
     <color name="color_chk_white_normal">#fff5f5f5</color>
-    <color name="color_control_highlight">#20008dcd</color>
-    <color name="color_control_normal">#ff57beee</color>
-    <color name="color_primary">#ff008dcd</color>
-    <color name="color_primary_dark">#ff0084c2</color>
-    <color name="color_secondary">#ff57beee</color>
+    <color name="color_control_highlight">#20cc4437</color>
+    <color name="color_control_normal">#ffe8857a</color>
+    <color name="color_primary">#ffcc4437</color>
+    <color name="color_primary_dark">#ffa93428</color>
+    <color name="color_secondary">#ffe8857a</color>
     <color name="design_menu_bg">#ffffffff</color>
     <color name="design_menu_text_color">#ff000000</color>
-    <color name="design_tab_background">#ff008dcd</color>
+    <color name="design_tab_background">#ffcc4437</color>
     <color name="design_tab_indicator_color">#ffffc107</color>
     <color name="design_tab_selected_text_color">#ffffffff</color>
-    <color name="design_tab_text_color">#ffa8cde9</color>
+    <color name="design_tab_text_color">#ffffd5d0</color>
     <color name="grey">#ff828282</color>
     <color name="light_grey">#ffc6c6c6</color>
     <color name="lighter_grey">#ffeeeeee</color>
@@ -44,7 +46,7 @@
     <color name="scolor_sl_01">#ff1d2129</color>
     <color name="scolor_sl_02">#ffffb055</color>
     <color name="scolor_sl_03">#ffde0000</color>
-    <color name="scolor_sl_04">#ff008dcd</color>
+    <color name="scolor_sl_04">#ffcc4437</color>
     <color name="scolor_green_violet">#ff8a55d7</color>
     <color name="tool_bar_text_color">#ffffffff</color>
     <color name="transparent">#00ffffff</color>
@@ -60,7 +62,7 @@
     <color name="monokia_pro_orange">#ffffd866</color>
     <color name="monokia_pro_purple">#ffab9df2</color>
     <color name="monokia_pro_grey">#ff727072</color>
-    <color name="colorBottomBarSW">#ff008dcd</color>
+    <color name="colorBottomBarSW">#ffcc4437</color>
     <color name="color_text_onSurface">#1A1C1E</color>
     <color name="color_text_onSurfaceVariant">#41474D</color>
 
@@ -77,12 +79,12 @@
     <color name="cardStrokeColor">#D1D1D1</color>
 
     <color name="view_property_background_color">#ffffff</color>
-    <color name="view_property_tab_active">#ff0084c2</color>
-    <color name="view_property_tab_deactive">#30008dcd</color>
+    <color name="view_property_tab_active">#ffa93428</color>
+    <color name="view_property_tab_deactive">#30cc4437</color>
     <color name="view_property_tab_active_text">#ffffffff</color>
     <color name="view_property_tab_deactive_text">#ff000000</color>
-    <color name="view_property_grid_background">#30008dcd</color>
-    <color name="view_property_grid_see_all_background">#ff008dcd</color>
+    <color name="view_property_grid_background">#30cc4437</color>
+    <color name="view_property_grid_see_all_background">#ffcc4437</color>
     <color name="view_property_spinner_filter">#ff000000</color>
 
     <color name="splash_bg_color">@color/md_theme_light_background</color>
