@@ -39,6 +39,8 @@ public class OnboardingActivity extends AppCompatActivity {
     private static final String KEY_DONE = "done";
     private static final int REQUEST_STORAGE = 9501;
     private static final int PAGE_COUNT = 3;
+    private static final int DOT_SIZE_DP = 8;
+    private static final int SELECTED_DOT_WIDTH_DP = 22;
 
     private ViewPager pager;
     private MaterialButton nextButton;
@@ -118,8 +120,9 @@ public class OnboardingActivity extends AppCompatActivity {
         dots = new View[PAGE_COUNT];
         for (int i = 0; i < PAGE_COUNT; i++) {
             View dot = new View(this);
+            // A bare View with WRAP_CONTENT fills all the space it is offered, so the size must be explicit.
             android.widget.LinearLayout.LayoutParams params =
-                    new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    new android.widget.LinearLayout.LayoutParams((int) (DOT_SIZE_DP * dip), (int) (DOT_SIZE_DP * dip));
             params.setMargins((int) (4 * dip), 0, (int) (4 * dip), 0);
             container.addView(dot, params);
             dots[i] = dot;
@@ -127,8 +130,14 @@ public class OnboardingActivity extends AppCompatActivity {
     }
 
     private void updateControls(int position) {
+        float dip = getResources().getDisplayMetrics().density;
         for (int i = 0; i < dots.length; i++) {
-            dots[i].setBackgroundResource(i == position ? R.drawable.bg_onboarding_dot_on : R.drawable.bg_onboarding_dot_off);
+            boolean selected = i == position;
+            dots[i].setBackgroundResource(selected ? R.drawable.bg_onboarding_dot_on : R.drawable.bg_onboarding_dot_off);
+            ViewGroup.LayoutParams params = dots[i].getLayoutParams();
+            params.width = (int) ((selected ? SELECTED_DOT_WIDTH_DP : DOT_SIZE_DP) * dip);
+            params.height = (int) (DOT_SIZE_DP * dip);
+            dots[i].setLayoutParams(params);
         }
         boolean last = position == PAGE_COUNT - 1;
         nextButton.setText(last ? R.string.onboarding_get_started : R.string.onboarding_next);
