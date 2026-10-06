@@ -17,6 +17,7 @@ import org.cosmic.ide.dependency.resolver.eventReciever
 import org.cosmic.ide.dependency.resolver.getArtifact
 import org.cosmic.ide.dependency.resolver.repositories
 import pro.sketchware.utility.FileUtil
+import pro.sketchware.utility.ZipSafety
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -262,7 +263,8 @@ class DependencyResolver(
         val zipFile = ZipFile(path.toFile())
         zipFile.use { zip ->
             zip.entries().asSequence().forEach { entry ->
-                val entryDestination = path.parent.resolve(entry.name)
+                // Downloaded archives are untrusted too: reject entries that escape the target folder (Zip Slip).
+                val entryDestination = ZipSafety.resolveEntry(path.parent.toFile(), entry.name).toPath()
                 if (entry.isDirectory) {
                     Files.createDirectories(entryDestination)
                 } else {
