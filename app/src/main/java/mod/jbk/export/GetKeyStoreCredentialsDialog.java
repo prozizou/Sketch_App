@@ -13,6 +13,7 @@ import java.util.LinkedList;
 
 import a.a.a.wq;
 import mod.hey.studios.util.Helper;
+import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.R;
 import pro.sketchware.databinding.DialogKeystoreCredentialsBinding;
 import pro.sketchware.utility.SketchwareUtil;
@@ -46,6 +47,25 @@ public class GetKeyStoreCredentialsDialog {
             mode = SigningMode.values()[position];
             updateInputFieldsState();
         });
+        preselectSigningMode();
+    }
+
+    /**
+     * Starts from the build mode chosen in App Settings: Release signs with the user's keystore,
+     * Debug with the test key. The user can still pick any mode.
+     */
+    private void preselectSigningMode() {
+        boolean release = "release".equals(ConfigActivity.getStringSetting(ConfigActivity.SETTING_BUILD_MODE));
+        mode = release ? SigningMode.OWN_KEY_STORE : SigningMode.TESTKEY;
+        binding.actSigningMode.setText(mode.label, false);
+        if (release) {
+            String alias = ConfigActivity.getStringSetting(ConfigActivity.SETTING_KEYSTORE_ALIAS).trim();
+            if (!alias.isEmpty()) {
+                binding.etAlias.setText(alias);
+            }
+            binding.etSigningAlgorithm.setText("SHA256withRSA");
+        }
+        updateInputFieldsState();
     }
 
     private String[] getDropdownItems() {
@@ -65,7 +85,7 @@ public class GetKeyStoreCredentialsDialog {
 
     private void onNextButtonClick(DialogInterface dialogInterface) {
         if (mode == SigningMode.OWN_KEY_STORE) {
-            if (new File(wq.j()).exists()) {
+            if (new File(wq.getSigningKeystorePath()).exists()) {
                 if (validateInputs()) {
                     dialogInterface.dismiss();
                     receiver.gotCredentials(new Credentials(

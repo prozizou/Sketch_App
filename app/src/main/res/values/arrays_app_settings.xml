@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="app_settings_auto_save_interval_entries">
+        <item>Off</item>
+        <item>Every 30 seconds</item>
+        <item>Every minute</item>
+        <item>Every 2 minutes</item>
+        <item>Every 5 minutes</item>
+    </string-array>
+    <string-array name="app_settings_auto_save_interval_values">
+        <item>0</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>300</item>
+    </string-array>
+
+    <string-array name="app_settings_auto_save_mode_entries">
+        <item>Recovery snapshot</item>
+        <item>Save project</item>
+    </string-array>
+    <string-array name="app_settings_auto_save_mode_values">
+        <item>snapshot</item>
+        <item>save</item>
+    </string-array>
+
+    <string-array name="app_settings_backup_frequency_entries">
+        <item>Every time</item>
+        <item>Once a day</item>
+        <item>Once a week</item>
+    </string-array>
+    <string-array name="app_settings_backup_frequency_values">
+        <item>always</item>
+        <item>daily</item>
+        <item>weekly</item>
+    </string-array>
+
+    <string-array name="app_settings_backup_retention_entries">
+        <item>Last 3</item>
+        <item>Last 5</item>
+        <item>Last 10</item>
+        <item>Last 20</item>
+        <item>All</item>
+    </string-array>
+    <string-array name="app_settings_backup_retention_values">
+        <item>3</item>
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="app_settings_build_mode_entries">
+        <item>Debug</item>
+        <item>Release</item>
+    </string-array>
+    <string-array name="app_settings_build_mode_values">
+        <item>debug</item>
+        <item>release</item>
+    </string-array>
+
+    <string-array name="app_settings_memory_threshold_entries">
+        <item>75% of heap</item>
+        <item>85% of heap</item>
+        <item>90% of heap</item>
+    </string-array>
+    <string-array name="app_settings_memory_threshold_values">
+        <item>75</item>
+        <item>85</item>
+        <item>90</item>
+    </string-array>
+
+    <string-array name="app_settings_update_channel_entries">
+        <item>Stable</item>
+        <item>Beta</item>
+        <item>Dev</item>
+    </string-array>
+    <string-array name="app_settings_update_channel_values">
+        <item>stable</item>
+        <item>beta</item>
+        <item>dev</item>
+    </string-array>
+</resources>

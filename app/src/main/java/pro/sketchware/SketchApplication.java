@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 
 import com.besome.sketch.tools.CollectErrorActivity;
 
+import pro.sketchware.settings.CrashRecovery;
 import pro.sketchware.utility.theme.ThemeManager;
 
 public class SketchApplication extends Application {
@@ -25,6 +26,7 @@ public class SketchApplication extends Application {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
+                CrashRecovery.record(getApplicationContext(), Log.getStackTraceString(throwable));
                 Intent intent = new Intent(getApplicationContext(), CollectErrorActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 intent.putExtra("error", Log.getStackTraceString(throwable));

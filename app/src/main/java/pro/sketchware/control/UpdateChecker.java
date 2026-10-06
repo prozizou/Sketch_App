@@ -38,8 +38,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.BuildConfig;
 import pro.sketchware.utility.Network;
+import pro.sketchware.utility.SketchwareUtil;
 
 /**
  * Checks a remote manifest for a newer app version and, when the update is marked mandatory,
@@ -57,8 +59,8 @@ import pro.sketchware.utility.Network;
  */
 public class UpdateChecker {
 
-    private static final String MANIFEST_URL =
-            "https://raw.githubusercontent.com/prozizou/Sketch_App/main/update.json";
+    private static final String BASE_URL = "https://raw.githubusercontent.com/prozizou/Sketch_App/main/";
+    private static final String MANIFEST_URL = BASE_URL + "update.json";
 
     private static final String PREFS = "update_checker";
     private static final String KEY_MANDATORY_MANIFEST = "mandatory_manifest";
@@ -66,32 +68,76 @@ public class UpdateChecker {
     private final Network network = new Network();
 
     public void check(AppCompatActivity activity) {
+        check(activity, false);
+    }
+
+    /**
+     * @param manual true when the user asked for the check: they then also get told when nothing is new.
+     */
+    public void check(AppCompatActivity activity, boolean manual) {
         SharedPreferences prefs = activity.getSharedPreferences(PREFS, AppCompatActivity.MODE_PRIVATE);
         network.get(MANIFEST_URL, response -> {
             if (activity.isFinishing() || activity.isDestroyed()) {
                 return;
             }
+            boolean shown;
             if (response == null) {
                 // Offline or GitHub unreachable: keep enforcing the last mandatory update we saw.
-                handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false);
+                shown = handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false, true);
+                if (!shown && manual) {
+                    SketchwareUtil.toast("Couldn't reach the update server");
+                    return;
+                }
             } else {
-                handle(activity, prefs, response, true);
+                shown = handle(activity, prefs, response, true, true);
+            }
+            if (!shown) {
+                checkChannel(activity, prefs, manual);
             }
         });
     }
 
-    private void handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh) {
-        if (raw == null) {
+    /**
+     * Beta and Dev builds are announced in their own manifest. The stable manifest is always checked first,
+     * so a mandatory stable update can't be skipped by switching channel, and channel updates are never mandatory.
+     */
+    private void checkChannel(AppCompatActivity activity, SharedPreferences prefs, boolean manual) {
+        String channelUrl = switch (ConfigActivity.getStringSetting(ConfigActivity.SETTING_UPDATE_CHANNEL)) {
+            case "beta" -> BASE_URL + "update-beta.json";
+            case "dev" -> BASE_URL + "update-dev.json";
+            default -> null;
+        };
+        if (channelUrl == null) {
+            if (manual) SketchwareUtil.toast("You're up to date");
             return;
+        }
+        network.get(channelUrl, response -> {
+            if (activity.isFinishing() || activity.isDestroyed()) {
+                return;
+            }
+            boolean shown = response != null && handle(activity, prefs, response, false, false);
+            if (!shown && manual) {
+                SketchwareUtil.toast(response == null ? "Couldn't reach the update server" : "You're up to date");
+            }
+        });
+    }
+
+    /**
+     * @param allowMandatory false for channel manifests, whose updates are always optional.
+     * @return true if an update dialog was shown.
+     */
+    private boolean handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh, boolean allowMandatory) {
+        if (raw == null) {
+            return false;
         }
         try {
             JSONObject manifest = new JSONObject(raw);
             int latest = manifest.optInt("versionCode", -1);
             if (latest <= BuildConfig.VERSION_CODE) {
                 if (fresh) prefs.edit().remove(KEY_MANDATORY_MANIFEST).apply();
-                return;
+                return false;
             }
-            boolean mandatory = manifest.optBoolean("mandatory", false);
+            boolean mandatory = allowMandatory && manifest.optBoolean("mandatory", false);
             if (fresh) {
                 if (mandatory) {
                     prefs.edit().putString(KEY_MANDATORY_MANIFEST, raw).apply();
@@ -102,8 +148,10 @@ public class UpdateChecker {
             showUpdateDialog(activity, mandatory, manifest.optString("versionName", ""),
                     manifest.optString("notes", ""), manifest.optString("url", ""),
                     manifest.optString("apkUrl", ""), manifest.optString("sha256", ""));
+            return true;
         } catch (Exception ignored) {
             // Malformed manifest: fail silently, never block the app on our own bug.
+            return false;
         }
     }
 

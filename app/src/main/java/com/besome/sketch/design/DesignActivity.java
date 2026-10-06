@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.ComponentCallbacks2;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.ColorStateList;
@@ -14,10 +15,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -64,6 +67,9 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import pro.sketchware.settings.AppLog;
+import pro.sketchware.settings.AutoBackup;
+import pro.sketchware.settings.BuildHistory;
 import pro.sketchware.utility.AnalyticsHelper;
 import com.topjohnwu.superuser.Shell;
 
@@ -130,12 +136,27 @@ import pro.sketchware.utility.ThemeUtils;
 import pro.sketchware.utility.apk.ApkSignatures;
 
 public class DesignActivity extends BaseAppCompatActivity implements View.OnClickListener {
+    private static final long MAINTENANCE_INTERVAL_MS = 15_000L;
+    /** A full auto-save only runs once the user has stopped touching the screen for this long. */
+    private static final long AUTO_SAVE_IDLE_MS = 3_000L;
     public static String sc_id;
     public DesignBinding binding;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.getInstance();
     private ImageView xmlLayoutOrientation;
     private boolean B;
+    /** Set once the project's data has been loaded, so background savers never touch half-loaded state. */
+    private volatile boolean projectLoaded;
+    private long lastAutoSaveAt;
+    private long lastMemoryAlertAt;
+    private volatile long lastTouchAt;
+    private final Runnable maintenanceTick = new Runnable() {
+        @Override
+        public void run() {
+            runMaintenance();
+            handler.postDelayed(this, MAINTENANCE_INTERVAL_MS);
+        }
+    };
     private int currentTabNumber;
     private CustomViewPager viewPager;
     private CoordinatorLayout coordinatorLayout;
@@ -693,6 +714,80 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (freeMegabytes < 100L && freeMegabytes > 0L) {
             warnAboutInsufficientStorageSpace();
         }
+
+        lastAutoSaveAt = SystemClock.elapsedRealtime();
+        handler.removeCallbacks(maintenanceTick);
+        handler.postDelayed(maintenanceTick, MAINTENANCE_INTERVAL_MS);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        handler.removeCallbacks(maintenanceTick);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        lastTouchAt = SystemClock.elapsedRealtime();
+        return super.dispatchTouchEvent(event);
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW && level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            raiseMemoryAlert("Android is low on memory.");
+        }
+    }
+
+    /**
+     * Runs every few seconds while the editor is in the foreground: configurable auto-save and memory alerts.
+     */
+    private void runMaintenance() {
+        if (!projectLoaded || B || isFinishing() || isDestroyed()) {
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
+
+        int intervalSeconds = ConfigActivity.getIntSetting(ConfigActivity.SETTING_AUTO_SAVE_INTERVAL, 0);
+        if (intervalSeconds > 0 && now - lastAutoSaveAt >= intervalSeconds * 1000L) {
+            boolean fullSave = "save".equals(ConfigActivity.getStringSetting(ConfigActivity.SETTING_AUTO_SAVE_MODE));
+            if (!fullSave) {
+                lastAutoSaveAt = now;
+                new UnsavedChangesSaver(this).execute();
+            } else if (now - lastTouchAt >= AUTO_SAVE_IDLE_MS
+                    && (currentBuildTask == null || currentBuildTask.isBuildFinished || currentBuildTask.canceled)) {
+                lastAutoSaveAt = now;
+                new SilentProjectSaver(this).execute();
+            }
+        }
+
+        if (ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_MEMORY_ALERTS)) {
+            Runtime runtime = Runtime.getRuntime();
+            int usedPercent = (int) ((runtime.totalMemory() - runtime.freeMemory()) * 100 / runtime.maxMemory());
+            if (usedPercent >= ConfigActivity.getIntSetting(ConfigActivity.SETTING_MEMORY_THRESHOLD, 85)) {
+                raiseMemoryAlert("Memory use is at " + usedPercent + "%.");
+            }
+        }
+    }
+
+    /**
+     * Saves a recovery snapshot and tells the user, at most once every two minutes.
+     */
+    private void raiseMemoryAlert(String reason) {
+        if (!projectLoaded || !ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_MEMORY_ALERTS)) {
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
+        if (lastMemoryAlertAt != 0 && now - lastMemoryAlertAt < 120_000L) {
+            return;
+        }
+        lastMemoryAlertAt = now;
+        AppLog.w("Memory", reason);
+        if (!B) {
+            new UnsavedChangesSaver(this).execute();
+        }
+        SketchwareUtil.toast(reason + " A recovery snapshot was saved. Consider closing other apps.", Toast.LENGTH_LONG);
     }
 
     @Override
@@ -1108,6 +1203,9 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             DesignActivity activity = getActivity();
             if (activity == null) return;
 
+            long startedAt = System.currentTimeMillis();
+            String outcome = null;
+            String detail = null;
             try {
                 var q = activity.q;
                 var sc_id = DesignActivity.sc_id;
@@ -1224,9 +1322,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 activity.runOnUiThread(() -> AnalyticsHelper.logExportProject(activity, "debug_apk", activity.sc_id, true));
                 activity.installBuiltApk();
                 isBuildFinished = true;
+                outcome = BuildHistory.STATUS_SUCCESS;
             } catch (MissingFileException e) {
                 activity.runOnUiThread(() -> AnalyticsHelper.logExportProject(activity, "debug_apk", activity.sc_id, false));
                 isBuildFinished = true;
+                outcome = BuildHistory.STATUS_FAILED;
+                detail = "Missing " + (e.isMissingDirectory() ? "directory " : "file ") + e.getMissingFile().getName();
                 activity.runOnUiThread(() -> {
                     boolean isMissingDirectory = e.isMissingDirectory();
 
@@ -1254,14 +1355,56 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             } catch (zy zy) {
                 activity.runOnUiThread(() -> AnalyticsHelper.logExportProject(activity, "debug_apk", activity.sc_id, false));
                 isBuildFinished = true;
+                outcome = BuildHistory.STATUS_FAILED;
+                detail = firstLine(zy.getMessage());
                 activity.indicateCompileErrorOccurred(zy.getMessage());
             } catch (Throwable tr) {
                 activity.runOnUiThread(() -> AnalyticsHelper.logExportProject(activity, "debug_apk", activity.sc_id, false));
                 isBuildFinished = true;
+                outcome = BuildHistory.STATUS_FAILED;
+                detail = firstLine(tr.toString());
                 LogUtil.e("DesignActivity$BuildTask", "Failed to build project", tr);
                 activity.indicateCompileErrorOccurred(Log.getStackTraceString(tr));
             } finally {
+                recordBuild(activity, startedAt, outcome != null ? outcome
+                        : canceled ? BuildHistory.STATUS_CANCELED : BuildHistory.STATUS_FAILED, detail);
                 activity.runOnUiThread(this::onPostExecute);
+            }
+        }
+
+        private static String firstLine(String text) {
+            if (text == null) return null;
+            String line = text.strip();
+            int newline = line.indexOf('\n');
+            if (newline >= 0) line = line.substring(0, newline);
+            return line.length() > 160 ? line.substring(0, 160) + "…" : line;
+        }
+
+        /**
+         * Adds the build to the history in App Settings and, if enabled, bumps the project's version code.
+         */
+        private void recordBuild(DesignActivity activity, long startedAt, String status, String detail) {
+            try {
+                String scId = DesignActivity.sc_id;
+                HashMap<String, Object> metadata = lC.b(scId);
+                String project = metadata == null ? "" : yB.c(metadata, "my_ws_name");
+
+                BuildHistory.Entry entry = new BuildHistory.Entry();
+                entry.time = System.currentTimeMillis();
+                entry.scId = scId;
+                entry.project = project.isEmpty() ? "#" + scId : project;
+                entry.status = status;
+                entry.mode = "debug";
+                entry.versionName = activity.q.versionName;
+                entry.versionCode = activity.q.versionCode;
+                entry.durationMs = entry.time - startedAt;
+                entry.detail = detail;
+                String nextVersionCode = BuildHistory.recordFinishedBuild(entry);
+                if (nextVersionCode != null) {
+                    activity.q.versionCode = nextVersionCode;
+                }
+            } catch (Throwable t) {
+                LogUtil.e("DesignActivity$BuildTask", "Couldn't record build", t);
             }
         }
 
@@ -1404,6 +1547,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             if (activity != null) {
                 activity.loadProject(savedInstanceState != null);
                 activity.runOnUiThread(() -> {
+                    activity.projectLoaded = true;
                     activity.updateBottomMenu();
                     activity.refresh();
                     activity.h();
@@ -1497,11 +1641,46 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.c(sc_id).l();
                 jC.d(sc_id).h();
                 activity.saveVersionCodeInformationToProject();
+                AutoBackup.runIfEnabled(activity, sc_id);
                 activity.runOnUiThread(() -> {
                     bB.a(activity.getApplicationContext(), Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
                     activity.h();
                     activity.finish();
                 });
+            }
+        }
+    }
+
+    /**
+     * Same work as {@link ProjectSaver}, without the progress dialog and the toast, for auto-save.
+     */
+    private static class SilentProjectSaver extends BaseTask {
+        private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        public SilentProjectSaver(DesignActivity activity) {
+            super(activity);
+        }
+
+        public void execute() {
+            executorService.execute(this::doInBackground);
+            executorService.shutdown();
+        }
+
+        private void doInBackground() {
+            DesignActivity activity = getActivity();
+            if (activity == null) return;
+            try {
+                var sc_id = DesignActivity.sc_id;
+                jC.d(sc_id).a();
+                jC.b(sc_id).m();
+                jC.a(sc_id).j();
+                jC.d(sc_id).x();
+                activity.saveVersionCodeInformationToProject();
+                jC.d(sc_id).f();
+                jC.d(sc_id).g();
+                jC.d(sc_id).e();
+            } catch (Throwable t) {
+                AppLog.e("AutoSave", "Auto-save failed: " + t);
             }
         }
     }
