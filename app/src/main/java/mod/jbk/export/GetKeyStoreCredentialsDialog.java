@@ -24,6 +24,8 @@ public class GetKeyStoreCredentialsDialog {
     private final DialogKeystoreCredentialsBinding binding;
     private CredentialsReceiver receiver;
     private SigningMode mode;
+    /** The signing modes on offer. In Release build mode the public test key isn't one of them. */
+    private final LinkedList<SigningMode> modes = new LinkedList<>();
 
     public GetKeyStoreCredentialsDialog(Activity activity, int iconResourceId, String title, String noticeText) {
         dialog = new MaterialAlertDialogBuilder(activity);
@@ -40,22 +42,32 @@ public class GetKeyStoreCredentialsDialog {
     }
 
     private void setupSpinner(Activity activity) {
+        boolean release = isReleaseBuildMode();
+        for (SigningMode candidate : SigningMode.values()) {
+            if (!(release && candidate == SigningMode.TESTKEY)) {
+                modes.add(candidate);
+            }
+        }
         String[] dropdownItems = getDropdownItems();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, android.R.layout.simple_spinner_dropdown_item, dropdownItems);
         binding.actSigningMode.setAdapter(adapter);
         binding.actSigningMode.setOnItemClickListener((parent, view, position, id) -> {
-            mode = SigningMode.values()[position];
+            mode = modes.get(position);
             updateInputFieldsState();
         });
         preselectSigningMode();
     }
 
+    private static boolean isReleaseBuildMode() {
+        return "release".equals(ConfigActivity.getStringSetting(ConfigActivity.SETTING_BUILD_MODE));
+    }
+
     /**
      * Starts from the build mode chosen in App Settings: Release signs with the user's keystore,
-     * Debug with the test key. The user can still pick any mode.
+     * Debug with the test key. In Release mode the test key is not offered at all.
      */
     private void preselectSigningMode() {
-        boolean release = "release".equals(ConfigActivity.getStringSetting(ConfigActivity.SETTING_BUILD_MODE));
+        boolean release = isReleaseBuildMode();
         mode = release ? SigningMode.OWN_KEY_STORE : SigningMode.TESTKEY;
         binding.actSigningMode.setText(mode.label, false);
         if (release) {
@@ -70,7 +82,7 @@ public class GetKeyStoreCredentialsDialog {
 
     private String[] getDropdownItems() {
         LinkedList<String> labels = new LinkedList<>();
-        for (SigningMode mode : SigningMode.values()) {
+        for (SigningMode mode : modes) {
             labels.add(mode.label);
         }
         return labels.toArray(new String[0]);
