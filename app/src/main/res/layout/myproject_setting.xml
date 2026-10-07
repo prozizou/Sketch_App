@@ -75,7 +75,7 @@
                         android:paddingVertical="6dp"
                         android:text="@string/np_change_icon"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
-                        android:textColor="@color/event_accent" />
+                        android:textColor="@color/event_on_accent_container" />
                 </LinearLayout>
             </LinearLayout>
 
