@@ -102,6 +102,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private TextView dropHint;
     private TextView zoomLabel;
     private float previewZoom = 1f;
+    private float paletteWidthDp = SidebarWidth.DEFAULT_DP;
+    private android.view.ScaleGestureDetector pinchDetector;
     private String a;
     private LinearLayout aa;
     private String b;
@@ -516,11 +518,16 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
      * search field. The preview scale is recomputed from the palette's current width in {@link #a()}.
      */
     private void setupWidgetPaletteUi(Context context) {
+        dip = wB.a(context, 1.0f); // the rest of initialize() sets it later, but the sidebar needs it now
         palettePanel = findViewById(R.id.layout_palette);
         togglePaletteButton = findViewById(R.id.btn_toggle_palette);
         android.content.SharedPreferences prefs = context.getSharedPreferences("view_editor_ui", Context.MODE_PRIVATE);
         paletteExpanded = prefs.getBoolean("palette_expanded", true);
+        paletteWidthDp = SidebarWidth.clampDp(prefs.getFloat("palette_width_dp", SidebarWidth.DEFAULT_DP));
+        applyPaletteWidth();
         applyPaletteExpanded();
+        setupPaletteResize(prefs);
+        setupPinchZoom(context);
         togglePaletteButton.setOnClickListener(v -> {
             paletteExpanded = !paletteExpanded;
             prefs.edit().putBoolean("palette_expanded", paletteExpanded).apply();
@@ -536,6 +543,86 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         findViewById(R.id.btn_vzoom_out).setOnClickListener(v -> setPreviewZoom(previewZoom - 0.25f));
         findViewById(R.id.btn_vfit).setOnClickListener(v -> setPreviewZoom(1f));
         findViewById(R.id.btn_focus_preview).setOnClickListener(v -> setFocusPreview(!focusPreview));
+        // The zoom bar can be moved off the preview; where it was left is remembered.
+        new FloatingBarDragger(findViewById(R.id.view_canvas_controls), findViewById(R.id.view_canvas_controls_handle),
+                this, "view_zoom_bar", 8 * dip, 6 * dip);
+    }
+
+    /** Applies the sidebar width to the panel; a narrow sidebar keeps only the "+" of "+ Widget". */
+    private void applyPaletteWidth() {
+        ViewGroup.LayoutParams params = palettePanel.getLayoutParams();
+        params.width = Math.round(paletteWidthDp * dip);
+        palettePanel.setLayoutParams(params);
+        View label = palettePanel.findViewById(R.id.tv_new_widget);
+        if (label != null) {
+            label.setVisibility(SidebarWidth.showsLabel(paletteWidthDp) ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /** Drag the grabber on the sidebar's edge to make it narrower or wider; the width is remembered. */
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupPaletteResize(android.content.SharedPreferences prefs) {
+        View handle = findViewById(R.id.palette_resize_handle);
+        final float[] grab = new float[2];
+        handle.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN -> {
+                    grab[0] = event.getRawX();
+                    grab[1] = paletteWidthDp;
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                }
+                case MotionEvent.ACTION_MOVE -> {
+                    paletteWidthDp = SidebarWidth.clampDp(grab[1] + (event.getRawX() - grab[0]) / dip);
+                    applyPaletteWidth();
+                    isLayoutChanged = true;
+                    requestLayout();
+                    return true;
+                }
+                case MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    prefs.edit().putFloat("palette_width_dp", paletteWidthDp).apply();
+                    return true;
+                }
+                default -> {
+                    return false;
+                }
+            }
+        });
+    }
+
+    /** Two fingers zoom the preview smoothly; one finger still drags widgets as before. */
+    private void setupPinchZoom(Context context) {
+        pinchDetector = new android.view.ScaleGestureDetector(context,
+                new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                    @Override
+                    public boolean onScale(android.view.ScaleGestureDetector detector) {
+                        setPreviewZoom(previewZoom * detector.getScaleFactor(), false);
+                        return true;
+                    }
+                });
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (pinchDetector != null) {
+            pinchDetector.onTouchEvent(ev);
+            if (pinchDetector.isInProgress() || ev.getPointerCount() > 1) {
+                return true;
+            }
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (pinchDetector != null) {
+            pinchDetector.onTouchEvent(event);
+            if (pinchDetector.isInProgress() || event.getPointerCount() > 1) {
+                return true;
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     /**
@@ -544,7 +631,12 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
      * placement stays consistent; at other-than-100% the phone may sit off-centre (no scroll).
      */
     private void setPreviewZoom(float zoom) {
-        previewZoom = Math.max(0.5f, Math.min(2.0f, Math.round(zoom * 4f) / 4f));
+        setPreviewZoom(zoom, true);
+    }
+
+    /** {@code snap} rounds to quarter steps (buttons); a pinch zooms continuously. */
+    private void setPreviewZoom(float zoom, boolean snap) {
+        previewZoom = Math.max(0.5f, Math.min(2.0f, snap ? Math.round(zoom * 4f) / 4f : zoom));
         if (zoomLabel != null) zoomLabel.setText(Math.round(previewZoom * 100) + "%");
         isLayoutChanged = true;
         requestLayout();
@@ -1006,7 +1098,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
-        int var9 = displayWidth - (paletteExpanded ? (int) (88.0F * dip) : 0);
+        int var9 = displayWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
         int var8 = displayHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
         if (screenType == 0 && da) {
             Log.d("ViewEditor", "hmmm");
