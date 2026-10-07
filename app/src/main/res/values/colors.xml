@@ -90,8 +90,10 @@
     <color name="splash_bg_color">@color/md_theme_light_background</color>
     <color name="splash_content_color">@color/md_theme_light_on_background</color>
 
-    <color name="event_accent">#ffcc4437</color>
+    <color name="event_accent">#ffc94135</color>
     <color name="event_on_accent">#ffffffff</color>
     <color name="ic_launcher_background">#0D0D10</color>
     <color name="event_accent_container">#ffffdad5</color>
+    <!-- Text/icons placed on event_accent_container; event_accent itself is too light there for small text. -->
+    <color name="event_on_accent_container">#ff7a1c13</color>
 </resources>

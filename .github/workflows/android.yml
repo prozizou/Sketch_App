@@ -106,6 +106,7 @@ jobs:
           name: verify-reports
           path: |
             app/build/reports/lint-results-debug.*
+            app/build/reports/theme-renders/
             app/build/reports/tests/testDebugUnitTest/
             app/build/test-results/testDebugUnitTest/
           if-no-files-found: ignore

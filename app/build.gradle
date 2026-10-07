@@ -103,6 +103,7 @@ android {
         unitTests {
             // Unit tests run on the JVM; Android framework calls that aren't under test return defaults.
             returnDefaultValues = true
+            includeAndroidResources = true
         }
     }
 
@@ -127,6 +128,10 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
 
     testImplementation libs.junit
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.test.core
+    // Robolectric needs the desktop build of Conscrypt; the Android one (an app dependency) can't load on the JVM.
+    testImplementation libs.conscrypt.openjdk
 
     implementation libs.bundles.ui
 
@@ -195,3 +200,8 @@ gradle.taskGraph.whenReady { graph ->
     }
 }
 
+
+// The Android build of Conscrypt can't load on the JVM; unit tests use the desktop build instead.
+configurations.matching { it.name.startsWith('test') || it.name.contains('UnitTest') }.configureEach {
+    exclude group: 'org.conscrypt', module: 'conscrypt-android'
+}

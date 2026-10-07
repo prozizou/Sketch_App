@@ -93,8 +93,6 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // The New Project / project settings screen uses the light Material theme.
-        getDelegate().setLocalNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
         binding = MyprojectSettingBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
