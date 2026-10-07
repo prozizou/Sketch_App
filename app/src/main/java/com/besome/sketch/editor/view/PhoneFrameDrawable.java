@@ -5,79 +5,68 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.PixelFormat;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 
-import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * A phone bezel drawn around the View editor's preview. The picture is cut into pieces so it fits any
- * preview size without distorting what must keep its shape: the corners and the notch are only scaled
- * evenly, while the straight edges (and the side buttons on them) stretch.
+ * Draws a {@link PhoneFrame} around the View editor's preview. The picture is cut into pieces so it fits
+ * any preview size without distorting what must keep its shape: the corners and the camera / notch are only
+ * scaled evenly, while the straight edges (and the side buttons on them) stretch.
  * <p>
  * The screen of the phone stays see-through, so the preview shows through the opening.
  */
 public final class PhoneFrameDrawable extends Drawable {
-    // Geometry of res/drawable-nodpi/phone_frame.png, in its own pixels.
-    static final int SRC_WIDTH = 480;
-    static final int SRC_HEIGHT = 1025;
-    /** Thickness of the bezel on each side, from the outer edge to the screen opening. */
-    public static final int INSET_LEFT = 27;
-    public static final int INSET_RIGHT = 27;
-    public static final int INSET_TOP = 27;
-    public static final int INSET_BOTTOM = 42;
-    /** Size of a corner piece: it contains the whole rounded corner of the body and of the screen. */
-    private static final int CORNER = 80;
-    /** Horizontal span of the notch on the top edge; this part is never stretched. */
-    private static final int NOTCH_START = 200;
-    private static final int NOTCH_END = 280;
-
+    private final PhoneFrame frame;
     private final Bitmap bitmap;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Rect src = new Rect();
     private final RectF dst = new RectF();
     private float scale = 1f;
 
-    public PhoneFrameDrawable(Resources resources, @DrawableRes int id) {
+    public PhoneFrameDrawable(Resources resources, PhoneFrame frame) {
+        this.frame = frame;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
-        bitmap = BitmapFactory.decodeResource(resources, id, options);
+        bitmap = BitmapFactory.decodeResource(resources, frame.drawableRes(), options);
     }
 
-    /** Scale used for the corners and the notch; it must be the one the bounds were computed with. */
+    public PhoneFrame getFrame() {
+        return frame;
+    }
+
+    /** Scale used for the corners and the camera; it must be the one the bounds were computed with. */
     public void setScale(float scale) {
         this.scale = scale;
         invalidateSelf();
     }
 
     /**
-     * Scale of the picture so that the bezel is about {@code desiredBezel} pixels thick, but never so thick
-     * that it would not fit in the room around the screen.
-     *
-     * @param roomSides  free space on the left and right of the screen
-     * @param roomTop    free space above the screen
-     * @param roomBottom free space below the screen
+     * Scale of the picture so that the side bezel is about {@code desiredBezel} pixels thick, without letting
+     * the top or bottom bezel (thicker on some phones) take more than {@code maxVerticalBezel}.
      */
-    public static float scaleFor(float desiredBezel, float roomSides, float roomTop, float roomBottom) {
-        float scale = desiredBezel / INSET_LEFT;
-        scale = Math.min(scale, roomSides / Math.max(INSET_LEFT, INSET_RIGHT));
-        scale = Math.min(scale, roomTop / INSET_TOP);
-        scale = Math.min(scale, roomBottom / INSET_BOTTOM);
+    public static float scaleFor(PhoneFrame frame, float desiredBezel, float maxVerticalBezel) {
+        float scale = desiredBezel / frame.referenceInset();
+        float vertical = Math.max(frame.insetTop(), frame.insetBottom());
+        if (vertical > 0) {
+            scale = Math.min(scale, maxVerticalBezel / vertical);
+        }
         return Math.max(0f, scale);
     }
 
-    /** The outer rectangle of a bezel of the given scale that surrounds a screen. */
-    public static RectF outerBounds(float screenLeft, float screenTop, float screenWidth, float screenHeight, float scale) {
+    /** The outer rectangle of a frame of the given scale that surrounds a screen. */
+    public static RectF outerBounds(PhoneFrame frame, float screenLeft, float screenTop,
+                                    float screenWidth, float screenHeight, float scale) {
         return new RectF(
-                screenLeft - INSET_LEFT * scale,
-                screenTop - INSET_TOP * scale,
-                screenLeft + screenWidth + INSET_RIGHT * scale,
-                screenTop + screenHeight + INSET_BOTTOM * scale);
+                screenLeft - frame.insetLeft() * scale,
+                screenTop - frame.insetTop() * scale,
+                screenLeft + screenWidth + frame.insetRight() * scale,
+                screenTop + screenHeight + frame.insetBottom() * scale);
     }
 
     @Override
@@ -86,34 +75,47 @@ public final class PhoneFrameDrawable extends Drawable {
         if (bitmap == null || bounds.isEmpty()) {
             return;
         }
-        float corner = Math.min(CORNER * scale, Math.min(bounds.width(), bounds.height()) / 2f);
+        int w = frame.width();
+        int h = frame.height();
         float left = bounds.left;
         float top = bounds.top;
         float right = bounds.right;
         float bottom = bounds.bottom;
 
-        float notch = (NOTCH_END - NOTCH_START) * (corner / CORNER);
-        float topEdges = right - left - 2 * corner - notch;
-        float edgeA = topEdges / 2f;
-        float notchLeft = left + corner + edgeA;
+        // Fixed pieces are scaled evenly; the rest stretches. Never let the fixed parts overlap.
+        float corner = Math.min(frame.corner() * scale, (right - left) / 2f);
+        float topH = Math.min(frame.topFixed() * scale, (bottom - top) / 2f);
+        float botH = Math.min(frame.bottomFixed() * scale, (bottom - top) / 2f);
+        int cornerSrc = frame.corner();
 
-        // Top row: corner, edge, notch, edge, corner.
-        piece(canvas, 0, 0, CORNER, CORNER, left, top, left + corner, top + corner);
-        piece(canvas, CORNER, 0, NOTCH_START, CORNER, left + corner, top, notchLeft, top + corner);
-        piece(canvas, NOTCH_START, 0, NOTCH_END, CORNER, notchLeft, top, notchLeft + notch, top + corner);
-        piece(canvas, NOTCH_END, 0, SRC_WIDTH - CORNER, CORNER, notchLeft + notch, top, right - corner, top + corner);
-        piece(canvas, SRC_WIDTH - CORNER, 0, SRC_WIDTH, CORNER, right - corner, top, right, top + corner);
-        // Sides.
-        piece(canvas, 0, CORNER, CORNER, SRC_HEIGHT - CORNER, left, top + corner, left + corner, bottom - corner);
-        piece(canvas, SRC_WIDTH - CORNER, CORNER, SRC_WIDTH, SRC_HEIGHT - CORNER, right - corner, top + corner, right, bottom - corner);
+        // Top row: corner, edge, camera (fixed), edge, corner.
+        piece(canvas, 0, 0, cornerSrc, frame.topFixed(), left, top, left + corner, top + topH);
+        piece(canvas, w - cornerSrc, 0, w, frame.topFixed(), right - corner, top, right, top + topH);
+        if (frame.hasFeature()) {
+            int featStart = Math.max(frame.featureStart(), cornerSrc);
+            int featEnd = Math.min(frame.featureEnd(), w - cornerSrc);
+            float featW = (featEnd - featStart) * scale;
+            float edges = Math.max(0f, right - left - 2 * corner - featW);
+            float leftShare = (float) (featStart - cornerSrc) / Math.max(1, (featStart - cornerSrc) + (w - cornerSrc - featEnd));
+            float edgeA = edges * leftShare;
+            float featLeft = left + corner + edgeA;
+            piece(canvas, cornerSrc, 0, featStart, frame.topFixed(), left + corner, top, featLeft, top + topH);
+            piece(canvas, featStart, 0, featEnd, frame.topFixed(), featLeft, top, featLeft + featW, top + topH);
+            piece(canvas, featEnd, 0, w - cornerSrc, frame.topFixed(), featLeft + featW, top, right - corner, top + topH);
+        } else {
+            piece(canvas, cornerSrc, 0, w - cornerSrc, frame.topFixed(), left + corner, top, right - corner, top + topH);
+        }
+        // Sides (the buttons live here and stretch vertically).
+        piece(canvas, 0, frame.topFixed(), cornerSrc, h - frame.bottomFixed(), left, top + topH, left + corner, bottom - botH);
+        piece(canvas, w - cornerSrc, frame.topFixed(), w, h - frame.bottomFixed(), right - corner, top + topH, right, bottom - botH);
         // Bottom row.
-        piece(canvas, 0, SRC_HEIGHT - CORNER, CORNER, SRC_HEIGHT, left, bottom - corner, left + corner, bottom);
-        piece(canvas, CORNER, SRC_HEIGHT - CORNER, SRC_WIDTH - CORNER, SRC_HEIGHT, left + corner, bottom - corner, right - corner, bottom);
-        piece(canvas, SRC_WIDTH - CORNER, SRC_HEIGHT - CORNER, SRC_WIDTH, SRC_HEIGHT, right - corner, bottom - corner, right, bottom);
+        piece(canvas, 0, h - frame.bottomFixed(), cornerSrc, h, left, bottom - botH, left + corner, bottom);
+        piece(canvas, cornerSrc, h - frame.bottomFixed(), w - cornerSrc, h, left + corner, bottom - botH, right - corner, bottom);
+        piece(canvas, w - cornerSrc, h - frame.bottomFixed(), w, h, right - corner, bottom - botH, right, bottom);
     }
 
     private void piece(Canvas canvas, int sl, int st, int sr, int sb, float dl, float dt, float dr, float db) {
-        if (dr <= dl || db <= dt) {
+        if (dr <= dl || db <= dt || sr <= sl || sb <= st) {
             return;
         }
         src.set(sl, st, sr, sb);
