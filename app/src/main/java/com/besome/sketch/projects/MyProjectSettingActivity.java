@@ -62,7 +62,10 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
 
     private static final int REQUEST_CODE_CREATE_ICON = 200212;
     private final String[] themeColorKeys = {"color_accent", "color_primary", "color_primary_dark", "color_control_highlight", "color_control_normal"};
-    private final String[] themeColorLabels = {"colorAccent", "colorPrimary", "colorPrimaryDark", "colorControlHighlight", "colorControlNormal"};
+    /** Names of the colors in the project's colors.xml; not shown to the user. */
+    private final String[] themeColorNames = {"colorAccent", "colorPrimary", "colorPrimaryDark", "colorControlHighlight", "colorControlNormal"};
+    /** User-facing labels, in the same order. */
+    private final int[] themeColorLabels = {R.string.np_color_accent, R.string.np_color_primary, R.string.np_color_primary_dark, R.string.np_color_highlight, R.string.np_color_control};
     private final int[] projectThemeColors = new int[themeColorKeys.length];
     public MyprojectSettingBinding binding;
     private PackageNameValidator projectPackageNameValidator;
@@ -123,11 +126,11 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
         projectAppNameValidator = new AppNameValidator(getApplicationContext(), binding.tilAppName);
         projectPackageNameValidator = new PackageNameValidator(getApplicationContext(), binding.tilPackageName);
         projectNameValidator = new VB(getApplicationContext(), binding.tilProjectName);
-        com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher stepsWatcher =
-                new com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher(text -> binding.getRoot().post(this::updateSteps));
-        binding.etAppName.addTextChangedListener(stepsWatcher);
-        binding.etPackageName.addTextChangedListener(stepsWatcher);
-        binding.etProjectName.addTextChangedListener(stepsWatcher);
+        com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher createButtonWatcher =
+                new com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher(text -> binding.getRoot().post(this::updateCreateButton));
+        binding.etAppName.addTextChangedListener(createButtonWatcher);
+        binding.etPackageName.addTextChangedListener(createButtonWatcher);
+        binding.etProjectName.addTextChangedListener(createButtonWatcher);
         binding.tilPackageName.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
                 if (!shownPackageNameChangeWarning && !Helper.getText((EditText) v).trim().contains("com.my.newproject")) {
@@ -145,8 +148,9 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
         for (int i = 0; i < themeColorKeys.length; i++) {
             ThemeColorView colorView = new ThemeColorView(this, i);
             colorView.name.setText(themeColorLabels[i]);
-            colorView.color.setBackgroundColor(Color.WHITE);
-            binding.layoutThemeColors.addView(colorView);
+            setSwatchColor(colorView, Color.WHITE);
+            // Equal-width columns so the five swatches always fit, whatever the screen width.
+            binding.layoutThemeColors.addView(colorView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             colorView.setOnClickListener(v -> {
                 if (!mB.a()) {
                     pickColor(v, (Integer) v.getTag());
@@ -205,7 +209,7 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
         }
         syncThemeColors();
 
-        binding.getRoot().post(this::updateSteps);
+        binding.getRoot().post(this::updateCreateButton);
     }
 
     @Override
@@ -371,7 +375,15 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
 
     private void syncThemeColors() {
         for (int i = 0; i < projectThemeColors.length; i++) {
-            ((ThemeColorView) binding.layoutThemeColors.getChildAt(i)).color.setBackgroundColor(projectThemeColors[i]);
+            setSwatchColor((ThemeColorView) binding.layoutThemeColors.getChildAt(i), projectThemeColors[i]);
+        }
+    }
+
+    /** Fills the round swatch with {@code color}; its ring keeps following the light/dark theme. */
+    private void setSwatchColor(ThemeColorView view, int color) {
+        android.graphics.drawable.Drawable background = view.color.getBackground().mutate();
+        if (background instanceof android.graphics.drawable.GradientDrawable swatch) {
+            swatch.setColor(color);
         }
     }
 
@@ -435,32 +447,14 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
     }
 
     /**
-     * Progress indicator: Basic info -> Theme -> Create. Once the three fields are valid the first two
-     * steps are done and Create becomes the active step.
+     * Create/Save is only available once the three fields are filled in and valid. The validators
+     * already show what is wrong under each field while the user types.
      */
-    private void updateSteps() {
-        boolean basicValid = !Helper.getText(binding.etAppName).trim().isEmpty()
+    private void updateCreateButton() {
+        boolean fieldsFilled = !Helper.getText(binding.etAppName).trim().isEmpty()
                 && !Helper.getText(binding.etPackageName).trim().isEmpty()
-                && !Helper.getText(binding.etProjectName).trim().isEmpty()
-                && isInputValid();
-        setStep(binding.stepBasicDot, binding.stepBasicLabel, basicValid ? 2 : 1);
-        setStep(binding.stepThemeDot, binding.stepThemeLabel, basicValid ? 2 : 0);
-        setStep(binding.stepCreateDot, binding.stepCreateLabel, basicValid ? 1 : 0);
-    }
-
-    /** state: 0 = idle, 1 = active, 2 = done. */
-    private void setStep(TextView dot, TextView label, int state) {
-        int onSurface = pro.sketchware.utility.ThemeUtils.getColor(dot, R.attr.colorOnSurface);
-        int onSurfaceVariant = pro.sketchware.utility.ThemeUtils.getColor(dot, R.attr.colorOnSurfaceVariant);
-        dot.setBackgroundResource(state == 1 ? R.drawable.bg_step_active : state == 2 ? R.drawable.bg_step_done : R.drawable.bg_step_idle);
-        dot.setText(state == 2 ? "\u2713" : String.valueOf(stepNumber(dot)));
-        dot.setTextColor(state == 1 ? androidx.core.content.ContextCompat.getColor(this, R.color.event_on_accent)
-                : state == 2 ? androidx.core.content.ContextCompat.getColor(this, R.color.event_accent) : onSurfaceVariant);
-        label.setTextColor(state == 0 ? onSurfaceVariant : onSurface);
-    }
-
-    private int stepNumber(TextView dot) {
-        return dot == binding.stepBasicDot ? 1 : dot == binding.stepThemeDot ? 2 : 3;
+                && !Helper.getText(binding.etProjectName).trim().isEmpty();
+        binding.okButton.setEnabled(fieldsFilled && isInputValid());
     }
 
     private boolean isInputValid() {
@@ -627,7 +621,7 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
             if (FileUtil.isExistFile(colorsFilePath)) {
                 String xmlContent = FileUtil.readFile(colorsFilePath);
                 for (int i = 0; i < themeColorKeys.length; i++) {
-                    String colorName = themeColorLabels[i];
+                    String colorName = themeColorNames[i];
                     String newColor = String.format("#%06X", (0xFFFFFF & projectThemeColors[i]));
                     xmlContent = xmlContent.replaceAll("(<color\\s+name=\"" + colorName + "\">)(.*?)(</color>)", "$1" + newColor + "$3");
                 }
