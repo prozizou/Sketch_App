@@ -2148,6 +2148,29 @@ public class BlocksHandler {
         hashMap.put("spec", "while %b");
         arrayList.add(hashMap);
 
+        // "else if" and "else" are separate blocks meant to be stacked right under an "if" block (or under
+        // another "else if"): their code starts with the keyword, so the generated Java reads
+        // if (a) {...} else if (b) {...} else {...}
+        hashMap = new HashMap<>();
+        hashMap.put("name", "elseIf");
+        hashMap.put("type", "c");
+        hashMap.put("typeName", "");
+        hashMap.put("code", "else if (%s) {\r\n%s\r\n}");
+        hashMap.put("color", "#e1a92a");
+        hashMap.put("palette", "-1");
+        hashMap.put("spec", "else if %b");
+        arrayList.add(hashMap);
+
+        hashMap = new HashMap<>();
+        hashMap.put("name", "else");
+        hashMap.put("type", "c");
+        hashMap.put("typeName", "");
+        hashMap.put("code", "else {\r\n%s\r\n}");
+        hashMap.put("color", "#e1a92a");
+        hashMap.put("palette", "-1");
+        hashMap.put("spec", "else");
+        arrayList.add(hashMap);
+
         hashMap = new HashMap<>();
         hashMap.put("name", "tryCatch");
         hashMap.put("type", "e");
@@ -2745,6 +2768,8 @@ public class BlocksHandler {
         }
         logicEditorActivity.a("c", "if");
         logicEditorActivity.a("e", "ifElse");
+        logicEditorActivity.a("c", "elseIf");
+        logicEditorActivity.a("c", "else");
         if (showBuiltIn()) {
             logicEditorActivity.a("b", "instanceOfOperator");
             logicEditorActivity.a("b", "isEmpty");

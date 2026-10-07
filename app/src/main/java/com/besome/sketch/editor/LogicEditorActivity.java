@@ -127,6 +127,7 @@ import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.R;
 import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
+import pro.sketchware.blocks.MultiBranchChain;
 import pro.sketchware.databinding.ImagePickerItemBinding;
 import pro.sketchware.databinding.LogicEditorBinding;
 import pro.sketchware.databinding.LogicPopupAddListBinding;
@@ -1821,6 +1822,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     public void n(String str) {
+        if (MultiBranchChain.isChain(str)) {
+            return;
+        }
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
         dialog.setTitle(R.string.logic_block_favorites_delete_title);
         dialog.setMessage(R.string.logic_block_favorites_delete_message);
@@ -1834,6 +1838,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     public void o(String str) {
+        if (MultiBranchChain.isChain(str)) {
+            return;
+        }
         Intent intent = new Intent(this, ShowBlockCollectionActivity.class);
         intent.putExtra("block_name", str);
         startActivity(intent);
@@ -2563,6 +2570,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     public void z() {
         O.a();
+        O.a(MultiBranchChain.NAME, MultiBranchChain.create()).setOnTouchListener(this);
         Executors.newSingleThreadExecutor().execute(() -> {
             ArrayList<BlockCollectionBean> collections = Mp.h().f();
             runOnUiThread(() -> {
