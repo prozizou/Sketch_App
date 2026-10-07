@@ -536,6 +536,13 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         return a2;
     }
 
+    public View addBlockGroup(String name, ArrayList<BlockBean> blocks) {
+        Us group = m.addBlockGroup(name, blocks);
+        group.setClickable(true);
+        group.setOnTouchListener(this);
+        return group;
+    }
+
     public final View a(String str, String str2, String str3) {
         Ts a2 = m.a(str, str2, str3);
         a2.setTag(str3);
