@@ -115,6 +115,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private int displayHeight;
     private PaletteFavorite paletteFavorite;
     private LinearLayout bgStatus;
+    private ImageView phoneFrame;
+    private PhoneFrameDrawable phoneFrameDrawable;
     private TextView fileName;
     private ImageView imgPhoneTopBg;
     private LinearLayout toolbar;
@@ -781,6 +783,16 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         viewPane.setOnTouchListener(this);
         shape.addView(viewPane);
 
+        // The phone's bezel sits over the preview; it is see-through and never takes touches.
+        phoneFrameDrawable = new PhoneFrameDrawable(getResources(), R.drawable.phone_frame);
+        phoneFrame = new ImageView(context);
+        phoneFrame.setImageDrawable(phoneFrameDrawable);
+        phoneFrame.setScaleType(ImageView.ScaleType.FIT_XY);
+        phoneFrame.setClickable(false);
+        phoneFrame.setFocusable(false);
+        phoneFrame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        shape.addView(phoneFrame, new FrameLayout.LayoutParams(0, 0));
+
         dropHint = new TextView(context);
         dropHint.setText(R.string.view_drop_components_here);
         dropHint.setGravity(Gravity.CENTER);
@@ -1096,6 +1108,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         boolean isLandscapeMode = displayWidth > displayHeight;
         int var4 = (int) (dip * (!isLandscapeMode ? 12.0F : 24.0F));
         int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
+        final int marginX = var4;
+        final int marginY = var5;
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
         int var9 = displayWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
@@ -1156,7 +1170,25 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         var11 = var5;
         viewPane.setX(var10);
         viewPane.setY(var8 - (int) ((var11 - var3 * var11) / 2.0F));
+        updatePhoneFrame(marginX, marginY, displayWidth * var3, displayHeight * var3);
         isLayoutChanged = false;
+    }
+
+    /** Puts the phone bezel around the preview's screen, as thick as the room around the preview allows. */
+    private void updatePhoneFrame(int screenLeft, int screenTop, float screenWidth, float screenHeight) {
+        float scale = PhoneFrameDrawable.scaleFor(7 * dip, screenLeft, screenTop, screenTop);
+        phoneFrameDrawable.setScale(scale);
+        android.graphics.RectF outer = PhoneFrameDrawable.outerBounds(screenLeft, screenTop, screenWidth, screenHeight, scale);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) phoneFrame.getLayoutParams();
+        int width = Math.round(outer.width());
+        int height = Math.round(outer.height());
+        if (params.width != width || params.height != height) {
+            params.width = width;
+            params.height = height;
+            phoneFrame.setLayoutParams(params);
+        }
+        phoneFrame.setX(outer.left);
+        phoneFrame.setY(outer.top);
     }
 
     public void addWidgetLayout(PaletteWidget.a aVar, String str) {
