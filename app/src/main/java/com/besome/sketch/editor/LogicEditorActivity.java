@@ -21,6 +21,7 @@ import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputType;
 import android.util.Pair;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -127,12 +128,15 @@ import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.R;
 import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
+import com.besome.sketch.editor.view.FloatingBarDragger;
+import pro.sketchware.blocks.ColorArgSwatch;
 import pro.sketchware.blocks.MultiBranchChain;
 import pro.sketchware.databinding.ImagePickerItemBinding;
 import pro.sketchware.databinding.LogicEditorBinding;
 import pro.sketchware.databinding.LogicPopupAddListBinding;
 import pro.sketchware.databinding.LogicPopupAddVariableBinding;
 import pro.sketchware.databinding.PaletteBlockBinding;
+import pro.sketchware.utility.UI;
 import pro.sketchware.databinding.PropertyPopupInputIntentDataBinding;
 import pro.sketchware.databinding.PropertyPopupInputTextBinding;
 import pro.sketchware.databinding.PropertyPopupSaveToFavoriteBinding;
@@ -1252,7 +1256,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     public Rs b(BlockBean blockBean) {
-        return new Rs(this, Integer.parseInt(blockBean.id), blockBean.spec, blockBean.type, blockBean.typeName, blockBean.opCode);
+        Rs block = new Rs(this, Integer.parseInt(blockBean.id), blockBean.spec, blockBean.type, blockBean.typeName, blockBean.opCode);
+        ColorArgSwatch.attach(block);
+        return block;
     }
 
     private RadioButton getFontRadioButton(String fontName) {
@@ -1934,9 +1940,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
         binding = LogicEditorBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        // Keep the toolbar, canvas and bottom bar clear of the status bar, navigation bar and cutouts.
+        UI.addSystemWindowInsetToPadding(binding.getRoot(), true, true, true, true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             binding.editor.setForceDarkAllowed(false);
             binding.editor.getBlockPane().setForceDarkAllowed(false);
@@ -1998,24 +2007,18 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             return true;
         });
         binding.bottomNav.setOnItemReselectedListener(item -> showPaletteCategory(item.getItemId()));
-        binding.btnCanvasCenter.setOnClickListener(v -> {
-            View content = viewLogicEditor.getChildAt(0);
-            if (content != null) {
-                viewLogicEditor.scrollTo(Math.max(0, (content.getWidth() - viewLogicEditor.getWidth()) / 2),
-                        Math.max(0, (content.getHeight() - viewLogicEditor.getHeight()) / 2));
-            }
-        });
-        binding.btnCanvasFit.setOnClickListener(v -> {
-            setCanvasZoom(1f);
-            viewLogicEditor.scrollTo(0, 0);
-        });
-        binding.btnZoomIn.setOnClickListener(v -> setCanvasZoom(viewLogicEditor.getZoom() + 0.25f));
-        binding.btnZoomOut.setOnClickListener(v -> setCanvasZoom(viewLogicEditor.getZoom() - 0.25f));
+        viewLogicEditor.setOnZoomChangedListener(zoom -> binding.tvZoom.setText(Math.round(zoom * 100) + "%"));
+        binding.btnCanvasFit.setOnClickListener(v -> viewLogicEditor.fitToContent());
+        float density = wB.a(this, 1.0f);
+        TypedValue actionBarSize = new TypedValue();
+        float toolbarHeight = getTheme().resolveAttribute(androidx.appcompat.R.attr.actionBarSize, actionBarSize, true)
+                ? actionBarSize.getDimension(getResources().getDisplayMetrics()) : 56 * density;
+        new FloatingBarDragger(binding.canvasControls, binding.canvasControlsHandle, binding.layout,
+                "zoom_bar", 12 * density, toolbarHeight + 8 * density);
     }
 
     private void setCanvasZoom(float zoom) {
         viewLogicEditor.setZoom(zoom);
-        binding.tvZoom.setText(Math.round(viewLogicEditor.getZoom() * 100) + "%");
     }
 
     private void showPaletteCategory(int navItemId) {
