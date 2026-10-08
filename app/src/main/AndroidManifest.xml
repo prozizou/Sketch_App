@@ -276,6 +276,9 @@
             android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity android:name="pro.sketchware.activities.snapshots.ProjectSnapshotsActivity" />
         <activity
+            android:name="pro.sketchware.activities.git.ProjectGitActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name="pro.sketchware.activities.search.ProjectSearchActivity"
             android:windowSoftInputMode="adjustResize" />
         <activity

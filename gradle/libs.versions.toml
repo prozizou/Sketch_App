@@ -27,6 +27,8 @@ glide = "5.0.9"
 gson = "2.14.0"
 insetter = "0.6.1"
 javaparserSymbolSolver = "3.28.2"
+# The last 5.x release: 6.x needs a newer Java than Android desugaring covers
+jgit = "5.13.3.202401111512-r"
 kotlincForSketchware = "2.3.21"
 kotlinCompiler = "2.1.21"
 lottie = "6.7.1"
@@ -102,6 +104,7 @@ filepicker = { module = "com.github.PranavPurwar:filepicker", version.ref = "fil
 markwon = { module = "io.noties.markwon:core", version.ref = "markwon" }
 
 ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
+jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 
 kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler", version.ref = "kotlinCompiler" }

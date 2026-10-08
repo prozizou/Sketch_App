@@ -90,6 +90,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toSourceCodeViewer();
         } else if (id == R.id.item_xml_command_manager) {
             designActivity.toXMLCommandManager();
+        } else if (id == R.id.item_git) {
+            designActivity.toGit();
         } else if (id == R.id.item_snapshots) {
             designActivity.toSnapshots();
         } else if (id == R.id.item_project_search) {
@@ -155,6 +157,7 @@ public class DesignDrawer extends LinearLayout {
         Section project = addSection(content, "Project");
         addRow(project, R.id.item_library_manager, R.drawable.ic_mtrl_category, R.string.design_drawer_menu_title_library, R.string.design_drawer_menu_description_library);
         addRow(project, R.id.item_view_manager, R.drawable.ic_mtrl_devices, R.string.design_drawer_menu_title_view, R.string.design_drawer_menu_description_view);
+        addRow(project, R.id.item_git, R.drawable.ic_mtrl_sync, R.string.design_drawer_menu_title_git, R.string.design_drawer_menu_subtitle_git);
         addRow(project, R.id.item_snapshots, R.drawable.ic_mtrl_history, R.string.design_drawer_menu_title_snapshots, R.string.design_drawer_menu_subtitle_snapshots);
         addRow(project, R.id.item_collection_manager, R.drawable.ic_mtrl_bookmark, R.string.design_drawer_menu_title_collection, R.string.design_drawer_menu_description_collection);
 
