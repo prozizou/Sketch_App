@@ -145,6 +145,18 @@ public final class ClassIndex {
         return Collections.unmodifiableList(names);
     }
 
+    public boolean contains(String qualifiedName) {
+        return Collections.binarySearch(names, qualifiedName) >= 0;
+    }
+
+    /** Whether any class lives in {@code packageName} or one of its subpackages. */
+    public boolean hasPackage(String packageName) {
+        String prefix = packageName + ".";
+        int at = Collections.binarySearch(names, prefix);
+        if (at < 0) at = -at - 1;
+        return at < names.size() && names.get(at).startsWith(prefix);
+    }
+
     /** Every class with exactly this simple name, in different packages. */
     public List<String> withSimpleName(String simpleName) {
         return bySimpleName.getOrDefault(simpleName, Collections.emptyList());

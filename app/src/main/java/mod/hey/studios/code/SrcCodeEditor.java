@@ -60,6 +60,7 @@ import mod.jbk.code.CodeEditorColorSchemes;
 import mod.jbk.code.CodeEditorLanguages;
 import mod.jbk.code.completion.ClassIndex;
 import mod.jbk.code.completion.SketchJavaLanguage;
+import mod.jbk.code.diagnostics.LiveDiagnostics;
 import pro.sketchware.R;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
 import pro.sketchware.databinding.CodeEditorHsBinding;
@@ -90,6 +91,8 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     private boolean fromAndroidManifest;
     private String scId;
     private String activityName;
+    /** Underlines problems in Java files, null for other file types. */
+    private LiveDiagnostics liveDiagnostics;
 
     public static void loadCESettings(Context c, CodeEditor ed, String prefix) {
         loadCESettings(c, ed, prefix, false);
@@ -333,6 +336,9 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         if (title.endsWith(".java")) {
             binding.editor.setEditorLanguage(new SketchJavaLanguage(this, ClassIndex.projectIdOfJavaFile(getIntent().getStringExtra("content"))));
             languageId = 0;
+            liveDiagnostics = new LiveDiagnostics(binding.editor, (errors, warnings) -> binding.toolbar.setSubtitle(
+                    errors + warnings == 0 ? null : errors + " errors, " + warnings + " warnings"));
+            liveDiagnostics.setEnabled(getSharedPreferences("hsce", Activity.MODE_PRIVATE).getBoolean("act_diag", true));
         } else if (title.endsWith(".kt")) {
             binding.editor.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_KOTLIN));
             binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_DRACULA));
@@ -421,6 +427,10 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                 toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Layout Preview");
             }
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Find & Replace");
+            if (liveDiagnostics != null) {
+                toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Next problem");
+                toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Live diagnostics").setCheckable(true).setChecked(local_pref.getBoolean("act_diag", true));
+            }
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Word wrap").setCheckable(true).setChecked(local_pref.getBoolean("act_ww", false));
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Pretty print");
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Select language");
@@ -483,6 +493,11 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                     case "Select language":
                         showSwitchLanguageDialog(this, binding.editor, (dialog, which) -> {
                             selectLanguage(binding.editor, which, ClassIndex.projectIdOfJavaFile(getIntent().getStringExtra("content")));
+                            if (liveDiagnostics != null) {
+                                boolean wanted = which == 0 && getSharedPreferences("hsce", Activity.MODE_PRIVATE).getBoolean("act_diag", true);
+                                liveDiagnostics.setEnabled(wanted);
+                                if (!wanted) binding.toolbar.setSubtitle(null);
+                            }
                             dialog.dismiss();
                         });
                         break;
@@ -545,12 +560,31 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                         toLayoutPreview();
                         break;
 
+                    case "Next problem":
+                        if (liveDiagnostics == null || !liveDiagnostics.goToNextProblem()) {
+                            SketchwareUtil.toast("No problems found");
+                        }
+                        break;
+
+                    case "Live diagnostics":
+                        item.setChecked(!item.isChecked());
+                        pref.edit().putBoolean("act_diag", item.isChecked()).apply();
+                        if (liveDiagnostics != null) liveDiagnostics.setEnabled(item.isChecked());
+                        if (!item.isChecked()) binding.toolbar.setSubtitle(null);
+                        break;
+
                     default:
                         return false;
                 }
                 return true;
             });
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (liveDiagnostics != null) liveDiagnostics.destroy();
+        super.onDestroy();
     }
 
     @Override
