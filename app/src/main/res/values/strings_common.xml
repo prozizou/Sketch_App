@@ -215,7 +215,6 @@
     <string name="str_cancel">cancel</string>
     <string name="str_save">save</string>
     <string name="common_word_value">Value</string>
-    <string name="common_word_full_mode">Full Mode</string>
     <string name="common_word_replace_all">Replace all</string>
     <string name="common_word_palette_name">Palette name</string>
     <string name="common_word_fab">fab</string>

@@ -16,8 +16,10 @@ public class ProguardHandler {
     public static String DEFAULT_PROGUARD_RULES_PATH = "";
     private final String config_path;
     private final String fm_config_path;
+    private final String scId;
 
     public ProguardHandler(String sc_id) {
+        scId = sc_id;
         DEFAULT_PROGUARD_RULES_PATH = createDefaultRules(sc_id);
         config_path = FileUtil.getExternalStorageDir() + "/.sketch_nws/data/" + sc_id + "/proguard";
         fm_config_path = FileUtil.getExternalStorageDir() + "/.sketch_nws/data/" + sc_id + "/proguard_fm";
@@ -134,6 +136,42 @@ public class ProguardHandler {
         return DEFAULT_PROGUARD_RULES_PATH;
     }
 
+    /** The level the project is set to; configs from before the levels existed map to "shrink and scramble". */
+    public OptimizationMode getMode() {
+        try {
+            HashMap<String, String> config = new Gson().fromJson(FileUtil.readFile(config_path), Helper.TYPE_STRING_MAP);
+            return OptimizationMode.fromConfig(config.get("mode"), "true".equals(config.get("enabled")));
+        } catch (Exception e) {
+            return OptimizationMode.OFF;
+        }
+    }
+
+    /**
+     * Picks the level. Turning shrinking on also picks R8 (faster and better kept than ProGuard) unless a
+     * choice was already made, and the full level starts with the debug files on, since those are what makes
+     * a crash of a scrambled app readable.
+     */
+    public void setMode(OptimizationMode mode) {
+        HashMap<String, String> config = new Gson().fromJson(FileUtil.readFile(config_path), Helper.TYPE_STRING_MAP);
+        OptimizationMode before = OptimizationMode.fromConfig(config.get("mode"), "true".equals(config.get("enabled")));
+        config.put("mode", mode.key());
+        config.put("enabled", String.valueOf(mode.isShrinking()));
+        if (mode.isShrinking() && !config.containsKey("r8")) {
+            config.put("r8", "true");
+        }
+        if (mode == OptimizationMode.MAX && before != OptimizationMode.MAX) {
+            config.put("debug", "true");
+        }
+        FileUtil.writeFile(config_path, new Gson().toJson(config));
+    }
+
+    /** The rules file of the chosen level, written fresh for each build. */
+    public String getModeRulesPath() {
+        String path = FileUtil.getExternalStorageDir() + "/.sketch_nws/data/" + scId + "/proguard-mode.pro";
+        FileUtil.writeFile(path, getMode().extraRules());
+        return path;
+    }
+
     public boolean isDebugFilesEnabled() {
         boolean debugFiles = true;
         if (FileUtil.isExistFile(config_path)) {
@@ -177,10 +215,11 @@ public class ProguardHandler {
     }
 
     public void setProguardEnabled(boolean proguardEnabled) {
-        HashMap<String, String> config = new Gson().fromJson(FileUtil.readFile(config_path), Helper.TYPE_STRING_MAP);
-        config.put("enabled", String.valueOf(proguardEnabled));
-
-        FileUtil.writeFile(config_path, new Gson().toJson(config));
+        if (!proguardEnabled) {
+            setMode(OptimizationMode.OFF);
+        } else if (!getMode().isShrinking()) {
+            setMode(OptimizationMode.MAX);
+        }
     }
 
     public boolean isR8Enabled() {

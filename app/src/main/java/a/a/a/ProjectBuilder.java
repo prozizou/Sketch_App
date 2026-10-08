@@ -873,6 +873,7 @@ public class ProjectBuilder {
         config.add(ProguardHandler.ANDROID_PROGUARD_RULES_PATH);
         config.add(yq.proguardAaptRules);
         config.add(proguard.getCustomProguardRules());
+        config.add(proguard.getModeRulesPath());
         var rules = new ArrayList<>(Arrays.asList(getRJavaRules().split("\n")));
         for (Jp library : builtInLibraryManager.getLibraries()) {
             File f = BuiltInLibraries.getLibraryProguardConfiguration(library.getName());
@@ -915,6 +916,10 @@ public class ProjectBuilder {
         /* Include custom ProGuard rules */
         args.add("-include");
         args.add(proguard.getCustomProguardRules());
+
+        /* Include the rules of the chosen optimization level */
+        args.add("-include");
+        args.add(proguard.getModeRulesPath());
 
         proguardAddLibConfigs(args);
         proguardAddRjavaRules(args);
