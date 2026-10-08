@@ -104,6 +104,11 @@ android {
             // Unit tests run on the JVM; Android framework calls that aren't under test return defaults.
             returnDefaultValues = true
             includeAndroidResources = true
+            all {
+                // The prebuilt a.a.a jars hold old bytecode (no stack maps) that Android's dex tooling accepts but a
+                // desktop JVM refuses to verify; tests that load their classes (the properties screen) need this.
+                jvmArgs '-XX:+UnlockDiagnosticVMOptions', '-XX:-BytecodeVerificationRemote'
+            }
         }
     }
 

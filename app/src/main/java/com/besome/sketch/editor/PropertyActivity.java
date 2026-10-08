@@ -67,6 +67,8 @@ public class PropertyActivity extends BaseAppCompatActivity implements Kw {
         propertyItems.setProjectFileBean(projectFileBean);
         propertyItems.a(sc_id, viewBean);
         content.addView(propertyItems);
+        binding.searchProperties.addTextChangedListener(new com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher(
+                text -> propertyItems.setFilter(text.toString())));
     }
 
     private void m() {
