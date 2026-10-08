@@ -73,6 +73,8 @@ public class ConfigActivity extends BaseAppCompatActivity {
     public static final String SETTING_AUTO_SAVE_MODE = "auto-save-mode";
     public static final String SETTING_AUTO_VERSION_CODE = "auto-version-code";
     public static final String SETTING_AUTO_BACKUP = "auto-backup";
+    /** Restorable copies of a project kept on save and before builds. */
+    public static final String SETTING_AUTO_SNAPSHOTS = "auto-snapshots";
     /** "always", "daily" or "weekly". */
     public static final String SETTING_AUTO_BACKUP_FREQUENCY = "auto-backup-frequency";
     /** How many auto-backups to keep per project, "0" means all of them. */
@@ -106,6 +108,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
         DEFAULTS.put(SETTING_AUTO_SAVE_MODE, "snapshot");
         DEFAULTS.put(SETTING_AUTO_VERSION_CODE, false);
         DEFAULTS.put(SETTING_AUTO_BACKUP, false);
+        DEFAULTS.put(SETTING_AUTO_SNAPSHOTS, true);
         DEFAULTS.put(SETTING_AUTO_BACKUP_FREQUENCY, "daily");
         DEFAULTS.put(SETTING_BACKUP_RETENTION, "5");
         DEFAULTS.put(SETTING_CRASH_RECOVERY, true);

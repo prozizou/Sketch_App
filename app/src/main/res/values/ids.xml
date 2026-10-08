@@ -22,5 +22,6 @@
     <item name="item_xml_command_manager" type="id" />
     <item name="item_logcat_reader" type="id" />
     <item name="item_project_search" type="id" />
+    <item name="item_snapshots" type="id" />
     <item name="item_collection_manager" type="id" />
 </resources>

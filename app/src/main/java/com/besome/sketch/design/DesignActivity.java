@@ -128,6 +128,8 @@ import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.editor.view.ViewCodeEditorActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
 import pro.sketchware.activities.search.ProjectSearchActivity;
+import pro.sketchware.activities.snapshots.AutoSnapshots;
+import pro.sketchware.activities.snapshots.ProjectSnapshotsActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;
 import pro.sketchware.dialogs.BuildSettingsBottomSheet;
@@ -173,6 +175,13 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private TextView fileName;
     private String currentJavaFileName;
     private ViewEditorFragment viewTabAdapter;
+    private final ActivityResultLauncher<Intent> openSnapshots = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() == ProjectSnapshotsActivity.RESULT_RESTORED) {
+            // The project on disk was just replaced: leave without saving what is still in memory
+            SketchwareUtil.toast("Snapshot restored. Open the project again to continue.");
+            finish();
+        }
+    });
     private final ActivityResultLauncher<Intent> openCollectionManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             if (viewTabAdapter != null) {
@@ -997,6 +1006,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         startActivity(intent);
     }
 
+    void toSnapshots() {
+        Intent intent = new Intent(getApplicationContext(), ProjectSnapshotsActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        openSnapshots.launch(intent);
+    }
+
     void toLogReader() {
         Intent intent = new Intent(getApplicationContext(), LogReaderActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -1211,6 +1226,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             DesignActivity activity = getActivity();
             if (activity == null) return;
 
+            AutoSnapshots.beforeBuild(DesignActivity.sc_id);
             long startedAt = System.currentTimeMillis();
             String outcome = null;
             String detail = null;
@@ -1628,6 +1644,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.d(sc_id).f();
                 jC.d(sc_id).g();
                 jC.d(sc_id).e();
+                AutoSnapshots.afterSave(sc_id);
                 activity.runOnUiThread(() -> {
                     bB.a(activity.getApplicationContext(), Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
                     activity.h();
@@ -1659,6 +1676,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.c(sc_id).l();
                 jC.d(sc_id).h();
                 activity.saveVersionCodeInformationToProject();
+                AutoSnapshots.afterSave(sc_id);
                 AutoBackup.runIfEnabled(activity, sc_id);
                 activity.runOnUiThread(() -> {
                     bB.a(activity.getApplicationContext(), Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
@@ -1697,6 +1715,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.d(sc_id).f();
                 jC.d(sc_id).g();
                 jC.d(sc_id).e();
+                AutoSnapshots.afterSave(sc_id);
             } catch (Throwable t) {
                 AppLog.e("AutoSave", "Auto-save failed: " + t);
             }

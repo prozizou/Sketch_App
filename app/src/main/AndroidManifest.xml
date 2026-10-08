@@ -274,6 +274,7 @@
             android:configChanges="orientation|screenSize"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar.Translucent"
             android:windowSoftInputMode="adjustResize|stateHidden" />
+        <activity android:name="pro.sketchware.activities.snapshots.ProjectSnapshotsActivity" />
         <activity
             android:name="pro.sketchware.activities.search.ProjectSearchActivity"
             android:windowSoftInputMode="adjustResize" />
