@@ -90,6 +90,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toSourceCodeViewer();
         } else if (id == R.id.item_xml_command_manager) {
             designActivity.toXMLCommandManager();
+        } else if (id == R.id.item_project_search) {
+            designActivity.toProjectSearch();
         } else if (id == R.id.item_logcat_reader) {
             designActivity.toLogReader();
         } else if (id == R.id.item_collection_manager) {
@@ -164,6 +166,7 @@ public class DesignDrawer extends LinearLayout {
         Section code = addSection(content, "Code");
         addRow(code, R.id.item_java_manager, R.drawable.ic_mtrl_java, R.string.text_title_menu_java, R.string.text_subtitle_menu_java);
         addRow(code, R.id.item_show_src, R.drawable.ic_mtrl_frame_source, R.string.design_drawer_menu_title_source_code, R.string.design_drawer_menu_description_source_code);
+        addRow(code, R.id.item_project_search, R.drawable.ic_mtrl_search, R.string.design_drawer_menu_title_project_search, R.string.design_drawer_menu_subtitle_project_search);
         addRow(code, R.id.item_xml_command_manager, R.drawable.ic_mtrl_code, R.string.design_drawer_menu_title_xml_command, R.string.design_drawer_menu_description_xml_command);
         addRow(code, R.id.item_used_custom_blocks, R.drawable.ic_mtrl_block, R.string.design_drawer_menu_customblocks, R.string.design_drawer_menu_customblocks_subtitle);
         addRow(code, R.id.item_appcompat_manager, R.drawable.ic_mtrl_inject, R.string.design_drawer_menu_injection, R.string.design_drawer_menu_injection_subtitle);

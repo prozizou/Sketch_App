@@ -127,6 +127,7 @@ import pro.sketchware.activities.editor.command.ManageXMLCommandActivity;
 import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.editor.view.ViewCodeEditorActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
+import pro.sketchware.activities.search.ProjectSearchActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;
 import pro.sketchware.dialogs.BuildSettingsBottomSheet;
@@ -989,6 +990,13 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     /**
      * Opens {@link LogReaderActivity}.
      */
+    void toProjectSearch() {
+        Intent intent = new Intent(getApplicationContext(), ProjectSearchActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
+    }
+
     void toLogReader() {
         Intent intent = new Intent(getApplicationContext(), LogReaderActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
