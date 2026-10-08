@@ -171,6 +171,11 @@ public class ViewProperty extends LinearLayout implements Kw {
                 propertyLayout.setVisibility(VISIBLE);
                 viewPropertyItems.setupAllPropertiesFromConfig(viewBean);
                 layoutPropertySeeAll.setVisibility(GONE);
+            } else if (selectedGroupId == 3) {
+                propertyLayout.setVisibility(VISIBLE);
+                viewPropertyItems.setupAttributeCards(viewBean);
+                layoutPropertySeeAll.setVisibility(GONE);
+                viewEvent.setVisibility(GONE);
             } else if (selectedGroupId == 2) {
                 propertyLayout.setVisibility(GONE);
                 viewEvent.setVisibility(VISIBLE);
@@ -357,6 +362,7 @@ public class ViewProperty extends LinearLayout implements Kw {
         addGroup(0, R.string.property_group_basic);
         addGroup(1, R.string.property_group_recent);
         addGroup(2, R.string.property_group_event);
+        addGroup(3, R.string.property_group_attributes);
     }
 
     private void addGroup(int id, int labelResId) {

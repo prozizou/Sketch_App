@@ -161,4 +161,38 @@ public class AttributeCatalogTest {
         assertNotNull(attr.problemWith("say\"hi"));
         assertNull(attr.problemWith("hello"));
     }
+
+    @Test
+    public void searchFindsByNameOrLabelAndSkipsAttributesAlreadySet() {
+        List<AttributeCatalog.Section> sections = AttributeCatalog.sectionsFor(new Gx("TextView"));
+
+        List<AttributeCatalog.Section> found = AttributeCatalog.search(sections, "letter", List.of());
+        assertEquals(1, found.size());
+        assertEquals(List.of("android:letterSpacing"), found.get(0).names());
+
+        assertTrue(AttributeCatalog.search(sections, "letter", List.of("android:letterSpacing")).isEmpty());
+        assertEquals("a label word works too", 1, AttributeCatalog.search(sections, "SPACING", List.of()).stream()
+                .filter(s -> s.names().contains("android:letterSpacing")).count());
+        assertTrue(AttributeCatalog.search(sections, "zzzz", List.of()).isEmpty());
+    }
+
+    @Test
+    public void emptySearchListsEverythingNotYetSet() {
+        List<AttributeCatalog.Section> sections = AttributeCatalog.sectionsFor(new Gx("TextView"));
+
+        int all = sections.stream().mapToInt(s -> s.attrs().size()).sum();
+        int listed = AttributeCatalog.search(sections, "", List.of("android:minWidth")).stream().mapToInt(s -> s.attrs().size()).sum();
+
+        assertEquals(all - 1, listed);
+    }
+
+    @Test
+    public void findFallsBackToATextAttributeForUnknownNames() {
+        List<AttributeCatalog.Section> sections = AttributeCatalog.sectionsFor(new Gx("TextView"));
+
+        assertEquals(AttributeCatalog.Type.DIMENSION, AttributeCatalog.find(sections, "android:minWidth").type());
+        AttributeCatalog.Attr unknown = AttributeCatalog.find(sections, "app:lottie_loop");
+        assertEquals(AttributeCatalog.Type.STRING, unknown.type());
+        assertEquals("Lottie loop", unknown.label());
+    }
 }

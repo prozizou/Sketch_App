@@ -77,4 +77,12 @@ public class InjectAttributesTest {
 
         assertEquals("center|fill", new InjectAttributes(attributes.toString()).get("android:foregroundGravity"));
     }
+
+    @Test
+    public void listsEveryPlainAttributeInOrder() {
+        InjectAttributes attributes = new InjectAttributes("b:y=\"2\"\nnot an attribute\na:x=\"1\"");
+
+        assertEquals(List.of("b:y", "a:x"), List.copyOf(attributes.asMap().keySet()));
+        assertEquals("2", attributes.asMap().get("b:y"));
+    }
 }

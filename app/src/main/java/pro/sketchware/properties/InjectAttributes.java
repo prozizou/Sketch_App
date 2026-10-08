@@ -4,7 +4,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,6 +57,18 @@ public final class InjectAttributes {
             lines.add(line);
         }
         return this;
+    }
+
+    /** Every plain attribute of the view, in the order they are written. */
+    public Map<String, String> asMap() {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (String line : lines) {
+            Matcher matcher = ATTRIBUTE.matcher(line);
+            if (matcher.matches()) {
+                map.put(matcher.group(1), matcher.group(2));
+            }
+        }
+        return map;
     }
 
     /** How many attributes whose name is in {@code names} the view sets. */

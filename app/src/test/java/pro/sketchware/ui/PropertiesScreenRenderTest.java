@@ -18,6 +18,7 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.besome.sketch.beans.ProjectFileBean;
 import com.besome.sketch.beans.ViewBean;
+import com.besome.sketch.editor.property.ExtraAttributeCard;
 import com.besome.sketch.editor.property.ExtraAttributeRow;
 import com.besome.sketch.editor.property.PropertySubheader;
 import com.besome.sketch.editor.property.ViewPropertyItems;
@@ -156,5 +157,58 @@ public class PropertiesScreenRenderTest {
         }
         layout(items, 4000);
         save(items, "properties-gridview");
+    }
+
+    private ViewPropertyItems horizontalItems(ViewBean bean) throws Exception {
+        RuntimeEnvironment.setQualifiers("+night");
+        ThemeHarness.prepareApplication();
+        Context app = ApplicationProvider.getApplicationContext();
+        Activity activity = Robolectric.buildActivity(ConfigActivity.class, new Intent(app, ConfigActivity.class)).setup().get();
+        ViewPropertyItems items = new ViewPropertyItems(activity);
+        items.setOrientation(LinearLayout.HORIZONTAL);
+        items.setProjectSettings(new ProjectSettings("999"));
+        items.setProjectFileBean(new ProjectFileBean(0, "main"));
+        items.setupAttributeCards(bean);
+        return items;
+    }
+
+    @Test
+    public void bottomPanelListsTheAttributesSetOnTheViewAndAnAddCard() throws Exception {
+        ViewBean bean = new ViewBean("gridview1", ViewBeans.VIEW_TYPE_WIDGET_GRIDVIEW);
+        bean.inject = "android:numColumns=\"3\"\nandroid:stretchMode=\"columnWidth\"\napp:custom_thing=\"x\"";
+
+        ViewPropertyItems items = horizontalItems(bean);
+
+        assertEquals("add card + 3 attributes", 4, items.getChildCount());
+        ExtraAttributeCard add = (ExtraAttributeCard) items.getChildAt(0);
+        assertEquals("Add", add.getTitle());
+        ExtraAttributeCard columns = (ExtraAttributeCard) items.getChildAt(1);
+        assertEquals("Num columns", columns.getTitle());
+        assertEquals("3", columns.getValue());
+        ExtraAttributeCard stretch = (ExtraAttributeCard) items.getChildAt(2);
+        assertEquals("Stretch mode", stretch.getTitle());
+        assertEquals("columnWidth", stretch.getValue());
+        ExtraAttributeCard unknown = (ExtraAttributeCard) items.getChildAt(3);
+        assertEquals("an attribute the catalog doesn't know is still shown", "Custom thing", unknown.getTitle());
+        assertEquals("x", unknown.getValue());
+    }
+
+    @Test
+    public void bottomPanelWithNoAttributesOnlyHasTheAddCard() throws Exception {
+        ViewPropertyItems items = horizontalItems(new ViewBean("textview1", ViewBean.VIEW_TYPE_WIDGET_TEXTVIEW));
+
+        assertEquals(1, items.getChildCount());
+    }
+
+    @Test
+    public void rendersTheBottomPanel() throws Exception {
+        ViewBean bean = new ViewBean("gridview1", ViewBeans.VIEW_TYPE_WIDGET_GRIDVIEW);
+        bean.inject = "android:numColumns=\"3\"\nandroid:stretchMode=\"columnWidth\"";
+        ViewPropertyItems items = horizontalItems(bean);
+
+        items.measure(View.MeasureSpec.makeMeasureSpec(ThemeHarness.WIDTH, View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.AT_MOST));
+        items.layout(0, 0, items.getMeasuredWidth(), items.getMeasuredHeight());
+        save(items, "properties-bottom-attributes");
     }
 }

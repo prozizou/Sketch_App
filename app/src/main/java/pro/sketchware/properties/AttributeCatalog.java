@@ -380,6 +380,39 @@ public final class AttributeCatalog {
         return sections;
     }
 
+    /** The attribute the catalog knows under {@code name} for this view, or a plain text one for any other name. */
+    public static Attr find(List<Section> sections, String name) {
+        for (Section section : sections) {
+            for (Attr attr : section.attrs()) {
+                if (attr.name().equals(name)) {
+                    return attr;
+                }
+            }
+        }
+        return new Attr(name, Type.STRING, List.of(), Target.VIEW);
+    }
+
+    /**
+     * The sections narrowed to attributes matching {@code query} (name or label) and not in {@code except};
+     * sections left empty are dropped.
+     */
+    public static List<Section> search(List<Section> sections, String query, java.util.Collection<String> except) {
+        String needle = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        List<Section> found = new ArrayList<>();
+        for (Section section : sections) {
+            List<Attr> attrs = new ArrayList<>();
+            for (Attr attr : section.attrs()) {
+                if (!except.contains(attr.name()) && (needle.isEmpty() || searchText(attr).contains(needle))) {
+                    attrs.add(attr);
+                }
+            }
+            if (!attrs.isEmpty()) {
+                found.add(new Section(section.key(), section.titleRes(), attrs));
+            }
+        }
+        return found;
+    }
+
     /** Lower-case text to search in for an attribute: its name and its label. */
     public static String searchText(Attr attr) {
         return (attr.name() + " " + attr.label()).toLowerCase(Locale.ROOT);

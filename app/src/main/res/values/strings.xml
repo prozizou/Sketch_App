@@ -660,6 +660,9 @@ ACTION_VIEW
     <string name="property_group_basic">Basic</string>
     <string name="property_group_event">Event</string>
     <string name="property_group_recent">Recent</string>
+    <string name="property_group_attributes">Attributes</string>
+    <string name="property_attribute_add">Add</string>
+    <string name="property_attribute_pick_title">Add an attribute</string>
     <string name="property_header_image">Image Properties</string>
     <string name="property_header_layout">Layout Properties</string>
     <string name="property_header_seekbar">SeekBar Properties</string>

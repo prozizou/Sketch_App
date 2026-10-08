@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import a.a.a.Cx;
@@ -304,6 +305,46 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
             }
             section.header.setTitleSuffix(set > 0 ? set + " set" : "");
         }
+    }
+
+    /**
+     * The bottom (horizontal) panel's "Attributes" group: a card per attribute set on the view, which edits it,
+     * and a first card that opens a searchable list of the other attributes that fit this view.
+     */
+    public void setupAttributeCards(ViewBean bean) {
+        c = bean;
+        f.clear();
+        removeAllViews();
+        LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        params.gravity = Gravity.LEFT;
+        setLayoutParams(params);
+        setGravity(Gravity.LEFT);
+
+        List<AttributeCatalog.Section> sections = AttributeCatalog.sectionsFor(bean.getClassInfo(), bean.type);
+        Map<String, String> set = new InjectAttributes(bean.inject).asMap();
+
+        ExtraAttributeCard add = new ExtraAttributeCard(getContext(), R.drawable.ic_mtrl_add,
+                getContext().getString(R.string.property_attribute_add), null);
+        add.setOnClickListener(v -> AttributePicker.show(getContext(), sections, set.keySet(), attr -> editAttributeOnBean(attr, null)));
+        addView(add);
+        for (Map.Entry<String, String> entry : set.entrySet()) {
+            AttributeCatalog.Attr attr = AttributeCatalog.find(sections, entry.getKey());
+            ExtraAttributeCard card = new ExtraAttributeCard(getContext(), R.drawable.ic_mtrl_code, attr.label(), entry.getValue());
+            card.setOnClickListener(v -> editAttributeOnBean(attr, entry.getValue()));
+            addView(card);
+        }
+    }
+
+    private void editAttributeOnBean(AttributeCatalog.Attr attr, String current) {
+        ExtraAttributeEditor.show(getContext(), attr, current, value -> {
+            ViewBean before = c.clone();
+            c.inject = new InjectAttributes(c.inject).set(attr.name(), value).toString();
+            if (d != null && !b) {
+                cC.c(sc_id).a(e.getXmlName(), before, c.clone());
+                d.a(c);
+            }
+            setupAttributeCards(c);
+        });
     }
 
     private void editExtraAttribute(ExtraAttributeRow row) {
