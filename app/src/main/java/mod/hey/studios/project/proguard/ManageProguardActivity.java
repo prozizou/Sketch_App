@@ -1,13 +1,13 @@
 package mod.hey.studios.project.proguard;
 
-import pro.sketchware.R;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.CompoundButton;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
@@ -18,6 +18,10 @@ import mod.hey.studios.code.SrcCodeEditor;
 import pro.sketchware.R;
 import pro.sketchware.databinding.ManageProguardBinding;
 
+/**
+ * Code shrinking, made simple: three levels (off, smaller, smaller and protected) cover what almost everyone
+ * needs. The engine, the rules file, local libraries and the crash map stay available under "Advanced options".
+ */
 public class ManageProguardActivity extends BaseAppCompatActivity
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
 
@@ -35,7 +39,50 @@ public class ManageProguardActivity extends BaseAppCompatActivity
             startActivity(intent);
         } else if (id == binding.lnPgFm.getId()) {
             fmDialog();
+        } else if (id == binding.lnAdvanced.getId()) {
+            boolean show = binding.lnAdvancedContent.getVisibility() != View.VISIBLE;
+            binding.lnAdvancedContent.setVisibility(show ? View.VISIBLE : View.GONE);
+            binding.imgAdvanced.animate().rotation(show ? 180f : 0f).setDuration(150).start();
+        } else if (id == binding.cardModeOff.getId()) {
+            chooseMode(OptimizationMode.OFF);
+        } else if (id == binding.cardModeSafe.getId()) {
+            chooseMode(OptimizationMode.SAFE);
+        } else if (id == binding.cardModeMax.getId()) {
+            chooseMode(OptimizationMode.MAX);
         }
+    }
+
+    private void chooseMode(OptimizationMode mode) {
+        pg.setMode(mode);
+        showMode();
+        // Choosing a level can change the engine and the crash map, so the advanced switches follow.
+        binding.r8Enabled.setOnCheckedChangeListener(null);
+        binding.swPgDebug.setOnCheckedChangeListener(null);
+        binding.r8Enabled.setChecked(pg.isR8Enabled());
+        binding.swPgDebug.setChecked(pg.isDebugFilesEnabled());
+        binding.r8Enabled.setOnCheckedChangeListener(this);
+        binding.swPgDebug.setOnCheckedChangeListener(this);
+    }
+
+    private void showMode() {
+        OptimizationMode mode = pg.getMode();
+        select(binding.cardModeOff, mode == OptimizationMode.OFF);
+        select(binding.cardModeSafe, mode == OptimizationMode.SAFE);
+        select(binding.cardModeMax, mode == OptimizationMode.MAX);
+        binding.tvHint.setText(switch (mode) {
+            case OFF -> R.string.code_shrinker_hint_off;
+            case SAFE -> R.string.code_shrinker_hint_safe;
+            case MAX -> R.string.code_shrinker_hint_max;
+        });
+    }
+
+    private void select(MaterialCardView card, boolean selected) {
+        float density = getResources().getDisplayMetrics().density;
+        card.setChecked(selected);
+        card.setStrokeWidth(Math.round((selected ? 2 : 1) * density));
+        card.setStrokeColor(MaterialColors.getColor(card, selected
+                ? androidx.appcompat.R.attr.colorPrimary
+                : com.google.android.material.R.attr.colorOutlineVariant));
     }
 
     private void fmDialog() {
@@ -83,9 +130,7 @@ public class ManageProguardActivity extends BaseAppCompatActivity
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         int id = buttonView.getId();
-        if (id == binding.swPgEnabled.getId()) {
-            pg.setProguardEnabled(isChecked);
-        } else if (id == binding.r8Enabled.getId()) {
+        if (id == binding.r8Enabled.getId()) {
             pg.setR8Enabled(isChecked);
         } else if (id == binding.swPgDebug.getId()) {
             pg.setDebugEnabled(isChecked);
@@ -103,19 +148,22 @@ public class ManageProguardActivity extends BaseAppCompatActivity
     }
 
     private void initialize() {
-        binding.swPgEnabled.setOnCheckedChangeListener(this);
         binding.lnPgRules.setOnClickListener(this);
-        binding.r8Enabled.setOnCheckedChangeListener(this);
-        binding.swPgDebug.setOnCheckedChangeListener(this);
         binding.lnPgFm.setOnClickListener(this);
+        binding.lnAdvanced.setOnClickListener(this);
+        binding.cardModeOff.setOnClickListener(this);
+        binding.cardModeSafe.setOnClickListener(this);
+        binding.cardModeMax.setOnClickListener(this);
     }
 
     private void initializeLogic() {
         _initToolbar();
         pg = new ProguardHandler(getIntent().getStringExtra("sc_id"));
-        binding.swPgEnabled.setChecked(pg.isShrinkingEnabled());
+        showMode();
         binding.swPgDebug.setChecked(pg.isDebugFilesEnabled());
         binding.r8Enabled.setChecked(pg.isR8Enabled());
+        binding.r8Enabled.setOnCheckedChangeListener(this);
+        binding.swPgDebug.setOnCheckedChangeListener(this);
     }
 
     private void _initToolbar() {

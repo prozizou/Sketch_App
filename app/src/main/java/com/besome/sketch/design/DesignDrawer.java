@@ -371,8 +371,13 @@ public class DesignDrawer extends LinearLayout {
         try {
             // Only read the config when it already exists: the handlers create default files in their constructors.
             String dataDir = FileUtil.getExternalStorageDir() + "/.sketch_nws/data/" + scId;
-            if (FileUtil.isExistFile(dataDir + "/proguard") && new ProguardHandler(scId).isShrinkingEnabled()) {
-                setBadge(R.id.item_code_shrinking_manager, "Enabled", true);
+            if (FileUtil.isExistFile(dataDir + "/proguard")) {
+                switch (new ProguardHandler(scId).getMode()) {
+                    case SAFE -> setBadge(R.id.item_code_shrinking_manager, "Smaller", true);
+                    case MAX -> setBadge(R.id.item_code_shrinking_manager, "Protected", true);
+                    default -> {
+                    }
+                }
             }
             if (FileUtil.isExistFile(dataDir + "/stringfog") && new StringfogHandler(scId).isStringfogEnabled()) {
                 setBadge(R.id.item_stringfog_manager, "Enabled", true);
