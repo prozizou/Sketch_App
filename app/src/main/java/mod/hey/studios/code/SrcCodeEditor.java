@@ -70,6 +70,10 @@ import pro.sketchware.utility.UI;
 
 public class SrcCodeEditor extends BaseAppCompatActivity {
     public static final String FLAG_FROM_ANDROID_MANIFEST = "from_android_manifest";
+    /** 1-based line to put the cursor on when opening, 0 or absent for none. */
+    public static final String EXTRA_LINE = "line";
+    /** 1-based column on {@link #EXTRA_LINE}, 0 or absent for the start of the line. */
+    public static final String EXTRA_COLUMN = "column";
     public static final List<Pair<String, Class<? extends EditorColorScheme>>> KNOWN_COLOR_SCHEMES = List.of(
             new Pair<>("Default", EditorColorScheme.class),
             new Pair<>("GitHub", SchemeGitHub.class),
@@ -274,6 +278,16 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                 .show();
     }
 
+    private void moveToRequestedLine() {
+        int line = getIntent().getIntExtra(EXTRA_LINE, 0);
+        if (line <= 0) return;
+
+        int zeroBasedLine = Math.min(line, binding.editor.getLineCount()) - 1;
+        int lineLength = binding.editor.getText().getColumnCount(zeroBasedLine);
+        int column = Math.min(Math.max(getIntent().getIntExtra(EXTRA_COLUMN, 0) - 1, 0), lineLength);
+        binding.editor.setSelection(zeroBasedLine, column);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
@@ -306,6 +320,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         if (!fromAndroidManifest)
             beforeContent = FileUtil.readFile(getIntent().getStringExtra("content"));
         binding.editor.setText(beforeContent);
+        binding.editor.post(this::moveToRequestedLine);
 
         if (title.endsWith(".java")) {
             binding.editor.setEditorLanguage(new JavaLanguage());

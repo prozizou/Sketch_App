@@ -2,19 +2,28 @@ package mod.hey.studios.util;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.view.View;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 
 import com.google.android.material.color.MaterialColors;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import mod.jbk.diagnostic.CompileDiagnosticParser.Diagnostic;
 import pro.sketchware.R;
 
 public class CompileLogHelper {
+    public interface OnDiagnosticClickListener {
+        void onDiagnosticClick(Diagnostic diagnostic);
+    }
+
     private static final String TAG = "CompileLogHelper";
     private static final Pattern ERROR_PATTERN = Pattern.compile("----------\n([0-9]+\\. ERROR)", Pattern.MULTILINE);
     private static final Pattern WARNING_PATTERN = Pattern.compile("----------\n([0-9]+\\. WARNING)", Pattern.MULTILINE);
@@ -35,6 +44,29 @@ public class CompileLogHelper {
         Matcher xmlMatcher = XML_PATTERN.matcher(logs);
         applyStyleForXml(spannable, xmlMatcher, errorColor);
 
+        return spannable;
+    }
+
+    /**
+     * Same as {@link #getColoredLogs(Context, String)}, but also makes the file location of each
+     * diagnostic clickable.
+     */
+    public static SpannableString getColoredLogs(Context context, String logs, List<Diagnostic> diagnostics, OnDiagnosticClickListener listener) {
+        SpannableString spannable = getColoredLogs(context, logs);
+        for (Diagnostic diagnostic : diagnostics) {
+            if (diagnostic.start() < 0 || diagnostic.end() > logs.length() || diagnostic.start() >= diagnostic.end()) continue;
+            spannable.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(View widget) {
+                    listener.onDiagnosticClick(diagnostic);
+                }
+
+                @Override
+                public void updateDrawState(TextPaint ds) {
+                    ds.setUnderlineText(true);
+                }
+            }, diagnostic.start(), diagnostic.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         return spannable;
     }
 
