@@ -12,10 +12,14 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.besome.sketch.beans.BlockBean;
 import com.google.android.material.card.MaterialCardView;
+
+import java.util.ArrayList;
 
 import a.a.a.Rs;
 import a.a.a.Ts;
+import a.a.a.Us;
 import a.a.a.wB;
 import pro.sketchware.R;
 import pro.sketchware.databinding.PaletteBlockBinding;
@@ -60,6 +64,18 @@ public class PaletteBlock extends LinearLayout {
         card.setContentPadding(padding, padding, padding, padding);
         card.addView(blockView);
         binding.blockBuilder.addView(card);
+    }
+
+    /**
+     * Adds a ready-made group of blocks to the palette. Dropping it places every block of the group at once,
+     * exactly like an entry of the block collection.
+     */
+    public Us addBlockGroup(String name, ArrayList<BlockBean> blocks) {
+        BlockBean first = blocks.get(0);
+        Us group = new Us(context, first.type, first.typeName, first.opCode, name, blocks);
+        group.setContentDescription(name);
+        addBlockCard(group);
+        return group;
     }
 
     public Ts a(String var1, String var2, String var3) {

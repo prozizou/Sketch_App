@@ -102,6 +102,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private TextView dropHint;
     private TextView zoomLabel;
     private float previewZoom = 1f;
+    private float paletteWidthDp = SidebarWidth.DEFAULT_DP;
+    private android.view.ScaleGestureDetector pinchDetector;
     private String a;
     private LinearLayout aa;
     private String b;
@@ -113,6 +115,9 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private int displayHeight;
     private PaletteFavorite paletteFavorite;
     private LinearLayout bgStatus;
+    private ImageView phoneFrame;
+    private PhoneFrame currentFrame = PhoneFrame.byKey(PhoneFrame.DEFAULT_KEY);
+    private android.content.SharedPreferences uiPrefs;
     private TextView fileName;
     private ImageView imgPhoneTopBg;
     private LinearLayout toolbar;
@@ -516,11 +521,18 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
      * search field. The preview scale is recomputed from the palette's current width in {@link #a()}.
      */
     private void setupWidgetPaletteUi(Context context) {
+        dip = wB.a(context, 1.0f); // the rest of initialize() sets it later, but the sidebar needs it now
         palettePanel = findViewById(R.id.layout_palette);
         togglePaletteButton = findViewById(R.id.btn_toggle_palette);
         android.content.SharedPreferences prefs = context.getSharedPreferences("view_editor_ui", Context.MODE_PRIVATE);
+        uiPrefs = prefs;
+        currentFrame = PhoneFrame.byKey(prefs.getString("phone_frame", PhoneFrame.DEFAULT_KEY));
         paletteExpanded = prefs.getBoolean("palette_expanded", true);
+        paletteWidthDp = SidebarWidth.clampDp(prefs.getFloat("palette_width_dp", SidebarWidth.DEFAULT_DP));
+        applyPaletteWidth();
         applyPaletteExpanded();
+        setupPaletteResize(prefs);
+        setupPinchZoom(context);
         togglePaletteButton.setOnClickListener(v -> {
             paletteExpanded = !paletteExpanded;
             prefs.edit().putBoolean("palette_expanded", paletteExpanded).apply();
@@ -536,6 +548,87 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         findViewById(R.id.btn_vzoom_out).setOnClickListener(v -> setPreviewZoom(previewZoom - 0.25f));
         findViewById(R.id.btn_vfit).setOnClickListener(v -> setPreviewZoom(1f));
         findViewById(R.id.btn_focus_preview).setOnClickListener(v -> setFocusPreview(!focusPreview));
+        findViewById(R.id.btn_phone_frame).setOnClickListener(v -> showPhoneFramePicker());
+        // The zoom bar can be moved off the preview; where it was left is remembered.
+        new FloatingBarDragger(findViewById(R.id.view_canvas_controls), findViewById(R.id.view_canvas_controls_handle),
+                this, "view_zoom_bar", 8 * dip, 6 * dip);
+    }
+
+    /** Applies the sidebar width to the panel; a narrow sidebar keeps only the "+" of "+ Widget". */
+    private void applyPaletteWidth() {
+        ViewGroup.LayoutParams params = palettePanel.getLayoutParams();
+        params.width = Math.round(paletteWidthDp * dip);
+        palettePanel.setLayoutParams(params);
+        View label = palettePanel.findViewById(R.id.tv_new_widget);
+        if (label != null) {
+            label.setVisibility(SidebarWidth.showsLabel(paletteWidthDp) ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /** Drag the grabber on the sidebar's edge to make it narrower or wider; the width is remembered. */
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupPaletteResize(android.content.SharedPreferences prefs) {
+        View handle = findViewById(R.id.palette_resize_handle);
+        final float[] grab = new float[2];
+        handle.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN -> {
+                    grab[0] = event.getRawX();
+                    grab[1] = paletteWidthDp;
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                }
+                case MotionEvent.ACTION_MOVE -> {
+                    paletteWidthDp = SidebarWidth.clampDp(grab[1] + (event.getRawX() - grab[0]) / dip);
+                    applyPaletteWidth();
+                    isLayoutChanged = true;
+                    requestLayout();
+                    return true;
+                }
+                case MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    prefs.edit().putFloat("palette_width_dp", paletteWidthDp).apply();
+                    return true;
+                }
+                default -> {
+                    return false;
+                }
+            }
+        });
+    }
+
+    /** Two fingers zoom the preview smoothly; one finger still drags widgets as before. */
+    private void setupPinchZoom(Context context) {
+        pinchDetector = new android.view.ScaleGestureDetector(context,
+                new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                    @Override
+                    public boolean onScale(android.view.ScaleGestureDetector detector) {
+                        setPreviewZoom(previewZoom * detector.getScaleFactor(), false);
+                        return true;
+                    }
+                });
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (pinchDetector != null) {
+            pinchDetector.onTouchEvent(ev);
+            if (pinchDetector.isInProgress() || ev.getPointerCount() > 1) {
+                return true;
+            }
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (pinchDetector != null) {
+            pinchDetector.onTouchEvent(event);
+            if (pinchDetector.isInProgress() || event.getPointerCount() > 1) {
+                return true;
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     /**
@@ -544,7 +637,12 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
      * placement stays consistent; at other-than-100% the phone may sit off-centre (no scroll).
      */
     private void setPreviewZoom(float zoom) {
-        previewZoom = Math.max(0.5f, Math.min(2.0f, Math.round(zoom * 4f) / 4f));
+        setPreviewZoom(zoom, true);
+    }
+
+    /** {@code snap} rounds to quarter steps (buttons); a pinch zooms continuously. */
+    private void setPreviewZoom(float zoom, boolean snap) {
+        previewZoom = Math.max(0.5f, Math.min(2.0f, snap ? Math.round(zoom * 4f) / 4f : zoom));
         if (zoomLabel != null) zoomLabel.setText(Math.round(previewZoom * 100) + "%");
         isLayoutChanged = true;
         requestLayout();
@@ -688,6 +786,15 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         viewPane.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, displayHeight));
         viewPane.setOnTouchListener(this);
         shape.addView(viewPane);
+
+        // The phone's bezel sits over the preview; it is see-through and never takes touches.
+        phoneFrame = new ImageView(context);
+        showPhoneFrame(currentFrame);
+        phoneFrame.setScaleType(ImageView.ScaleType.FIT_XY);
+        phoneFrame.setClickable(false);
+        phoneFrame.setFocusable(false);
+        phoneFrame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        shape.addView(phoneFrame, new FrameLayout.LayoutParams(0, 0));
 
         dropHint = new TextView(context);
         dropHint.setText(R.string.view_drop_components_here);
@@ -1004,9 +1111,17 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         boolean isLandscapeMode = displayWidth > displayHeight;
         int var4 = (int) (dip * (!isLandscapeMode ? 12.0F : 24.0F));
         int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
+        // A frame with thick bezels (an old phone's chin, say) takes its room from the preview.
+        float frameScale = phoneFrameScale();
+        if (currentFrame != null) {
+            var4 = Math.max(var4, (int) Math.ceil(Math.max(currentFrame.insetLeft(), currentFrame.insetRight()) * frameScale) + 2);
+            var5 = Math.max(var5, (int) Math.ceil(Math.max(currentFrame.insetTop(), currentFrame.insetBottom()) * frameScale) + 2);
+        }
+        final int marginX = var4;
+        final int marginY = var5;
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
-        int var9 = displayWidth - (paletteExpanded ? (int) (88.0F * dip) : 0);
+        int var9 = displayWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
         int var8 = displayHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
         if (screenType == 0 && da) {
             Log.d("ViewEditor", "hmmm");
@@ -1064,7 +1179,138 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         var11 = var5;
         viewPane.setX(var10);
         viewPane.setY(var8 - (int) ((var11 - var3 * var11) / 2.0F));
+        updatePhoneFrame(marginX, marginY, displayWidth * var3, displayHeight * var3);
         isLayoutChanged = false;
+    }
+
+    /** Scale of the frame picture: a side bezel of about 7dp, top and bottom never thicker than 40dp. */
+    private float phoneFrameScale() {
+        if (currentFrame == null) {
+            return 0f;
+        }
+        return PhoneFrameDrawable.scaleFor(currentFrame, 7 * dip, 40 * dip);
+    }
+
+    /** Puts the phone bezel around the preview's screen. */
+    private void updatePhoneFrame(int screenLeft, int screenTop, float screenWidth, float screenHeight) {
+        if (currentFrame == null || !(phoneFrame.getDrawable() instanceof PhoneFrameDrawable drawable)) {
+            return;
+        }
+        float scale = phoneFrameScale();
+        drawable.setScale(scale);
+        android.graphics.RectF outer = PhoneFrameDrawable.outerBounds(currentFrame, screenLeft, screenTop, screenWidth, screenHeight, scale);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) phoneFrame.getLayoutParams();
+        int width = Math.round(outer.width());
+        int height = Math.round(outer.height());
+        if (params.width != width || params.height != height) {
+            params.width = width;
+            params.height = height;
+            phoneFrame.setLayoutParams(params);
+        }
+        phoneFrame.setX(outer.left);
+        phoneFrame.setY(outer.top);
+    }
+
+    /** Shows {@code frame} around the preview, or nothing for {@code null}. */
+    private void showPhoneFrame(PhoneFrame frame) {
+        currentFrame = frame;
+        if (frame == null) {
+            phoneFrame.setImageDrawable(null);
+            phoneFrame.setVisibility(View.GONE);
+        } else {
+            phoneFrame.setImageDrawable(new PhoneFrameDrawable(getResources(), frame));
+            phoneFrame.setVisibility(View.VISIBLE);
+        }
+        isLayoutChanged = true;
+        requestLayout();
+    }
+
+    private void choosePhoneFrame(PhoneFrame frame) {
+        if (uiPrefs != null) {
+            uiPrefs.edit().putString("phone_frame", frame == null ? PhoneFrame.NONE_KEY : frame.key()).apply();
+        }
+        showPhoneFrame(frame);
+    }
+
+    /** A grid of the available frames (and "no frame") to pick from. */
+    private void showPhoneFramePicker() {
+        Context context = getContext();
+        android.widget.GridLayout grid = new android.widget.GridLayout(context);
+        grid.setColumnCount(3);
+        int pad = (int) (12 * dip);
+        grid.setPadding(pad, pad, pad, pad);
+
+        androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        java.util.ArrayList<PhoneFrame> options = new java.util.ArrayList<>();
+        options.add(null);
+        options.addAll(PhoneFrame.ALL);
+        for (PhoneFrame option : options) {
+            grid.addView(phoneFrameChoice(context, option, option == currentFrame, () -> {
+                choosePhoneFrame(option);
+                if (dialog[0] != null) dialog[0].dismiss();
+            }));
+        }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(context);
+        scroll.addView(grid);
+        dialog[0] = new com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.phone_frame_title)
+                .setView(scroll)
+                .setNegativeButton(R.string.common_word_cancel, null)
+                .create();
+        dialog[0].show();
+    }
+
+    private View phoneFrameChoice(Context context, PhoneFrame frame, boolean selected, Runnable onChoose) {
+        int cell = (int) (92 * dip);
+        MaterialCardView card = new MaterialCardView(context);
+        card.setCardBackgroundColor(com.google.android.material.color.MaterialColors.getColor(card, R.attr.colorSurfaceContainerHigh));
+        card.setRadius(12 * dip);
+        card.setCardElevation(0f);
+        card.setStrokeWidth((int) ((selected ? 2 : 1) * dip));
+        card.setStrokeColor(com.google.android.material.color.MaterialColors.getColor(card,
+                selected ? androidx.appcompat.R.attr.colorPrimary : R.attr.colorOutlineVariant));
+        card.setClickable(true);
+        card.setOnClickListener(v -> onChoose.run());
+
+        LinearLayout content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        int inner = (int) (6 * dip);
+        content.setPadding(inner, inner, inner, inner);
+
+        ImageView thumb = new ImageView(context);
+        thumb.setLayoutParams(new LinearLayout.LayoutParams((int) (52 * dip), (int) (96 * dip)));
+        thumb.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        if (frame != null) {
+            thumb.setImageResource(frame.drawableRes());
+        } else {
+            thumb.setImageResource(R.drawable.ic_mtrl_close);
+            thumb.setPadding((int) (14 * dip), (int) (30 * dip), (int) (14 * dip), (int) (30 * dip));
+            thumb.setColorFilter(com.google.android.material.color.MaterialColors.getColor(card, R.attr.colorOnSurfaceVariant));
+        }
+        content.addView(thumb);
+
+        TextView label = new TextView(context);
+        label.setGravity(Gravity.CENTER);
+        label.setMaxLines(2);
+        label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        label.setTextSize(11f);
+        label.setTextColor(com.google.android.material.color.MaterialColors.getColor(card, R.attr.colorOnSurface));
+        label.setText(frame == null ? context.getString(R.string.phone_frame_none) : phoneFrameName(context, frame));
+        content.addView(label);
+
+        card.addView(content);
+        android.widget.GridLayout.LayoutParams params = new android.widget.GridLayout.LayoutParams();
+        params.width = cell;
+        params.setMargins((int) (4 * dip), (int) (4 * dip), (int) (4 * dip), (int) (4 * dip));
+        card.setLayoutParams(params);
+        return card;
+    }
+
+    static String phoneFrameName(Context context, PhoneFrame frame) {
+        return frame.labelNumber() > 0
+                ? context.getString(frame.labelRes(), frame.labelNumber())
+                : context.getString(frame.labelRes());
     }
 
     public void addWidgetLayout(PaletteWidget.a aVar, String str) {

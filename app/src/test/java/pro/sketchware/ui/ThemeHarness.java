@@ -84,7 +84,7 @@ final class ThemeHarness {
     }
 
     /** Gives the app what a real launch would: the application context and the storage permission. */
-    private static void prepareApplication() throws Exception {
+    static void prepareApplication() throws Exception {
         Application app = ApplicationProvider.getApplicationContext();
         Field context = SketchApplication.class.getDeclaredField("mApplicationContext");
         context.setAccessible(true);

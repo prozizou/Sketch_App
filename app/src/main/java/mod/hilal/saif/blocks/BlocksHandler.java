@@ -10,6 +10,7 @@ import java.util.HashMap;
 import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.R;
 import pro.sketchware.blocks.ExtraBlocks;
+import pro.sketchware.blocks.MultiBranchChain;
 import pro.sketchware.utility.ThemeUtils;
 
 public class BlocksHandler {
@@ -2770,6 +2771,7 @@ public class BlocksHandler {
         logicEditorActivity.a("e", "ifElse");
         logicEditorActivity.a("c", "elseIf");
         logicEditorActivity.a("c", "else");
+        logicEditorActivity.addBlockGroup(MultiBranchChain.NAME, MultiBranchChain.create());
         if (showBuiltIn()) {
             logicEditorActivity.a("b", "instanceOfOperator");
             logicEditorActivity.a("b", "isEmpty");

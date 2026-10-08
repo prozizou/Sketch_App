@@ -34,10 +34,13 @@
                 <com.google.android.material.tabs.TabLayout
                     android:id="@+id/tab_layout"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="38dp"
                     android:background="@android:color/transparent"
                     app:tabIndicatorColor="@color/event_accent"
-                    app:tabSelectedTextColor="@color/event_accent" />
+                    app:tabIndicatorFullWidth="false"
+                    app:tabIndicatorHeight="2dp"
+                    app:tabSelectedTextColor="@color/event_accent"
+                    app:tabTextColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.divider.MaterialDivider
                     android:layout_width="match_parent"
@@ -100,8 +103,7 @@
                 android:background="?attr/colorSurfaceContainer"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingTop="2dp"
-                android:paddingBottom="6dp">
+                android:paddingVertical="4dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/file_name_container"
