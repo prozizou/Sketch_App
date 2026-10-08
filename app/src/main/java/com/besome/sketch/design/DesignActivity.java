@@ -1347,11 +1347,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                             // A stale path to a local library: repairing re-reads what is really installed.
                             dialog.setNegativeButton(R.string.library_repair_action, (v, which) -> {
                                 v.dismiss();
-                                var repair = dev.aldi.sayuti.editor.manage.LocalLibrariesUtil.repairProjectLibraries(DesignActivity.sc_id);
-                                SketchwareUtil.toast(repair.changedAnything()
-                                        ? activity.getString(R.string.library_repair_done, String.join(", ", repair.repaired))
-                                        + (repair.removed.isEmpty() ? "" : "\n" + activity.getString(R.string.library_repair_removed, String.join(", ", repair.removed)))
-                                        : activity.getString(R.string.library_repair_ok, repair.healthy));
+                                Intent repair = new Intent(activity, dev.aldi.sayuti.editor.manage.ManageLocalLibraryActivity.class);
+                                repair.putExtra("sc_id", DesignActivity.sc_id);
+                                repair.putExtra("repair", true);
+                                activity.startActivity(repair);
                             });
                         }
                     } else {

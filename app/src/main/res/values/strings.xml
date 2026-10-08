@@ -1025,7 +1025,15 @@ ACTION_VIEW
     <string name="library_repair_action">Repair libraries</string>
     <string name="library_repair_ok">All the libraries of this project are in place (%1$d).</string>
     <string name="library_repair_done">Repaired: %1$s</string>
-    <string name="library_repair_removed">Not installed anymore, removed from the project: %1$s. Download them again to use them.</string>
+    <string name="library_repair_removed">Not installed anymore, removed from the project: %1$s.</string>
+    <string name="library_repair_missing">These libraries are not on this phone anymore: %1$s.\n\nSearch for them on the internet and download the most suitable version?</string>
+    <string name="library_repair_search">Search online</string>
+    <string name="library_repair_remove">Remove from project</string>
+    <string name="library_repair_cancel">Cancel</string>
+    <string name="library_repair_download">Download</string>
+    <string name="library_repair_downloaded">Downloaded again: %1$s</string>
+    <string name="library_repair_not_found">not found online</string>
+    <string name="library_repair_offline">Could not reach the internet to look the libraries up (%1$s).</string>
     <string name="library_repair_title">Library check</string>
     <string name="library_repair_close">OK</string>
 </resources>

@@ -25,6 +25,8 @@ public class LocalLibrariesRepair {
         public final List<String> repaired = new ArrayList<>();
         /** Libraries that are no longer installed: they cannot be used until downloaded again. */
         public final List<String> removed = new ArrayList<>();
+        /** The project's entries of those libraries, kept so they can be searched for online. */
+        public final List<HashMap<String, Object>> missing = new ArrayList<>();
         public int healthy;
 
         public boolean changedAnything() {
@@ -43,6 +45,7 @@ public class LocalLibrariesRepair {
             File folder = new File(localLibsRoot, name);
             if (!folder.isDirectory()) {
                 result.removed.add(name);
+                result.missing.add(entry);
                 continue;
             }
             Object dependency = entry.get("dependency");

@@ -40,13 +40,13 @@ public class LocalLibrariesUtil {
         return localLibraries;
     }
 
-    /** Repairs the libraries used by the project, saves the result and tells what was done. */
-    public static LocalLibrariesRepair.Result repairProjectLibraries(String scId) {
-        LocalLibrariesRepair.Result result = LocalLibrariesRepair.repair(getLocalLibsRoot(), getLocalLibraries(scId));
-        if (result.changedAnything()) {
-            rewriteLocalLibFile(scId, new Gson().toJson(result.libraries));
-        }
-        return result;
+    /** Checks the libraries used by the project against the files on the device; nothing is saved yet. */
+    public static LocalLibrariesRepair.Result checkProjectLibraries(String scId) {
+        return LocalLibrariesRepair.repair(getLocalLibsRoot(), getLocalLibraries(scId));
+    }
+
+    public static void saveRepairedLibraries(String scId, List<HashMap<String, Object>> libraries) {
+        rewriteLocalLibFile(scId, new Gson().toJson(libraries));
     }
 
     public static ArrayList<HashMap<String, Object>> getLocalLibraries(String scId) {

@@ -233,6 +233,9 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
         });
 
         runLoadLocalLibrariesTask();
+        if (getIntent().getBooleanExtra("repair", false) && !notAssociatedWithProject) {
+            binding.getRoot().post(this::repairLibraries);
+        }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -248,32 +251,140 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
         });
     }
 
-    /** Rebuilds the stored paths of the libraries the project uses and tells the user what was done. */
+    /** Rebuilds the stored paths of the libraries the project uses and offers to download the missing ones. */
     private void repairLibraries() {
         k();
         Executors.newSingleThreadExecutor().execute(() -> {
-            var result = LocalLibrariesUtil.repairProjectLibraries(scId);
+            var result = LocalLibrariesUtil.checkProjectLibraries(scId);
             runOnUiThread(() -> {
                 h();
-                StringBuilder message = new StringBuilder();
-                if (!result.repaired.isEmpty()) {
-                    message.append(getString(R.string.library_repair_done, String.join(", ", result.repaired)));
+                if (result.missing.isEmpty()) {
+                    LocalLibrariesUtil.saveRepairedLibraries(scId, result.libraries);
+                    showRepairReport(result, new ArrayList<>());
+                } else {
+                    askAboutMissingLibraries(result);
                 }
-                if (!result.removed.isEmpty()) {
-                    if (message.length() > 0) message.append("\n\n");
-                    message.append(getString(R.string.library_repair_removed, String.join(", ", result.removed)));
+            });
+        });
+    }
+
+    private void askAboutMissingLibraries(LocalLibrariesRepair.Result result) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.library_repair_title)
+                .setMessage(getString(R.string.library_repair_missing, String.join(", ", result.removed)))
+                .setPositiveButton(R.string.library_repair_search, (dialog, which) -> planOnlineRepair(result))
+                .setNeutralButton(R.string.library_repair_remove, (dialog, which) -> {
+                    LocalLibrariesUtil.saveRepairedLibraries(scId, result.libraries);
+                    showRepairReport(result, new ArrayList<>());
+                })
+                .setNegativeButton(R.string.library_repair_cancel, null)
+                .show();
+    }
+
+    /** Looks the missing libraries up on the internet, then lets the user confirm what will be downloaded. */
+    private void planOnlineRepair(LocalLibrariesRepair.Result result) {
+        k();
+        Executors.newSingleThreadExecutor().execute(() -> {
+            var finder = new OnlineLibraryFinder();
+            var plans = new ArrayList<OnlineLibraryFinder.Plan>();
+            String error = null;
+            for (var entry : result.missing) {
+                try {
+                    plans.add(finder.plan(entry));
+                } catch (java.io.IOException e) {
+                    error = e.getMessage();
+                    break;
                 }
-                if (message.length() == 0) {
-                    message.append(getString(R.string.library_repair_ok, result.healthy));
+            }
+            String networkError = error;
+            runOnUiThread(() -> {
+                h();
+                if (networkError != null) {
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.library_repair_title)
+                            .setMessage(getString(R.string.library_repair_offline, networkError))
+                            .setPositiveButton(R.string.library_repair_close, null)
+                            .show();
+                    return;
                 }
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.library_repair_title)
-                        .setMessage(message)
-                        .setPositiveButton(R.string.library_repair_close, null)
-                        .show();
+                confirmOnlineRepair(result, plans);
+            });
+        });
+    }
+
+    private void confirmOnlineRepair(LocalLibrariesRepair.Result result, List<OnlineLibraryFinder.Plan> plans) {
+        StringBuilder message = new StringBuilder();
+        var toDownload = new ArrayList<OnlineLibraryFinder.Plan>();
+        for (var plan : plans) {
+            if (plan.found()) {
+                toDownload.add(plan);
+                message.append("• ").append(plan.libraryName).append(" → ").append(plan.coordinate()).append('\n');
+            } else {
+                message.append("• ").append(plan.libraryName).append(" → ").append(getString(R.string.library_repair_not_found)).append('\n');
+            }
+        }
+        var builder = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.library_repair_title)
+                .setMessage(message.toString().trim())
+                .setNegativeButton(R.string.library_repair_cancel, null);
+        if (toDownload.isEmpty()) {
+            builder.setPositiveButton(R.string.library_repair_remove, (dialog, which) -> {
+                LocalLibrariesUtil.saveRepairedLibraries(scId, result.libraries);
+                showRepairReport(result, new ArrayList<>());
+            });
+        } else {
+            builder.setPositiveButton(R.string.library_repair_download, (dialog, which) -> downloadMissingLibraries(result, toDownload));
+        }
+        builder.show();
+    }
+
+    private void downloadMissingLibraries(LocalLibrariesRepair.Result result, List<OnlineLibraryFinder.Plan> plans) {
+        k();
+        Executors.newSingleThreadExecutor().execute(() -> {
+            var libraries = new ArrayList<>(result.libraries);
+            var downloaded = new ArrayList<String>();
+            for (var plan : plans) {
+                var names = LibraryRedownloader.download(plan, buildSettings);
+                if (names == null) {
+                    continue;
+                }
+                for (String name : names) {
+                    libraries.add(createLibraryMap(name, plan.coordinate()));
+                }
+                downloaded.add(plan.coordinate());
+            }
+            // Whatever could not be downloaded is dropped from the project: it would only break the build.
+            LocalLibrariesUtil.saveRepairedLibraries(scId, libraries);
+            runOnUiThread(() -> {
+                h();
+                showRepairReport(result, downloaded);
                 runLoadLocalLibrariesTask();
             });
         });
+    }
+
+    private void showRepairReport(LocalLibrariesRepair.Result result, List<String> downloaded) {
+        StringBuilder message = new StringBuilder();
+        if (!result.repaired.isEmpty()) {
+            message.append(getString(R.string.library_repair_done, String.join(", ", result.repaired)));
+        }
+        if (!downloaded.isEmpty()) {
+            if (message.length() > 0) message.append("\n\n");
+            message.append(getString(R.string.library_repair_downloaded, String.join(", ", downloaded)));
+        }
+        if (!result.removed.isEmpty() && downloaded.size() < result.removed.size()) {
+            if (message.length() > 0) message.append("\n\n");
+            message.append(getString(R.string.library_repair_removed, String.join(", ", result.removed)));
+        }
+        if (message.length() == 0) {
+            message.append(getString(R.string.library_repair_ok, result.healthy));
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.library_repair_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.library_repair_close, null)
+                .show();
+        runLoadLocalLibrariesTask();
     }
 
     private void runLoadLocalLibrariesTask() {
