@@ -46,7 +46,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import a.a.a.Lx;
-import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.component.EditorAutoCompletion;
@@ -59,6 +58,9 @@ import io.github.rosemoe.sora.widget.schemes.SchemeVS2019;
 import mod.hey.studios.util.Helper;
 import mod.jbk.code.CodeEditorColorSchemes;
 import mod.jbk.code.CodeEditorLanguages;
+import mod.jbk.code.completion.ClassIndex;
+import mod.jbk.code.completion.SketchJavaLanguage;
+import mod.jbk.code.diagnostics.LiveDiagnostics;
 import pro.sketchware.R;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
 import pro.sketchware.databinding.CodeEditorHsBinding;
@@ -70,6 +72,10 @@ import pro.sketchware.utility.UI;
 
 public class SrcCodeEditor extends BaseAppCompatActivity {
     public static final String FLAG_FROM_ANDROID_MANIFEST = "from_android_manifest";
+    /** 1-based line to put the cursor on when opening, 0 or absent for none. */
+    public static final String EXTRA_LINE = "line";
+    /** 1-based column on {@link #EXTRA_LINE}, 0 or absent for the start of the line. */
+    public static final String EXTRA_COLUMN = "column";
     public static final List<Pair<String, Class<? extends EditorColorScheme>>> KNOWN_COLOR_SCHEMES = List.of(
             new Pair<>("Default", EditorColorScheme.class),
             new Pair<>("GitHub", SchemeGitHub.class),
@@ -85,6 +91,8 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     private boolean fromAndroidManifest;
     private String scId;
     private String activityName;
+    /** Underlines problems in Java files, null for other file types. */
+    private LiveDiagnostics liveDiagnostics;
 
     public static void loadCESettings(Context c, CodeEditor ed, String prefix) {
         loadCESettings(c, ed, prefix, false);
@@ -122,10 +130,17 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     }
 
     public static void selectLanguage(CodeEditor ed, int which) {
+        selectLanguage(ed, which, null);
+    }
+
+    /**
+     * @param scId the project the file belongs to, so Java completion can suggest its classes; may be null
+     */
+    public static void selectLanguage(CodeEditor ed, int which, String scId) {
         switch (which) {
             default:
             case 0:
-                ed.setEditorLanguage(new JavaLanguage());
+                ed.setEditorLanguage(new SketchJavaLanguage(ed.getContext(), scId));
                 languageId = 0;
                 break;
 
@@ -274,6 +289,16 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                 .show();
     }
 
+    private void moveToRequestedLine() {
+        int line = getIntent().getIntExtra(EXTRA_LINE, 0);
+        if (line <= 0) return;
+
+        int zeroBasedLine = Math.min(line, binding.editor.getLineCount()) - 1;
+        int lineLength = binding.editor.getText().getColumnCount(zeroBasedLine);
+        int column = Math.min(Math.max(getIntent().getIntExtra(EXTRA_COLUMN, 0) - 1, 0), lineLength);
+        binding.editor.setSelection(zeroBasedLine, column);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
@@ -306,10 +331,14 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         if (!fromAndroidManifest)
             beforeContent = FileUtil.readFile(getIntent().getStringExtra("content"));
         binding.editor.setText(beforeContent);
+        binding.editor.post(this::moveToRequestedLine);
 
         if (title.endsWith(".java")) {
-            binding.editor.setEditorLanguage(new JavaLanguage());
+            binding.editor.setEditorLanguage(new SketchJavaLanguage(this, ClassIndex.projectIdOfJavaFile(getIntent().getStringExtra("content"))));
             languageId = 0;
+            liveDiagnostics = new LiveDiagnostics(binding.editor, (errors, warnings) -> binding.toolbar.setSubtitle(
+                    errors + warnings == 0 ? null : errors + " errors, " + warnings + " warnings"));
+            liveDiagnostics.setEnabled(getSharedPreferences("hsce", Activity.MODE_PRIVATE).getBoolean("act_diag", true));
         } else if (title.endsWith(".kt")) {
             binding.editor.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_KOTLIN));
             binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_DRACULA));
@@ -398,6 +427,10 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                 toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Layout Preview");
             }
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Find & Replace");
+            if (liveDiagnostics != null) {
+                toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Next problem");
+                toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Live diagnostics").setCheckable(true).setChecked(local_pref.getBoolean("act_diag", true));
+            }
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Word wrap").setCheckable(true).setChecked(local_pref.getBoolean("act_ww", false));
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Pretty print");
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Select language");
@@ -459,7 +492,12 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
 
                     case "Select language":
                         showSwitchLanguageDialog(this, binding.editor, (dialog, which) -> {
-                            selectLanguage(binding.editor, which);
+                            selectLanguage(binding.editor, which, ClassIndex.projectIdOfJavaFile(getIntent().getStringExtra("content")));
+                            if (liveDiagnostics != null) {
+                                boolean wanted = which == 0 && getSharedPreferences("hsce", Activity.MODE_PRIVATE).getBoolean("act_diag", true);
+                                liveDiagnostics.setEnabled(wanted);
+                                if (!wanted) binding.toolbar.setSubtitle(null);
+                            }
                             dialog.dismiss();
                         });
                         break;
@@ -522,12 +560,31 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                         toLayoutPreview();
                         break;
 
+                    case "Next problem":
+                        if (liveDiagnostics == null || !liveDiagnostics.goToNextProblem()) {
+                            SketchwareUtil.toast("No problems found");
+                        }
+                        break;
+
+                    case "Live diagnostics":
+                        item.setChecked(!item.isChecked());
+                        pref.edit().putBoolean("act_diag", item.isChecked()).apply();
+                        if (liveDiagnostics != null) liveDiagnostics.setEnabled(item.isChecked());
+                        if (!item.isChecked()) binding.toolbar.setSubtitle(null);
+                        break;
+
                     default:
                         return false;
                 }
                 return true;
             });
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (liveDiagnostics != null) liveDiagnostics.destroy();
+        super.onDestroy();
     }
 
     @Override

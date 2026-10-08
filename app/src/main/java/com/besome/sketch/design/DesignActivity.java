@@ -127,6 +127,10 @@ import pro.sketchware.activities.editor.command.ManageXMLCommandActivity;
 import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.editor.view.ViewCodeEditorActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
+import pro.sketchware.activities.search.ProjectSearchActivity;
+import pro.sketchware.activities.git.ProjectGitActivity;
+import pro.sketchware.activities.snapshots.AutoSnapshots;
+import pro.sketchware.activities.snapshots.ProjectSnapshotsActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;
 import pro.sketchware.dialogs.BuildSettingsBottomSheet;
@@ -172,6 +176,13 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private TextView fileName;
     private String currentJavaFileName;
     private ViewEditorFragment viewTabAdapter;
+    private final ActivityResultLauncher<Intent> openSnapshots = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() == ProjectSnapshotsActivity.RESULT_RESTORED) { // also what the Git screen answers
+            // The project on disk was just replaced: leave without saving what is still in memory
+            SketchwareUtil.toast("Snapshot restored. Open the project again to continue.");
+            finish();
+        }
+    });
     private final ActivityResultLauncher<Intent> openCollectionManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             if (viewTabAdapter != null) {
@@ -989,6 +1000,42 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     /**
      * Opens {@link LogReaderActivity}.
      */
+    void toProjectSearch() {
+        Intent intent = new Intent(getApplicationContext(), ProjectSearchActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
+    }
+
+    /**
+     * Saves the project, then runs {@code action}, so screens that work on the project's files on disk
+     * see the latest changes. Doesn't save while a build is running.
+     */
+    private void saveThen(Runnable action) {
+        boolean building = currentBuildTask != null && !currentBuildTask.isBuildFinished && !currentBuildTask.canceled;
+        if (!projectLoaded || building) {
+            action.run();
+        } else {
+            new SilentProjectSaver(this, action).execute();
+        }
+    }
+
+    void toSnapshots() {
+        saveThen(() -> {
+            Intent intent = new Intent(getApplicationContext(), ProjectSnapshotsActivity.class);
+            intent.putExtra("sc_id", sc_id);
+            openSnapshots.launch(intent);
+        });
+    }
+
+    void toGit() {
+        saveThen(() -> {
+            Intent intent = new Intent(getApplicationContext(), ProjectGitActivity.class);
+            intent.putExtra("sc_id", sc_id);
+            openSnapshots.launch(intent);
+        });
+    }
+
     void toLogReader() {
         Intent intent = new Intent(getApplicationContext(), LogReaderActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -1203,6 +1250,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             DesignActivity activity = getActivity();
             if (activity == null) return;
 
+            AutoSnapshots.beforeBuild(DesignActivity.sc_id);
             long startedAt = System.currentTimeMillis();
             String outcome = null;
             String detail = null;
@@ -1620,6 +1668,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.d(sc_id).f();
                 jC.d(sc_id).g();
                 jC.d(sc_id).e();
+                AutoSnapshots.afterSave(sc_id);
                 activity.runOnUiThread(() -> {
                     bB.a(activity.getApplicationContext(), Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
                     activity.h();
@@ -1651,6 +1700,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.c(sc_id).l();
                 jC.d(sc_id).h();
                 activity.saveVersionCodeInformationToProject();
+                AutoSnapshots.afterSave(sc_id);
                 AutoBackup.runIfEnabled(activity, sc_id);
                 activity.runOnUiThread(() -> {
                     bB.a(activity.getApplicationContext(), Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
@@ -1667,8 +1717,18 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private static class SilentProjectSaver extends BaseTask {
         private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+        private final Runnable afterSave;
+
         public SilentProjectSaver(DesignActivity activity) {
+            this(activity, null);
+        }
+
+        /**
+         * @param afterSave runs on the main thread once saving is over, whether or not it worked
+         */
+        public SilentProjectSaver(DesignActivity activity, Runnable afterSave) {
             super(activity);
+            this.afterSave = afterSave;
         }
 
         public void execute() {
@@ -1689,8 +1749,11 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.d(sc_id).f();
                 jC.d(sc_id).g();
                 jC.d(sc_id).e();
+                AutoSnapshots.afterSave(sc_id);
             } catch (Throwable t) {
                 AppLog.e("AutoSave", "Auto-save failed: " + t);
+            } finally {
+                if (afterSave != null) activity.runOnUiThread(afterSave);
             }
         }
     }

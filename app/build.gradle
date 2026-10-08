@@ -172,6 +172,7 @@ dependencies {
     implementation libs.bundles.networking
 
     implementation libs.ecj
+    implementation libs.jgit
 
     implementation libs.bundles.kotlin.compiler
     compileOnly libs.kotlin.compiler

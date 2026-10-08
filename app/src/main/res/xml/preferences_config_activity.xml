@@ -87,6 +87,12 @@
 
         <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
+            app:key="auto-snapshots"
+            app:summary="Keep restorable copies of a project when you save it and before each build."
+            app:title="Automatic snapshots" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
             app:key="auto-backup"
             app:summary="Back up a project when you save and close it."
             app:title="Automatic backup" />

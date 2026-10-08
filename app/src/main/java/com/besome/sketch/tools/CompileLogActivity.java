@@ -1,7 +1,10 @@
 package com.besome.sketch.tools;
 
 import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -10,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
+import android.text.method.LinkMovementMethod;
 import android.widget.PopupMenu;
 
 import androidx.core.view.ViewCompat;
@@ -18,8 +22,15 @@ import androidx.core.view.WindowInsetsCompat;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.io.File;
+import java.util.List;
+
+import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.CompileLogHelper;
 import mod.hey.studios.util.Helper;
+import mod.jbk.diagnostic.CompileDiagnosticParser;
+import mod.jbk.diagnostic.CompileDiagnosticParser.Diagnostic;
+import mod.jbk.diagnostic.CompileDiagnosticParser.Severity;
 import mod.jbk.diagnostic.CompileErrorSaver;
 import mod.jbk.util.AddMarginOnApplyWindowInsetsListener;
 import pro.sketchware.databinding.CompileLogBinding;
@@ -80,11 +91,13 @@ public class CompileLogActivity extends BaseAppCompatActivity {
         final String wrapTextLabel = "Wrap text";
         final String monospacedFontLabel = "Monospaced font";
         final String fontSizeLabel = "Font size";
+        final String copyLogLabel = "Copy log";
 
         PopupMenu options = new PopupMenu(this, binding.formatButton);
         options.getMenu().add(wrapTextLabel).setCheckable(true).setChecked(getWrappedTextPreference());
         options.getMenu().add(monospacedFontLabel).setCheckable(true).setChecked(getMonospacedFontPreference());
         options.getMenu().add(fontSizeLabel);
+        options.getMenu().add(copyLogLabel);
 
         options.setOnMenuItemClickListener(menuItem -> {
             switch (menuItem.getTitle().toString()) {
@@ -97,6 +110,7 @@ public class CompileLogActivity extends BaseAppCompatActivity {
                     toggleMonospacedText(menuItem.isChecked());
                 }
                 case fontSizeLabel -> changeFontSizeDialog();
+                case copyLogLabel -> copyLog();
                 default -> {
                     return false;
                 }
@@ -123,8 +137,38 @@ public class CompileLogActivity extends BaseAppCompatActivity {
         binding.optionsLayout.setVisibility(View.VISIBLE);
         binding.noContentLayout.setVisibility(View.GONE);
 
-        binding.tvCompileLog.setText(CompileLogHelper.getColoredLogs(this, error));
-        binding.tvCompileLog.setTextIsSelectable(true);
+        List<Diagnostic> diagnostics = CompileDiagnosticParser.parse(error);
+        int errors = CompileDiagnosticParser.count(diagnostics, Severity.ERROR);
+        int warnings = CompileDiagnosticParser.count(diagnostics, Severity.WARNING);
+        binding.topAppBar.setSubtitle(diagnostics.isEmpty() ? null : errors + " errors, " + warnings + " warnings");
+
+        binding.tvCompileLog.setText(CompileLogHelper.getColoredLogs(this, error, diagnostics, this::openDiagnostic));
+        // Selecting text and tapping links can't both be on, so "Copy log" is in the options menu.
+        binding.tvCompileLog.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    private void openDiagnostic(Diagnostic diagnostic) {
+        File file = new File(diagnostic.path());
+        if (!file.isFile()) {
+            SketchwareUtil.toast("File not found: " + diagnostic.path());
+            return;
+        }
+
+        Intent intent = new Intent(this, SrcCodeEditor.class);
+        intent.putExtra("title", file.getName());
+        intent.putExtra("content", file.getAbsolutePath());
+        intent.putExtra(SrcCodeEditor.EXTRA_LINE, diagnostic.line());
+        intent.putExtra(SrcCodeEditor.EXTRA_COLUMN, diagnostic.column());
+        startActivity(intent);
+    }
+
+    private void copyLog() {
+        String log = compileErrorSaver.getLogsFromFile();
+        if (log == null) return;
+
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        clipboard.setPrimaryClip(ClipData.newPlainText("Compile log", log));
+        SketchwareUtil.toast("Compile log copied.");
     }
 
     private void applyLogViewerPreferences() {
