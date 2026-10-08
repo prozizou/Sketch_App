@@ -1343,6 +1343,16 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                                 SketchwareUtil.toastError("Failed to create directory / directories!");
                             }
                         });
+                        if (e.getMissingFile().getAbsolutePath().contains("/libs/local_libs/")) {
+                            // A stale path to a local library: repairing re-reads what is really installed.
+                            dialog.setNegativeButton(R.string.library_repair_action, (v, which) -> {
+                                v.dismiss();
+                                Intent repair = new Intent(activity, dev.aldi.sayuti.editor.manage.ManageLocalLibraryActivity.class);
+                                repair.putExtra("sc_id", DesignActivity.sc_id);
+                                repair.putExtra("repair", true);
+                                activity.startActivity(repair);
+                            });
+                        }
                     } else {
                         dialog.setTitle("Missing file detected");
                         dialog.setMessage("A file needed for building is missing. " +
