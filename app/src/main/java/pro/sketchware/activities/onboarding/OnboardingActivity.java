@@ -51,6 +51,18 @@ public class OnboardingActivity extends AppCompatActivity {
         return !context.getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_DONE, false);
     }
 
+    /** The first page shows the NWS logo itself: no tint, no tinted disc behind it. */
+    private static void showLogo(ImageView icon) {
+        icon.setImageResource(R.drawable.nws_logo);
+        androidx.core.widget.ImageViewCompat.setImageTintList(icon, null);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        ViewGroup.LayoutParams params = icon.getLayoutParams();
+        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        icon.setLayoutParams(params);
+        ((View) icon.getParent()).setBackground(null);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         EdgeToEdge.enable(this);
@@ -194,7 +206,7 @@ public class OnboardingActivity extends AppCompatActivity {
 
             switch (position) {
                 case 0 -> {
-                    icon.setImageResource(R.drawable.ic_mtrl_component);
+                    showLogo(icon);
                     title.setText(R.string.onboarding_welcome_title);
                     description.setText(R.string.onboarding_welcome_text);
                 }
