@@ -163,6 +163,15 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
             }
         });
 
+        binding.searchBar.getMenu().findItem(R.id.action_repair_libraries).setVisible(!notAssociatedWithProject);
+        binding.searchBar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_repair_libraries) {
+                repairLibraries();
+                return true;
+            }
+            return false;
+        });
+
         binding.contextualToolbar.setNavigationOnClickListener(v -> hideContextualToolbarAndClearSelection());
         binding.contextualToolbar.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
@@ -236,6 +245,34 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
                     finish();
                 }
             }
+        });
+    }
+
+    /** Rebuilds the stored paths of the libraries the project uses and tells the user what was done. */
+    private void repairLibraries() {
+        k();
+        Executors.newSingleThreadExecutor().execute(() -> {
+            var result = LocalLibrariesUtil.repairProjectLibraries(scId);
+            runOnUiThread(() -> {
+                h();
+                StringBuilder message = new StringBuilder();
+                if (!result.repaired.isEmpty()) {
+                    message.append(getString(R.string.library_repair_done, String.join(", ", result.repaired)));
+                }
+                if (!result.removed.isEmpty()) {
+                    if (message.length() > 0) message.append("\n\n");
+                    message.append(getString(R.string.library_repair_removed, String.join(", ", result.removed)));
+                }
+                if (message.length() == 0) {
+                    message.append(getString(R.string.library_repair_ok, result.healthy));
+                }
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.library_repair_title)
+                        .setMessage(message)
+                        .setPositiveButton(R.string.library_repair_close, null)
+                        .show();
+                runLoadLocalLibrariesTask();
+            });
         });
     }
 

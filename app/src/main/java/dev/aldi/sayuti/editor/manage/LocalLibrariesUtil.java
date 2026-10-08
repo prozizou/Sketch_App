@@ -19,6 +19,10 @@ import java.util.Map;
 import mod.hey.studios.util.Helper;
 
 public class LocalLibrariesUtil {
+    public static File getLocalLibsRoot() {
+        return new File(localLibsPath);
+    }
+
     private static final String localLibsPath = getExternalStorageDir().concat("/.sketch_nws/libs/local_libs/");
 
     public static List<LocalLibrary> getAllLocalLibraries() {
@@ -34,6 +38,15 @@ public class LocalLibrariesUtil {
         }
 
         return localLibraries;
+    }
+
+    /** Repairs the libraries used by the project, saves the result and tells what was done. */
+    public static LocalLibrariesRepair.Result repairProjectLibraries(String scId) {
+        LocalLibrariesRepair.Result result = LocalLibrariesRepair.repair(getLocalLibsRoot(), getLocalLibraries(scId));
+        if (result.changedAnything()) {
+            rewriteLocalLibFile(scId, new Gson().toJson(result.libraries));
+        }
+        return result;
     }
 
     public static ArrayList<HashMap<String, Object>> getLocalLibraries(String scId) {

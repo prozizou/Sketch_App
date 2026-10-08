@@ -34,6 +34,7 @@
             android:layout_marginBottom="8dp"
             android:hint="Search for libraries"
             app:defaultMarginsEnabled="false"
+            app:menu="@menu/menu_local_libraries"
             app:navigationIcon="?attr/homeAsUpIndicator" />
 
     </com.google.android.material.appbar.AppBarLayout>
