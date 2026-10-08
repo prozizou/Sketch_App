@@ -26,14 +26,78 @@
             app:subtitle="@string/common_word_oncreate"
             app:title="@string/common_word_activity" />
 
-        <com.besome.sketch.editor.view.ViewLogicEditor
-            android:id="@+id/editor"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="2dp"
-            android:background="?attr/colorSurfaceContainerLow"
-            android:forceDarkAllowed="false"
-            tools:ignore="UnusedAttribute" />
+            android:layout_height="match_parent">
+
+            <com.besome.sketch.editor.view.ViewLogicEditor
+                android:id="@+id/editor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="2dp"
+                android:background="?attr/colorSurfaceContainerLow"
+                android:forceDarkAllowed="false"
+                tools:ignore="UnusedAttribute" />
+
+            <!-- The Java the blocks turn into, shown in place of the canvas (toolbar action switches). -->
+            <FrameLayout
+                android:id="@+id/code_panel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="2dp"
+                android:background="?attr/colorSurfaceContainerLowest"
+                android:visibility="gone">
+
+                <io.github.rosemoe.sora.widget.CodeEditor
+                    android:id="@+id/code_editor"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <TextView
+                    android:id="@+id/code_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="8dp"
+                    android:alpha="0.92"
+                    android:background="@drawable/canvas_control_bg"
+                    android:elevation="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="2dp">
+
+                    <ImageButton
+                        android:id="@+id/btn_code_copy"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/logic_code_copy"
+                        android:padding="7dp"
+                        android:src="@drawable/ic_mtrl_copy"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <ImageButton
+                        android:id="@+id/btn_code_fullscreen"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/logic_code_open_full"
+                        android:padding="7dp"
+                        android:src="@drawable/ic_focus_preview"
+                        app:tint="?attr/colorOnSurface" />
+                </LinearLayout>
+            </FrameLayout>
+        </FrameLayout>
     </LinearLayout>
 
     <LinearLayout

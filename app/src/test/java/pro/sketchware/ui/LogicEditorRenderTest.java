@@ -151,4 +151,44 @@ public class LogicEditorRenderTest {
 
         assertEquals(1f, screen.editor.getZoom(), 0.0001f);
     }
+
+    @Test
+    public void theCodePanelIsThereButHiddenUntilTheSwitch() throws Exception {
+        Screen screen = inflate(true);
+
+        View panel = screen.root.findViewById(R.id.code_panel);
+        assertNotNull(panel);
+        assertEquals(View.GONE, panel.getVisibility());
+        assertNotNull(screen.root.findViewById(R.id.code_editor));
+        assertNotNull(screen.root.findViewById(R.id.btn_code_copy));
+        assertNotNull(screen.root.findViewById(R.id.btn_code_fullscreen));
+    }
+
+    @Test
+    public void rendersTheGeneratedCodeInPlaceOfTheBlocks() throws Exception {
+        Screen screen = inflate(true);
+        io.github.rosemoe.sora.widget.CodeEditor editor = screen.root.findViewById(R.id.code_editor);
+        editor.setTypefaceText(pro.sketchware.utility.EditorUtils.getTypeface(screen.activity));
+        editor.setTextSize(13);
+        editor.setEditable(false);
+        pro.sketchware.utility.EditorUtils.loadJavaConfig(editor);
+        editor.setText(String.join("\n",
+                "n_variant = 0;",
+                "getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);",
+                "try {",
+                "    tv_1.setText(String.valueOf((long)(n)));",
+                "    if (list.size() == n_variant) {",
+                "        _timer.cancel(t);",
+                "    } else {",
+                "        n_variant++;",
+                "    }",
+                "} catch (Exception e) {",
+                "    finish();",
+                "}"));
+        screen.root.findViewById(R.id.editor).setVisibility(View.VISIBLE);
+        screen.root.findViewById(R.id.code_panel).setVisibility(View.VISIBLE);
+        layout(screen.root);
+
+        save(screen.root, "logic-editor-code");
+    }
 }

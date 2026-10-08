@@ -130,6 +130,7 @@ import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
 import com.besome.sketch.editor.view.FloatingBarDragger;
 import pro.sketchware.blocks.ColorArgSwatch;
+import pro.sketchware.blocks.GeneratedCode;
 import pro.sketchware.blocks.MultiBranchChain;
 import pro.sketchware.databinding.ImagePickerItemBinding;
 import pro.sketchware.databinding.LogicEditorBinding;
@@ -167,6 +168,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private FloatingActionButton openBlocksMenuButton;
     private LogicTopMenu logicTopMenu;
     private LogicEditorDrawer O;
+    /** True while the generated Java is shown in place of the blocks. */
+    private boolean codeMode;
+    /** The project's build settings, read once: the code view regenerates often. */
+    private jq codeBuildConfig;
+    private final android.os.Handler codeHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable codeRefresher = this::refreshCode;
     private ObjectAnimator U, V, ba, ca, fa, ga;
     private ExtraPaletteBlock extraPaletteBlock;
     private ViewLogicEditor viewLogicEditor;
@@ -323,6 +330,84 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     public void C() {
         invalidateOptionsMenu();
+        if (codeMode) {
+            // Blocks changed: refresh the code shown, once for a burst of changes.
+            codeHandler.removeCallbacks(codeRefresher);
+            codeHandler.postDelayed(codeRefresher, 150);
+        }
+    }
+
+    /** Switches between the blocks and the Java they produce. */
+    private void setCodeMode(boolean on) {
+        if (codeMode == on) {
+            return;
+        }
+        codeMode = on;
+        View panel = binding.codePanel;
+        if (on) {
+            e(false);
+            refreshCode();
+            panel.setAlpha(0f);
+            panel.setVisibility(View.VISIBLE);
+            panel.animate().alpha(1f).setDuration(150).start();
+        } else {
+            codeHandler.removeCallbacks(codeRefresher);
+            panel.animate().alpha(0f).setDuration(150).withEndAction(() -> {
+                if (!codeMode) {
+                    panel.setVisibility(View.GONE);
+                }
+            }).start();
+        }
+        // The palette button and the zoom bar belong to the canvas.
+        binding.layoutPalette.setVisibility(on ? View.GONE : View.VISIBLE);
+        binding.canvasControls.setVisibility(on ? View.GONE : View.VISIBLE);
+        invalidateOptionsMenu();
+    }
+
+    private String generateCode() {
+        if (codeBuildConfig == null) {
+            yq project = new yq(this, scId);
+            project.a(jC.c(scId), jC.b(scId), jC.a(scId));
+            codeBuildConfig = project.N;
+        }
+        return GeneratedCode.forEvent(M.getActivityName(), codeBuildConfig, o.getBlocks(),
+                isViewBindingEnabled, M.fileName.contains("_fragment"));
+    }
+
+    private void refreshCode() {
+        if (!codeMode) {
+            return;
+        }
+        String message = null;
+        String code = "";
+        try {
+            code = generateCode();
+            if (code.isEmpty()) {
+                message = getString(R.string.logic_code_empty);
+            }
+        } catch (Exception e) {
+            message = getString(R.string.logic_code_error);
+        }
+        binding.codeMessage.setText(message);
+        binding.codeMessage.setVisibility(message == null ? View.GONE : View.VISIBLE);
+        binding.codeEditor.setVisibility(message == null ? View.VISIBLE : View.INVISIBLE);
+        if (message == null) {
+            binding.codeEditor.setText(code);
+        }
+    }
+
+    private void setupCodePanel() {
+        binding.codeEditor.setTypefaceText(pro.sketchware.utility.EditorUtils.getTypeface(this));
+        binding.codeEditor.setTextSize(13);
+        binding.codeEditor.setEditable(false);
+        binding.codeEditor.setWordwrap(false);
+        pro.sketchware.utility.EditorUtils.loadJavaConfig(binding.codeEditor);
+        binding.btnCodeCopy.setOnClickListener(v -> {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("code", binding.codeEditor.getText().toString()));
+            SketchwareUtil.toast(getString(R.string.logic_code_copied));
+        });
+        binding.btnCodeFullscreen.setOnClickListener(v -> showSourceCode());
     }
 
     public void E() {
@@ -1878,6 +1963,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     @Override
     public void onBackPressed() {
+        if (codeMode) {
+            setCodeMode(false);
+            return;
+        }
         if (ia) {
             g(false);
             return;
@@ -1995,6 +2084,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         logicTopMenu = binding.topMenu;
         O = binding.rightDrawer;
         setupBottomNavAndCanvasControls();
+        setupCodePanel();
         paletteBlockBinding.searchHeader.addTextChangedListener(new PaletteSelector.SimpleTextWatcher(text -> paletteSelector.setSearchQuery(text.toString())));
         extraPaletteBlock = new ExtraPaletteBlock(this, isViewBindingEnabled);
 
@@ -2022,6 +2112,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     private void showPaletteCategory(int navItemId) {
+        setCodeMode(false);
         e(true);
         if (navItemId == R.id.nav_variables) {
             paletteSelector.performClickPalette(0);
@@ -2035,6 +2126,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         getMenuInflater().inflate(R.menu.logic_menu, menu);
         menu.findItem(R.id.menu_logic_redo).setEnabled(M != null && bC.d(scId).g(s()));
         menu.findItem(R.id.menu_logic_undo).setEnabled(M != null && bC.d(scId).h(s()));
+        MenuItem codeItem = menu.findItem(R.id.menu_logic_showsource);
+        codeItem.setIcon(codeMode ? R.drawable.ic_mtrl_block : R.drawable.ic_mtrl_code);
+        codeItem.setTitle(codeMode ? R.string.logic_code_hide : R.string.logic_code_show);
         return true;
     }
 
@@ -2053,7 +2147,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             bC.d(scId).b(s());
             SketchwareUtil.toast(getString(R.string.logic_saved));
         } else if (itemId == R.id.menu_logic_showsource) {
-            showSourceCode();
+            setCodeMode(!codeMode);
         }
 
         return super.onOptionsItemSelected(menuItem);
@@ -2542,17 +2636,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     public void showSourceCode() {
-        yq yq = new yq(this, scId);
-        yq.a(jC.c(scId), jC.b(scId), jC.a(scId));
-
-        boolean isFragment = M.fileName.contains("_fragment");
-
-        String code = new Fx(M.getActivityName(), yq.N, o.getBlocks(), isViewBindingEnabled).a();
-        code = code.replaceAll("\\$className", M.getActivityName())
-                .replaceAll("\\$context", isFragment ? "getContext()" : M.getActivityName() + ".this");
-
         var intent = new Intent(this, CodeViewerActivity.class);
-        intent.putExtra("code", code);
+        intent.putExtra("code", generateCode());
         intent.putExtra("sc_id", scId);
         intent.putExtra("scheme", CodeViewerActivity.SCHEME_JAVA);
         startActivity(intent);

@@ -913,6 +913,13 @@ ACTION_VIEW
     <string name="logic_nav_variables">My Variables</string>
     <string name="logic_nav_components">Components</string>
     <string name="logic_canvas_fit">Fit</string>
+    <string name="logic_code_show">Code</string>
+    <string name="logic_code_hide">Blocks</string>
+    <string name="logic_code_copy">Copy code</string>
+    <string name="logic_code_copied">Code copied</string>
+    <string name="logic_code_open_full">Open full screen</string>
+    <string name="logic_code_empty">No blocks yet. Add blocks to see the Java code they produce.</string>
+    <string name="logic_code_error">The code can\'t be shown yet: a block is probably incomplete.</string>
     <string name="logic_canvas_controls_move">Move zoom controls</string>
     <string name="logic_saved">Saved</string>
     <string name="logic_zoom_in">Zoom in</string>
