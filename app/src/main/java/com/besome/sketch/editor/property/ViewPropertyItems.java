@@ -20,8 +20,12 @@ import com.besome.sketch.editor.manage.image.ManageImageActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import a.a.a.Cx;
@@ -35,6 +39,8 @@ import a.a.a.oq;
 import mod.hey.studios.project.ProjectSettings;
 import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.R;
+import pro.sketchware.properties.AttributeCatalog;
+import pro.sketchware.properties.InjectAttributes;
 
 public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickListener {
     private final boolean b = false;
@@ -44,6 +50,20 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
     private Lw d;
     private ProjectFileBean e;
     private ProjectSettings settings;
+    /** The catalog sections of the selected view (full-screen editor only). */
+    private final List<ExtraSection> extraSections = new ArrayList<>();
+    /** Rows hidden by the search or a folded section, so only those are shown again later. */
+    private final Set<View> hiddenByFilter = new HashSet<>();
+    private String filterQuery = "";
+
+    private static final class ExtraSection {
+        final PropertySubheader header;
+        final List<ExtraAttributeRow> rows = new ArrayList<>();
+
+        ExtraSection(PropertySubheader header) {
+            this.header = header;
+        }
+    }
 
     public ViewPropertyItems(Context var1) {
         super(var1);
@@ -143,7 +163,201 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
         sub.setHeaderName(header);
         if (sub.getParent() == null) {
             addView(sub);
+            setupHeader(sub, false);
         }
+    }
+
+    private android.content.SharedPreferences uiPrefs() {
+        return getContext().getSharedPreferences("property_ui", Context.MODE_PRIVATE);
+    }
+
+    /** In the full-screen editor a section header folds and unfolds its rows; the state is remembered. */
+    private void setupHeader(PropertySubheader header, boolean defaultCollapsed) {
+        if (getOrientation() != LinearLayout.VERTICAL) {
+            return;
+        }
+        String key = "collapsed_" + header.getHeaderName();
+        header.setCollapsed(uiPrefs().getBoolean(key, defaultCollapsed));
+        header.setToggleListener(() -> {
+            uiPrefs().edit().putBoolean(key, header.isCollapsed()).apply();
+            applyVisibility();
+        });
+    }
+
+    /** Narrows the list to the properties matching {@code query} (their name or value). */
+    public void setFilter(String query) {
+        filterQuery = query == null ? "" : query;
+        applyVisibility();
+    }
+
+    private void applyVisibility() {
+        if (getOrientation() != LinearLayout.VERTICAL) {
+            return;
+        }
+        String query = filterQuery.trim().toLowerCase(Locale.ROOT);
+        boolean searching = !query.isEmpty();
+
+        PropertySubheader header = null;
+        List<View> group = new ArrayList<>();
+        for (int i = 0; i <= getChildCount(); i++) {
+            View child = i < getChildCount() ? getChildAt(i) : null;
+            if (child == null || child instanceof PropertySubheader) {
+                applyGroup(header, group, query, searching);
+                header = (PropertySubheader) child;
+                group = new ArrayList<>();
+            } else {
+                group.add(child);
+            }
+        }
+    }
+
+    private void applyGroup(PropertySubheader header, List<View> items, String query, boolean searching) {
+        boolean folded = header != null && header.isCollapsed() && !searching;
+        boolean anyMatch = false;
+        for (View item : items) {
+            boolean matches = !searching || matches(item, query);
+            anyMatch |= matches;
+            setShown(item, matches && !folded);
+        }
+        if (header != null) {
+            setShown(header, !searching || anyMatch);
+        }
+    }
+
+    private void setShown(View view, boolean shown) {
+        if (shown) {
+            if (hiddenByFilter.remove(view)) {
+                view.setVisibility(View.VISIBLE);
+            }
+        } else if (view.getVisibility() == View.VISIBLE) {
+            view.setVisibility(View.GONE);
+            hiddenByFilter.add(view);
+        }
+    }
+
+    private static boolean matches(View item, String query) {
+        if (item instanceof ExtraAttributeRow row) {
+            return AttributeCatalog.searchText(row.getAttr()).contains(query);
+        }
+        StringBuilder text = new StringBuilder();
+        if (item.getTag() instanceof String tag) {
+            text.append(tag.replace('_', ' ')).append(' ');
+        }
+        collectText(item, text);
+        return text.toString().toLowerCase(Locale.ROOT).contains(query);
+    }
+
+    private static void collectText(View view, StringBuilder out) {
+        if (view instanceof TextView textView) {
+            out.append(textView.getText()).append(' ');
+        }
+        if (view instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectText(group.getChildAt(i), out);
+            }
+        }
+    }
+
+    /** The "custom attributes" text of the view as currently edited. */
+    private String currentInject() {
+        View item = f.get("property_inject");
+        if (item instanceof PropertyInputItem input && input.getValue() != null) {
+            return input.getValue();
+        }
+        return c.inject == null ? "" : c.inject;
+    }
+
+    /** Adds the attribute sections that fit this kind of view; their rows are edited through the custom attributes. */
+    private void setupExtraSections(ViewBean bean) {
+        if (getOrientation() != LinearLayout.VERTICAL || !(f.get("property_inject") instanceof PropertyInputItem)) {
+            return;
+        }
+        if (extraSections.isEmpty()) {
+            String notSet = getContext().getString(R.string.property_extra_not_set);
+            for (AttributeCatalog.Section section : AttributeCatalog.sectionsFor(bean.getClassInfo(), bean.type)) {
+                PropertySubheader header = new PropertySubheader(getContext());
+                header.setHeaderName(getContext().getString(section.titleRes()));
+                addView(header);
+                setupHeader(header, true);
+                ExtraSection extra = new ExtraSection(header);
+                for (AttributeCatalog.Attr attr : section.attrs()) {
+                    ExtraAttributeRow row = new ExtraAttributeRow(getContext(), attr, notSet);
+                    row.setOnClickListener(v -> editExtraAttribute(row));
+                    addView(row);
+                    extra.rows.add(row);
+                }
+                extraSections.add(extra);
+            }
+        }
+        refreshExtraValues();
+    }
+
+    private void refreshExtraValues() {
+        InjectAttributes attributes = new InjectAttributes(currentInject());
+        for (ExtraSection section : extraSections) {
+            int set = 0;
+            for (ExtraAttributeRow row : section.rows) {
+                String value = attributes.get(row.getAttr().name());
+                row.setValue(value);
+                if (value != null) {
+                    set++;
+                }
+            }
+            section.header.setTitleSuffix(set > 0 ? set + " set" : "");
+        }
+    }
+
+    /**
+     * The bottom (horizontal) panel's "Attributes" group: a card per attribute set on the view, which edits it,
+     * and a first card that opens a searchable list of the other attributes that fit this view.
+     */
+    public void setupAttributeCards(ViewBean bean) {
+        c = bean;
+        f.clear();
+        removeAllViews();
+        LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        params.gravity = Gravity.LEFT;
+        setLayoutParams(params);
+        setGravity(Gravity.LEFT);
+
+        List<AttributeCatalog.Section> sections = AttributeCatalog.sectionsFor(bean.getClassInfo(), bean.type);
+        Map<String, String> set = new InjectAttributes(bean.inject).asMap();
+
+        ExtraAttributeCard add = new ExtraAttributeCard(getContext(), R.drawable.ic_mtrl_add,
+                getContext().getString(R.string.property_attribute_add), null);
+        add.setOnClickListener(v -> AttributePicker.show(getContext(), sections, set.keySet(), attr -> editAttributeOnBean(attr, null)));
+        addView(add);
+        for (Map.Entry<String, String> entry : set.entrySet()) {
+            AttributeCatalog.Attr attr = AttributeCatalog.find(sections, entry.getKey());
+            ExtraAttributeCard card = new ExtraAttributeCard(getContext(), R.drawable.ic_mtrl_code, attr.label(), entry.getValue());
+            card.setOnClickListener(v -> editAttributeOnBean(attr, entry.getValue()));
+            addView(card);
+        }
+    }
+
+    private void editAttributeOnBean(AttributeCatalog.Attr attr, String current) {
+        ExtraAttributeEditor.show(getContext(), attr, current, value -> {
+            ViewBean before = c.clone();
+            c.inject = new InjectAttributes(c.inject).set(attr.name(), value).toString();
+            if (d != null && !b) {
+                cC.c(sc_id).a(e.getXmlName(), before, c.clone());
+                d.a(c);
+            }
+            setupAttributeCards(c);
+        });
+    }
+
+    private void editExtraAttribute(ExtraAttributeRow row) {
+        AttributeCatalog.Attr attr = row.getAttr();
+        String current = new InjectAttributes(currentInject()).get(attr.name());
+        ExtraAttributeEditor.show(getContext(), attr, current, value -> {
+            String updated = new InjectAttributes(currentInject()).set(attr.name(), value).toString();
+            if (f.get("property_inject") instanceof PropertyInputItem input) {
+                input.setValue(updated);
+            }
+            a("property_inject", updated);
+            refreshExtraValues();
+        });
     }
 
     private void setupColorProperty(String name, int value) {
@@ -253,6 +467,7 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
         propertySubheader.setOnClickListener(listener);
         if (propertySubheader.getParent() == null) {
             addView(propertySubheader);
+            setupHeader(propertySubheader, false);
         }
     }
 
@@ -265,6 +480,8 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
         if (!isSameView) {
             removeAllViews();
             f.clear();
+            extraSections.clear();
+            hiddenByFilter.clear();
         }
         
         if (bean.id.equals("_fab")) {
@@ -278,10 +495,12 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
             setupLayoutAndWeightProperties(bean);
             setupTextProperties(bean);
             setupVisualProperties(bean);
+            setupExtraSections(bean);
             if (getOrientation() == LinearLayout.HORIZONTAL) {
                 setupInputProperty("property_id", bean.id);
             }
         }
+        applyVisibility();
     }
 
     @Override
