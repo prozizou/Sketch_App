@@ -161,7 +161,7 @@ public class LogicEditorRenderTest {
         assertEquals(View.GONE, panel.getVisibility());
         assertNotNull(screen.root.findViewById(R.id.code_editor));
         assertNotNull(screen.root.findViewById(R.id.btn_code_copy));
-        assertNotNull(screen.root.findViewById(R.id.btn_code_fullscreen));
+        assertNotNull(screen.root.findViewById(R.id.btn_code_maximize));
     }
 
     @Test
@@ -185,10 +185,20 @@ public class LogicEditorRenderTest {
                 "} catch (Exception e) {",
                 "    finish();",
                 "}"));
-        screen.root.findViewById(R.id.editor).setVisibility(View.VISIBLE);
-        screen.root.findViewById(R.id.code_panel).setVisibility(View.VISIBLE);
+        View blocks = screen.root.findViewById(R.id.editor);
+        View panel = screen.root.findViewById(R.id.code_panel);
+        android.widget.LinearLayout.LayoutParams blocksParams = (android.widget.LinearLayout.LayoutParams) blocks.getLayoutParams();
+        android.widget.LinearLayout.LayoutParams panelParams = (android.widget.LinearLayout.LayoutParams) panel.getLayoutParams();
+        blocksParams.weight = com.besome.sketch.editor.logic.LogicViewMode.SPLIT.blocksWeight();
+        panelParams.weight = 1f;
+        blocks.setLayoutParams(blocksParams);
+        panel.setLayoutParams(panelParams);
+        panel.setVisibility(View.VISIBLE);
         layout(screen.root);
 
-        save(screen.root, "logic-editor-code");
+        assertTrue("blocks above the code", blocks.getBottom() <= panel.getTop());
+        float blocksShare = blocks.getHeight() / (float) (blocks.getHeight() + panel.getHeight());
+        assertEquals("blocks take two thirds", 2f / 3f, blocksShare, 0.03f);
+        save(screen.root, "logic-editor-split");
     }
 }

@@ -26,14 +26,17 @@
             app:subtitle="@string/common_word_oncreate"
             app:title="@string/common_word_activity" />
 
-        <FrameLayout
+        <LinearLayout
+            android:id="@+id/editor_area"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <com.besome.sketch.editor.view.ViewLogicEditor
                 android:id="@+id/editor"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:layout_margin="2dp"
                 android:background="?attr/colorSurfaceContainerLow"
                 android:forceDarkAllowed="false"
@@ -43,7 +46,8 @@
             <FrameLayout
                 android:id="@+id/code_panel"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:layout_margin="2dp"
                 android:background="?attr/colorSurfaceContainerLowest"
                 android:visibility="gone">
@@ -87,17 +91,17 @@
                         app:tint="?attr/colorOnSurface" />
 
                     <ImageButton
-                        android:id="@+id/btn_code_fullscreen"
+                        android:id="@+id/btn_code_maximize"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/logic_code_open_full"
+                        android:contentDescription="@string/logic_code_maximize"
                         android:padding="7dp"
                         android:src="@drawable/ic_focus_preview"
                         app:tint="?attr/colorOnSurface" />
                 </LinearLayout>
             </FrameLayout>
-        </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
