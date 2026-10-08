@@ -17,7 +17,7 @@ on:
       notes:
         description: 'Message shown in the update dialog'
         type: string
-        default: 'A new version of New World Sketchware is available. Please update to continue.'
+        default: 'A new version of NWS is available. Please update to continue.'
 
 permissions:
   contents: write
@@ -144,7 +144,7 @@ jobs:
         run: |
           printf '%s\n\nSHA-256 of %s:\n`%s`\n' "$NOTES" "$APK_NAME" "$SHA" > "$RUNNER_TEMP/release-notes.md"
           gh release create "$TAG" "dist/$APK_NAME" \
-            --title "New World Sketchware $TAG" \
+            --title "NWS $TAG" \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
             --latest

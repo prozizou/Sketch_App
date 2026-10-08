@@ -748,7 +748,7 @@ ACTION_VIEW
     <string name="title_company_tel">Telephone</string>
     <string name="title_company_url">Website</string>
     <string name="title_compatible_chrome_browser">Chrome Browser Required</string>
-    <string name="title_sketchware">New World Sketchware</string>
+    <string name="title_sketchware">NWS</string>
     <string name="view_panel_title_layouts">Layouts</string>
     <string name="view_panel_title_properties">Properties</string>
     <string name="view_panel_title_widgets">Widgets</string>
@@ -918,7 +918,7 @@ ACTION_VIEW
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_get_started">Get started</string>
-    <string name="onboarding_welcome_title">Welcome to New World Sketchware</string>
+    <string name="onboarding_welcome_title">Welcome to NWS</string>
     <string name="onboarding_welcome_text">Design screens, add logic with blocks and build real Android apps, all from your phone.</string>
     <string name="onboarding_access_title">Allow file access</string>
     <string name="onboarding_access_text">Your projects, resources and exported apps are stored on your device. Without file access the app cannot save or open them.</string>

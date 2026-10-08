@@ -12,12 +12,11 @@
     <ImageView
         android:id="@+id/layout_main_logo"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="36dp"
         android:layout_gravity="center"
+        android:adjustViewBounds="true"
         android:contentDescription="@string/title_sketchware"
         android:scaleType="fitCenter"
-        android:src="@drawable/top_title_logo"
-        android:padding="4dp"
-        app:tint="?attr/colorPrimary" />
+        android:src="@drawable/nws_logo" />
 
 </androidx.appcompat.widget.Toolbar>
