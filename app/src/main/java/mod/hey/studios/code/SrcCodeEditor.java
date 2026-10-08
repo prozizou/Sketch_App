@@ -46,7 +46,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import a.a.a.Lx;
-import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.component.EditorAutoCompletion;
@@ -59,6 +58,8 @@ import io.github.rosemoe.sora.widget.schemes.SchemeVS2019;
 import mod.hey.studios.util.Helper;
 import mod.jbk.code.CodeEditorColorSchemes;
 import mod.jbk.code.CodeEditorLanguages;
+import mod.jbk.code.completion.ClassIndex;
+import mod.jbk.code.completion.SketchJavaLanguage;
 import pro.sketchware.R;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
 import pro.sketchware.databinding.CodeEditorHsBinding;
@@ -126,10 +127,17 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     }
 
     public static void selectLanguage(CodeEditor ed, int which) {
+        selectLanguage(ed, which, null);
+    }
+
+    /**
+     * @param scId the project the file belongs to, so Java completion can suggest its classes; may be null
+     */
+    public static void selectLanguage(CodeEditor ed, int which, String scId) {
         switch (which) {
             default:
             case 0:
-                ed.setEditorLanguage(new JavaLanguage());
+                ed.setEditorLanguage(new SketchJavaLanguage(ed.getContext(), scId));
                 languageId = 0;
                 break;
 
@@ -323,7 +331,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         binding.editor.post(this::moveToRequestedLine);
 
         if (title.endsWith(".java")) {
-            binding.editor.setEditorLanguage(new JavaLanguage());
+            binding.editor.setEditorLanguage(new SketchJavaLanguage(this, ClassIndex.projectIdOfJavaFile(getIntent().getStringExtra("content"))));
             languageId = 0;
         } else if (title.endsWith(".kt")) {
             binding.editor.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_KOTLIN));
@@ -474,7 +482,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
 
                     case "Select language":
                         showSwitchLanguageDialog(this, binding.editor, (dialog, which) -> {
-                            selectLanguage(binding.editor, which);
+                            selectLanguage(binding.editor, which, ClassIndex.projectIdOfJavaFile(getIntent().getStringExtra("content")));
                             dialog.dismiss();
                         });
                         break;
