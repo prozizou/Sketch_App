@@ -110,8 +110,9 @@ public class ProjectSearch {
         if (file.length() == 0 || file.length() > MAX_FILE_SIZE) return false;
         // Binary files contain NUL bytes near the start
         try (InputStream in = Files.newInputStream(file.toPath())) {
-            byte[] head = in.readNBytes(1024);
-            for (byte b : head) if (b == 0) return false;
+            byte[] head = new byte[1024];
+            int length = in.read(head);
+            for (int i = 0; i < length; i++) if (head[i] == 0) return false;
         } catch (IOException e) {
             return false;
         }

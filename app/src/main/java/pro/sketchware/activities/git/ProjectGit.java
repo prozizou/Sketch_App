@@ -272,7 +272,7 @@ public final class ProjectGit implements AutoCloseable {
             List<DiffEntry> entries = formatter.scan(oldTree, newTree);
             formatter.format(entries);
         }
-        String text = out.toString(StandardCharsets.UTF_8);
+        String text = new String(out.toByteArray(), StandardCharsets.UTF_8);
         return text.length() > MAX_DIFF_CHARS ? text.substring(0, MAX_DIFF_CHARS) + "\n… (the rest is not shown)\n" : text;
     }
 
