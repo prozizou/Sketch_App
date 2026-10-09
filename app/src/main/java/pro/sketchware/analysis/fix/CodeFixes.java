@@ -30,7 +30,8 @@ public final class CodeFixes {
     public static Result handlerLooper(String content) {
         if (content.contains("Looper.prepare") || content.contains("HandlerThread")) return new Result(content, 0);
         Matcher matcher = HANDLER.matcher(content);
-        StringBuilder out = new StringBuilder();
+        // StringBuffer: the StringBuilder overloads of appendReplacement need API 34
+        StringBuffer out = new StringBuffer();
         int count = 0;
         while (matcher.find()) {
             if (inCommentOrString(content, matcher.start())) continue;
@@ -130,7 +131,7 @@ public final class CodeFixes {
      */
     public static Result supportImports(String content) {
         Matcher matcher = SUPPORT_IMPORT.matcher(content);
-        StringBuilder out = new StringBuilder();
+        StringBuffer out = new StringBuffer();
         int count = 0;
         while (matcher.find()) {
             String replacement = SUPPORT_TO_ANDROIDX.get(matcher.group(2));
