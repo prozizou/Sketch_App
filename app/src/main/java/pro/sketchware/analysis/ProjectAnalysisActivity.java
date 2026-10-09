@@ -250,7 +250,7 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
     private void showAutoFix() {
         if (loaded == null || report == null) return;
         pro.sketchware.analysis.fix.AutoFix.Plan plan = pro.sketchware.analysis.fix.AutoFix.plan(
-                loaded.facts().views(), loaded.logicScreens());
+                loaded.facts().views(), loaded.logicScreens(), loaded.facts().sources(), loaded.facts().usesAndroidX());
         int needYou = pro.sketchware.analysis.fix.AutoFix.notFixable(report.findings()).size();
         if (plan.isEmpty()) {
             new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix)
@@ -303,6 +303,9 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             case SPACING -> R.string.analysis_autofix_spacing;
             case TEXT_SCALE -> R.string.analysis_autofix_text_scale;
             case HARDCODED_TEXT -> R.string.analysis_autofix_hardcoded_text;
+            case HANDLER_LOOPER -> R.string.analysis_autofix_handler_looper;
+            case PENDING_INTENT_FLAG -> R.string.analysis_autofix_pending_intent;
+            case SUPPORT_LIBRARY -> R.string.analysis_autofix_support_library;
             case UNCONNECTED_BLOCKS -> R.string.analysis_autofix_unconnected_blocks;
         };
     }
@@ -312,6 +315,9 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
         StringBuilder text = new StringBuilder();
         for (pro.sketchware.analysis.fix.AutoFix.WidgetChange change : plan.widgetChanges()) {
             text.append(change.describe()).append('\n');
+        }
+        for (pro.sketchware.analysis.fix.AutoFix.FileEdit edit : plan.fileEdits()) {
+            text.append(getString(R.string.analysis_autofix_file_edit, edit.shownName(), edit.changes(), getString(autoFixLabel(edit.rule()), edit.changes()))).append('\n');
         }
         for (pro.sketchware.analysis.fix.AutoFix.BlockRemoval removal : plan.blockRemovals()) {
             text.append(getString(R.string.analysis_autofix_remove_blocks, removal.javaName().replace(".java", ""),

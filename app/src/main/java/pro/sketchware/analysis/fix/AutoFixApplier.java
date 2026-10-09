@@ -60,6 +60,24 @@ public final class AutoFixApplier {
                 applied++;
             }
         }
+        // Java files: each file is rewritten once with all the chosen rules that apply to it
+        Map<String, java.util.Set<AutoFix.Rule>> rulesByFile = new LinkedHashMap<>();
+        for (AutoFix.FileEdit edit : plan.fileEdits()) {
+            rulesByFile.computeIfAbsent(edit.path(), k -> java.util.EnumSet.noneOf(AutoFix.Rule.class)).add(edit.rule());
+        }
+        for (Map.Entry<String, java.util.Set<AutoFix.Rule>> entry : rulesByFile.entrySet()) {
+            File file = new File(entry.getKey());
+            if (!file.isFile()) {
+                missing++;
+                continue;
+            }
+            String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+            CodeFixes.Result result = AutoFix.rewrite(content, entry.getValue());
+            if (result.changes() > 0) {
+                Files.write(file.toPath(), result.content().getBytes(StandardCharsets.UTF_8));
+                applied += result.changes();
+            }
+        }
         for (AutoFix.BlockRemoval removal : plan.blockRemovals()) {
             HashMap<String, ArrayList<BlockBean>> events = jC.a(scId).b(removal.javaName());
             ArrayList<BlockBean> blocks = events == null ? null : events.get(removal.eventKey());

@@ -205,7 +205,11 @@ generated Java **and** the project's own Java files (`files/java`) together, wit
   smaller than 48 dp, text below 12 sp, black or white text where contrast is too low, spacing rounded to the 4 dp
   rhythm, text sizes rounded to the Material type scale, typed-in texts moved to the project's `strings.xml`
   (`files/resource/values/strings.xml`, an existing key with the same text is reused; nothing is written if the file
-  cannot be read), and (unticked by default) deleting blocks not connected to their event. Tests check that once the plan is applied, the analyses no longer report those problems.
+  cannot be read), deprecated APIs with one mechanical replacement in the project's Java files (`new Handler()` gets
+  `Looper.getMainLooper()` unless the file prepares its own loopers; `FLAG_IMMUTABLE` added to PendingIntent flags;
+  `android.support` imports with a known AndroidX or Material replacement, only when the project uses AndroidX), and
+  (unticked by default) deleting blocks not connected to their event. Tests check that once the plan is applied, the analyses no longer report those problems.
 - **Not auto-fixed, on purpose**: everything that needs a decision (target SDK, permissions, secrets, http addresses,
-  deprecated APIs, libraries, left/right spacing, unused variables, loops and logic errors...). They stay
+  AsyncTask, ProgressDialog, shared storage, onBackPressed, Wi-Fi and device identifiers (they need the logic
+  rewritten), libraries, left/right spacing, unused variables, loops and logic errors...). They stay
   in the list with their Open button.

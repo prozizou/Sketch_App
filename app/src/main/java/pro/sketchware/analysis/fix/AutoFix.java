@@ -10,6 +10,7 @@ import java.util.Set;
 
 import pro.sketchware.analysis.CompatibilityAnalyzer;
 import pro.sketchware.analysis.Finding;
+import pro.sketchware.analysis.SourceFile;
 import pro.sketchware.analysis.ViewFacts;
 import pro.sketchware.editor.layout.SpacingScale;
 import pro.sketchware.logic.BlockGraph;
@@ -32,6 +33,12 @@ public final class AutoFix {
         TEXT_SCALE("design.text-size-off-scale", true),
         /** Moves typed-in text to strings.xml and points the widget at it. */
         HARDCODED_TEXT("quality.hardcoded-text", true),
+        /** new Handler() gets the main looper, in the project's Java files. */
+        HANDLER_LOOPER("compat.handler-no-looper", true),
+        /** PendingIntent calls get FLAG_IMMUTABLE, in the project's Java files. */
+        PENDING_INTENT_FLAG("compat.pending-intent-flag", true),
+        /** android.support imports with a known replacement become AndroidX, in the project's Java files. */
+        SUPPORT_LIBRARY("compat.support-library", true),
         /** Deletes blocks: off by default, since loose blocks are sometimes kept on purpose as drafts. */
         UNCONNECTED_BLOCKS("logic.unconnected-blocks", false);
 
@@ -77,22 +84,32 @@ public final class AutoFix {
     public record BlockRemoval(String javaName, String eventKey, Set<String> blockIds) {
     }
 
-    public record Plan(List<WidgetChange> widgetChanges, List<BlockRemoval> blockRemovals) {
+    /** Rewrite the project's Java file at {@code path} with {@code rule}, which changes {@code changes} places in it. */
+    public record FileEdit(Rule rule, String path, String shownName, int changes) {
+    }
+
+    public record Plan(List<WidgetChange> widgetChanges, List<BlockRemoval> blockRemovals, List<FileEdit> fileEdits) {
+        public Plan(List<WidgetChange> widgetChanges, List<BlockRemoval> blockRemovals) {
+            this(widgetChanges, blockRemovals, List.of());
+        }
+
         public int count(Rule rule) {
             if (rule == Rule.UNCONNECTED_BLOCKS) {
                 return blockRemovals.stream().mapToInt(r -> r.blockIds().size()).sum();
             }
-            return (int) widgetChanges.stream().filter(c -> c.rule() == rule).count();
+            return (int) widgetChanges.stream().filter(c -> c.rule() == rule).count()
+                    + fileEdits.stream().filter(e -> e.rule() == rule).mapToInt(FileEdit::changes).sum();
         }
 
         public boolean isEmpty() {
-            return widgetChanges.isEmpty() && blockRemovals.isEmpty();
+            return widgetChanges.isEmpty() && blockRemovals.isEmpty() && fileEdits.isEmpty();
         }
 
         /** Only the changes of the chosen rules. */
         public Plan only(Set<Rule> rules) {
             return new Plan(widgetChanges.stream().filter(c -> rules.contains(c.rule())).toList(),
-                    rules.contains(Rule.UNCONNECTED_BLOCKS) ? blockRemovals : List.of());
+                    rules.contains(Rule.UNCONNECTED_BLOCKS) ? blockRemovals : List.of(),
+                    fileEdits.stream().filter(e -> rules.contains(e.rule())).toList());
         }
     }
 
@@ -108,6 +125,51 @@ public final class AutoFix {
     }
 
     public static Plan plan(List<ViewFacts> views, List<LogicScreen> screens) {
+        return plan(views, screens, List.of(), false);
+    }
+
+    /**
+     * Also plans the rewrites of the project's own Java files ({@code sources}). Support Library imports are only
+     * replaced when the project uses AndroidX ({@code usesAndroidX}), since the replacements come from it.
+     */
+    public static Plan plan(List<ViewFacts> views, List<LogicScreen> screens, List<SourceFile> sources, boolean usesAndroidX) {
+        Plan base = planScreens(views, screens);
+        List<FileEdit> edits = new ArrayList<>();
+        for (SourceFile source : sources) {
+            if (!source.name().endsWith(".java")) continue;
+            int handlers = CodeFixes.handlerLooper(source.content()).changes();
+            if (handlers > 0) edits.add(new FileEdit(Rule.HANDLER_LOOPER, source.openPath(), source.name(), handlers));
+            int intents = CodeFixes.pendingIntentFlags(source.content()).changes();
+            if (intents > 0) edits.add(new FileEdit(Rule.PENDING_INTENT_FLAG, source.openPath(), source.name(), intents));
+            int imports = usesAndroidX ? CodeFixes.supportImports(source.content()).changes() : 0;
+            if (imports > 0) edits.add(new FileEdit(Rule.SUPPORT_LIBRARY, source.openPath(), source.name(), imports));
+        }
+        return new Plan(base.widgetChanges(), base.blockRemovals(), edits);
+    }
+
+    /** {@code content} rewritten with the chosen file rules, in a fixed order. */
+    public static CodeFixes.Result rewrite(String content, Set<Rule> rules) {
+        String text = content;
+        int changes = 0;
+        if (rules.contains(Rule.HANDLER_LOOPER)) {
+            CodeFixes.Result r = CodeFixes.handlerLooper(text);
+            text = r.content();
+            changes += r.changes();
+        }
+        if (rules.contains(Rule.PENDING_INTENT_FLAG)) {
+            CodeFixes.Result r = CodeFixes.pendingIntentFlags(text);
+            text = r.content();
+            changes += r.changes();
+        }
+        if (rules.contains(Rule.SUPPORT_LIBRARY)) {
+            CodeFixes.Result r = CodeFixes.supportImports(text);
+            text = r.content();
+            changes += r.changes();
+        }
+        return new CodeFixes.Result(text, changes);
+    }
+
+    private static Plan planScreens(List<ViewFacts> views, List<LogicScreen> screens) {
         // One change per widget field: a later rule refines an earlier one (small text, then the type scale)
         Map<String, WidgetChange> changes = new LinkedHashMap<>();
         for (ViewFacts view : views) {
