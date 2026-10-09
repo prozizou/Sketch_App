@@ -148,20 +148,23 @@ public final class SecurityScanner {
     private static void checkSecrets(List<SourceFile> files, List<Finding> out) {
         for (SecretRule rule : SECRET_RULES) {
             List<String> hits = new ArrayList<>();
+            List<Location> at = new ArrayList<>();
             int count = 0;
             for (SourceFile file : files) {
                 Matcher matcher = rule.pattern().matcher(file.content());
                 while (matcher.find()) {
                     count++;
+                    at.add(Location.source(file.openPath(), file.name(), Location.lineOf(file.content(), matcher.start())));
                     if (hits.size() < MAX_EVIDENCE) hits.add(location(file, matcher.start()) + ": " + redact(matcher.group()));
                 }
             }
             if (count > 0) {
-                out.add(new Finding(rule.id(), Category.SECURITY, rule.severity(), rule.title() + suffix(count), rule.cause(), rule.solution(), String.join("\n", hits)));
+                out.add(new Finding(rule.id(), Category.SECURITY, rule.severity(), rule.title() + suffix(count), rule.cause(), rule.solution(), String.join("\n", hits), at));
             }
         }
 
         List<String> hits = new ArrayList<>();
+        List<Location> at = new ArrayList<>();
         int count = 0;
         for (SourceFile file : files) {
             Matcher matcher = GENERIC_SECRET.matcher(file.content());
@@ -169,6 +172,7 @@ public final class SecurityScanner {
                 String value = matcher.group(2);
                 if (isPlaceholder(value)) continue;
                 count++;
+                at.add(Location.source(file.openPath(), file.name(), Location.lineOf(file.content(), matcher.start())));
                 if (hits.size() < MAX_EVIDENCE) hits.add(location(file, matcher.start()) + ": " + matcher.group(1) + " = " + redact(value));
             }
         }
@@ -176,7 +180,7 @@ public final class SecurityScanner {
             out.add(new Finding("security.secret-hardcoded", Category.SECURITY, Severity.WARNING, "Passwords or keys written into the code" + suffix(count),
                     "A value typed into the code ends up in the APK, where anyone can read it with free tools.",
                     "Do not keep secrets in the app. Ask the user to sign in, or let your server hold the secret and give the app a short-lived token.",
-                    String.join("\n", hits)));
+                    String.join("\n", hits), at));
         }
     }
 
@@ -196,11 +200,13 @@ public final class SecurityScanner {
 
     private static void checkCleartext(List<SourceFile> files, List<Finding> out) {
         List<String> hits = new ArrayList<>();
+        List<Location> at = new ArrayList<>();
         int count = 0;
         for (SourceFile file : files) {
             Matcher matcher = CLEARTEXT_URL.matcher(file.content());
             while (matcher.find()) {
                 count++;
+                at.add(Location.source(file.openPath(), file.name(), Location.lineOf(file.content(), matcher.start())));
                 if (hits.size() < MAX_EVIDENCE) hits.add(location(file, matcher.start()) + ": " + matcher.group(1));
             }
         }
@@ -208,22 +214,24 @@ public final class SecurityScanner {
             out.add(new Finding("security.cleartext-http", Category.SECURITY, Severity.WARNING, "Addresses that use http instead of https" + suffix(count),
                     "Data sent over http can be read and changed by anyone on the network. Apps that target Android 9 (API 28) or higher also block it by default, so these requests fail.",
                     "Use https:// addresses. If the server has no HTTPS, set one up (free certificates exist) before releasing the app.",
-                    String.join("\n", hits)));
+                    String.join("\n", hits), at));
         }
     }
 
     private static void checkCode(CodeRule rule, List<SourceFile> files, List<Finding> out) {
         List<String> hits = new ArrayList<>();
+        List<Location> at = new ArrayList<>();
         int count = 0;
         for (SourceFile file : files) {
             Matcher matcher = rule.pattern().matcher(file.content());
             while (matcher.find()) {
                 count++;
+                at.add(Location.source(file.openPath(), file.name(), Location.lineOf(file.content(), matcher.start())));
                 if (hits.size() < MAX_EVIDENCE) hits.add(location(file, matcher.start()) + ": " + firstLine(matcher.group()));
             }
         }
         if (count > 0) {
-            out.add(new Finding(rule.id(), Category.SECURITY, rule.severity(), rule.title() + suffix(count), rule.cause(), rule.solution(), String.join("\n", hits)));
+            out.add(new Finding(rule.id(), Category.SECURITY, rule.severity(), rule.title() + suffix(count), rule.cause(), rule.solution(), String.join("\n", hits), at));
         }
     }
 

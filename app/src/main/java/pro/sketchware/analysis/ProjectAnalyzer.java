@@ -24,16 +24,16 @@ public final class ProjectAnalyzer {
                                      List<pro.sketchware.logic.LogicScreen> logicScreens) {
         List<Finding> findings = new ArrayList<>();
         if (!logicScreens.isEmpty()) {
-            List<String> javaNames = new ArrayList<>();
+            Map<String, String> javaPaths = new java.util.LinkedHashMap<>();
             Map<String, String> javaFiles = new java.util.LinkedHashMap<>();
             for (SourceFile source : facts.sources()) {
                 if (source.name().endsWith(".java")) {
-                    javaNames.add(source.name());
+                    javaPaths.put(source.name(), source.openPath());
                     javaFiles.put(source.name(), source.content());
                 }
             }
-            findings.addAll(pro.sketchware.logic.LogicAnalyzer.analyze(logicScreens, javaNames));
-            findings.addAll(pro.sketchware.logic.NavigationGraph.build(logicScreens, javaFiles).findings());
+            findings.addAll(pro.sketchware.logic.LogicAnalyzer.analyze(logicScreens, javaPaths));
+            findings.addAll(pro.sketchware.logic.NavigationGraph.build(logicScreens, javaFiles, javaPaths).findings());
         }
         findings.addAll(CompatibilityAnalyzer.analyze(facts));
         findings.addAll(DesignSystemChecker.analyze(facts.views()));

@@ -1,5 +1,6 @@
 package pro.sketchware.analysis;
 
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.besome.sketch.beans.ProjectFileBean;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.color.MaterialColors;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import a.a.a.jC;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.databinding.ActivityProjectAnalysisBinding;
@@ -40,6 +43,10 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
     private ActivityProjectAnalysisBinding binding;
     private String scId;
     private AnalysisReport report;
+    /** Result extras: the screen to show in the editor, and the widget to select on it. */
+    public static final String EXTRA_PROJECT_FILE = "project_file";
+    public static final String EXTRA_SELECT_WIDGET = "select_widget";
+
     private ProjectFactsLoader.Loaded loaded;
     private Category filter;
 
@@ -225,6 +232,83 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
                 .show();
     }
 
+    /** One location opens at once; several are offered in a list. */
+    private void openFirstOrChoose(Finding finding) {
+        List<Location> locations = finding.locations();
+        if (locations.size() == 1) {
+            open(locations.get(0));
+            return;
+        }
+        String[] labels = new String[locations.size()];
+        for (int i = 0; i < labels.length; i++) labels[i] = locations.get(i).label();
+        new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_open_where)
+                .setItems(labels, (dialog, which) -> open(locations.get(which)))
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    /**
+     * Opens what a finding is about: a widget or a screen goes back to the editor on that screen (and selects the
+     * widget), a file opens in the code editor at the line, an event opens in the Logic editor.
+     */
+    private void open(Location location) {
+        switch (location.kind()) {
+            case WIDGET -> backToEditor(projectFile(location.file() + ".xml", true), location.target(), location);
+            case SCREEN -> backToEditor(projectFile(location.file(), false), null, location);
+            case SOURCE -> {
+                java.io.File file = new java.io.File(location.file());
+                if (!file.isFile()) {
+                    SketchwareUtil.toast(getString(R.string.analysis_location_missing, location.label()));
+                    return;
+                }
+                Intent intent = new Intent(this, mod.hey.studios.code.SrcCodeEditor.class);
+                intent.putExtra("title", file.getName());
+                intent.putExtra("content", file.getAbsolutePath());
+                intent.putExtra(mod.hey.studios.code.SrcCodeEditor.EXTRA_LINE, location.line());
+                startActivity(intent);
+            }
+            case EVENT -> {
+                ProjectFileBean file = projectFile(location.file(), false);
+                if (file == null) {
+                    SketchwareUtil.toast(getString(R.string.analysis_location_missing, location.label()));
+                    return;
+                }
+                Intent intent = new Intent(this, com.besome.sketch.editor.LogicEditorActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                intent.putExtra("sc_id", scId);
+                intent.putExtra("id", location.eventTarget());
+                intent.putExtra("event", location.eventName());
+                intent.putExtra("project_file", file);
+                intent.putExtra("event_text", location.eventName());
+                if (!location.detail().isEmpty()) intent.putExtra(com.besome.sketch.editor.LogicEditorActivity.EXTRA_HIGHLIGHT_BLOCK, location.detail());
+                startActivity(intent);
+            }
+        }
+    }
+
+    /** The screen or custom view whose layout ({@code byXml}) or Java file is {@code name}, or null. */
+    private ProjectFileBean projectFile(String name, boolean byXml) {
+        List<ProjectFileBean> files = new ArrayList<>();
+        if (jC.b(scId).b() != null) files.addAll(jC.b(scId).b());
+        if (byXml && jC.b(scId).c() != null) files.addAll(jC.b(scId).c());
+        for (ProjectFileBean file : files) {
+            if (name.equals(byXml ? file.getXmlName() : file.getJavaName())) return file;
+        }
+        return null;
+    }
+
+    /** Closes this screen and asks the editor to show {@code file}, selecting {@code widgetId} when given. */
+    private void backToEditor(ProjectFileBean file, String widgetId, Location location) {
+        if (file == null) {
+            SketchwareUtil.toast(getString(R.string.analysis_location_missing, location.label()));
+            return;
+        }
+        Intent result = new Intent();
+        result.putExtra(EXTRA_PROJECT_FILE, file);
+        if (widgetId != null) result.putExtra(EXTRA_SELECT_WIDGET, widgetId);
+        setResult(RESULT_OK, result);
+        finish();
+    }
+
     private String categoryLabel(Category category) {
         return getString(switch (category) {
             case COMPATIBILITY -> R.string.analysis_cat_compatibility;
@@ -263,7 +347,10 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             holder.item.title.setText(finding.title());
             holder.item.title.setTextColor(severityColor(finding.severity()));
             holder.item.subtitle.setText(categoryLabel(finding.category()) + " · " + finding.cause());
-            holder.itemView.setOnClickListener(v -> FindingsDialog.show(ProjectAnalysisActivity.this, finding.title(), List.of(finding), ""));
+            holder.itemView.setOnClickListener(v -> FindingsDialog.show(ProjectAnalysisActivity.this, finding.title(), List.of(finding), "",
+                    ProjectAnalysisActivity.this::open));
+            holder.item.open.setVisibility(finding.locations().isEmpty() ? View.GONE : View.VISIBLE);
+            holder.item.open.setOnClickListener(v -> openFirstOrChoose(finding));
         }
 
         @Override

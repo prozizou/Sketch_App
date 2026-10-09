@@ -29,26 +29,39 @@ public final class DesignSystemChecker {
         List<String> offScaleText = new ArrayList<>();
         Set<Integer> textSizes = new TreeSet<>();
         Set<Integer> colors = new LinkedHashSet<>();
+        List<Location> spacingAt = new ArrayList<>();
+        List<Location> textAt = new ArrayList<>();
+        java.util.Map<Integer, List<Location>> colorAt = new java.util.HashMap<>();
         for (ViewFacts view : views) {
-            if (hasOffScaleSpacing(view)) offScaleSpacing.add(view.label());
+            if (hasOffScaleSpacing(view)) {
+                offScaleSpacing.add(view.label());
+                spacingAt.add(Location.widget(view.screen(), view.id()));
+            }
             if (view.textSizeSp() > 0) {
                 textSizes.add(view.textSizeSp());
-                if (!onTypeScale(view.textSizeSp())) offScaleText.add(view.label() + " (" + view.textSizeSp() + " sp)");
+                if (!onTypeScale(view.textSizeSp())) {
+                    offScaleText.add(view.label() + " (" + view.textSizeSp() + " sp)");
+                    textAt.add(Location.widget(view.screen(), view.id()));
+                }
             }
-            if (view.textColor() != null && opaque(view.textColor())) colors.add(rgb(view.textColor()));
-            if (view.backgroundColor() != null && opaque(view.backgroundColor())) colors.add(rgb(view.backgroundColor()));
+            for (Integer color : new Integer[]{view.textColor(), view.backgroundColor()}) {
+                if (color != null && opaque(color)) {
+                    colors.add(rgb(color));
+                    colorAt.computeIfAbsent(rgb(color), k -> new ArrayList<>()).add(Location.widget(view.screen(), view.id()));
+                }
+            }
         }
         if (!offScaleSpacing.isEmpty()) {
             out.add(new Finding("design.spacing-off-scale", Category.QUALITY, Severity.INFO,
                     "Margins or padding off the 4 dp rhythm (" + offScaleSpacing.size() + " widgets)",
                     "Material Design spaces things in steps of 4 dp (4, 8, 12, 16, 24...). Odd values make the screens look uneven and are hard to keep consistent.",
-                    "Use values from 0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64 dp.", sample(offScaleSpacing)));
+                    "Use values from 0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64 dp.", sample(offScaleSpacing), spacingAt));
         }
         if (!offScaleText.isEmpty()) {
             out.add(new Finding("design.text-size-off-scale", Category.QUALITY, Severity.INFO,
                     "Text sizes outside the Material type scale (" + offScaleText.size() + " widgets)",
                     "The Material 3 type scale uses a fixed set of sizes so text hierarchy stays consistent between screens.",
-                    "Use 11, 12, 14, 16, 22, 24, 28, 32, 36, 45 or 57 sp.", sample(offScaleText)));
+                    "Use 11, 12, 14, 16, 22, 24, 28, 32, 36, 45 or 57 sp.", sample(offScaleText), textAt));
         }
         if (textSizes.size() > MAX_TEXT_SIZES) {
             out.add(new Finding("design.too-many-text-sizes", Category.QUALITY, Severity.INFO,
@@ -64,10 +77,12 @@ public final class DesignSystemChecker {
         }
         List<String> nearDuplicates = nearDuplicates(new ArrayList<>(colors));
         if (!nearDuplicates.isEmpty()) {
+            List<Location> twinsAt = new ArrayList<>();
+            for (Integer color : nearDuplicateColors(new ArrayList<>(colors))) twinsAt.addAll(colorAt.getOrDefault(color, List.of()));
             out.add(new Finding("design.near-duplicate-colors", Category.QUALITY, Severity.INFO,
                     "Colours that are almost the same (" + nearDuplicates.size() + " pairs)",
                     "Two colours that differ by a hair are nearly always one colour typed twice, and they will drift apart over time.",
-                    "Use one colour for both, ideally from the colour resources.", sample(nearDuplicates)));
+                    "Use one colour for both, ideally from the colour resources.", sample(nearDuplicates), twinsAt));
         }
         return out;
     }
@@ -93,6 +108,27 @@ public final class DesignSystemChecker {
 
     private static int rgb(int argb) {
         return argb & 0xffffff;
+    }
+
+    /** The colours that have a near twin, in the order of {@code colors}. */
+    static Set<Integer> nearDuplicateColors(List<Integer> colors) {
+        Set<Integer> result = new LinkedHashSet<>();
+        for (int i = 0; i < colors.size(); i++) {
+            for (int j = i + 1; j < colors.size(); j++) {
+                if (isNear(colors.get(i), colors.get(j))) {
+                    result.add(colors.get(i));
+                    result.add(colors.get(j));
+                }
+            }
+        }
+        return result;
+    }
+
+    private static boolean isNear(int a, int b) {
+        int distance = Math.abs(((a >> 16) & 0xff) - ((b >> 16) & 0xff))
+                + Math.abs(((a >> 8) & 0xff) - ((b >> 8) & 0xff))
+                + Math.abs((a & 0xff) - (b & 0xff));
+        return distance > 0 && distance <= NEAR_DUPLICATE_DISTANCE;
     }
 
     static List<String> nearDuplicates(List<Integer> colors) {

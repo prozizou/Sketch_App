@@ -1113,6 +1113,19 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         isLayoutChanged = true;
     }
 
+    /**
+     * Selects the widget with that id as a tap would, which also shows its properties.
+     *
+     * @return false when the screen has no such widget
+     */
+    public boolean selectWidget(String id) {
+        if (id == null || id.isEmpty()) return false;
+        ItemView item = viewPane.findItemViewByTag(id);
+        if (item == null) return false;
+        a(item, true);
+        return true;
+    }
+
     public void updateSelection(String tag) {
         ItemView syVar;
         ItemView itemView = viewPane.findItemViewByTag(tag);

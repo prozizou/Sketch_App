@@ -183,6 +183,7 @@ public final class CompatibilityAnalyzer {
         int target = facts.targetSdk();
         for (CodeRule rule : CODE_RULES) {
             List<String> hits = new ArrayList<>();
+            List<Location> at = new ArrayList<>();
             int count = 0;
             for (SourceFile source : facts.sources()) {
                 String[] lines = source.content().split("\n", -1);
@@ -191,6 +192,7 @@ public final class CompatibilityAnalyzer {
                     if (rule.pattern().matcher(stripLineComment(lines[i])).find()) {
                         count++;
                         if (hits.size() < MAX_EVIDENCE_LINES) hits.add(source.name() + ":" + (i + 1) + ": " + lines[i].strip());
+                        at.add(Location.source(source.openPath(), source.name(), i + 1));
                     }
                 }
             }
@@ -199,7 +201,7 @@ public final class CompatibilityAnalyzer {
             boolean newTarget = rule.newTargetFrom() > 0 && (target == 0 || target >= rule.newTargetFrom());
             Severity severity = newTarget ? rule.severityOnNewTarget() : rule.severity();
             out.add(new Finding(rule.id(), Category.COMPATIBILITY, severity, rule.title() + countSuffix(count),
-                    rule.cause(), rule.solution(), String.join("\n", hits)));
+                    rule.cause(), rule.solution(), String.join("\n", hits), at));
         }
         checkPendingIntents(facts, out);
         checkSupportLibrary(facts, out);
@@ -207,6 +209,7 @@ public final class CompatibilityAnalyzer {
 
     private static void checkPendingIntents(ProjectFacts facts, List<Finding> out) {
         List<String> hits = new ArrayList<>();
+        List<Location> at = new ArrayList<>();
         int count = 0;
         for (SourceFile source : facts.sources()) {
             Matcher matcher = PENDING_INTENT.matcher(source.content());
@@ -215,6 +218,7 @@ public final class CompatibilityAnalyzer {
                 String call = source.content().substring(matcher.start(), end < 0 ? Math.min(source.content().length(), matcher.end() + 300) : end);
                 if (call.contains("FLAG_IMMUTABLE") || call.contains("FLAG_MUTABLE")) continue;
                 count++;
+                at.add(Location.source(source.openPath(), source.name(), Location.lineOf(source.content(), matcher.start())));
                 if (hits.size() < MAX_EVIDENCE_LINES) {
                     int line = 1 + (int) source.content().substring(0, matcher.start()).chars().filter(c -> c == '\n').count();
                     hits.add(source.name() + ":" + line + ": " + call.strip().split("\n")[0]);
@@ -227,16 +231,18 @@ public final class CompatibilityAnalyzer {
                 "PendingIntent without FLAG_IMMUTABLE or FLAG_MUTABLE" + countSuffix(count),
                 "Apps that target Android 12 (API 31) or higher crash with an IllegalArgumentException when a PendingIntent is created without saying whether it is mutable.",
                 "Add PendingIntent.FLAG_IMMUTABLE to the flags (or FLAG_MUTABLE if the intent must be changed by the receiver).",
-                String.join("\n", hits)));
+                String.join("\n", hits), at));
     }
 
     private static void checkSupportLibrary(ProjectFacts facts, List<Finding> out) {
         List<String> hits = new ArrayList<>();
+        List<Location> at = new ArrayList<>();
         int count = 0;
         for (SourceFile source : facts.sources()) {
             Matcher matcher = SUPPORT_IMPORT.matcher(source.content());
             while (matcher.find()) {
                 count++;
+                at.add(Location.source(source.openPath(), source.name(), Location.lineOf(source.content(), matcher.start())));
                 if (hits.size() < MAX_EVIDENCE_LINES) {
                     int line = 1 + (int) source.content().substring(0, matcher.start()).chars().filter(c -> c == '\n').count();
                     hits.add(source.name() + ":" + line + ": " + matcher.group().strip());
@@ -248,7 +254,7 @@ public final class CompatibilityAnalyzer {
                 "Code uses the old Android Support Library" + countSuffix(count),
                 "The android.support packages were replaced by AndroidX in 2018. They are not included in builds that use AndroidX, so the code does not compile.",
                 "Replace imports starting with android.support. by their androidx. equivalents (android.support.v7.app.AppCompatActivity becomes androidx.appcompat.app.AppCompatActivity).",
-                String.join("\n", hits)));
+                String.join("\n", hits), at));
     }
 
     private static boolean isCommentLine(String line) {
@@ -295,22 +301,42 @@ public final class CompatibilityAnalyzer {
         List<String> leftRight = new ArrayList<>();
         List<String> hardcodedText = new ArrayList<>();
         int lightLiteralBackgrounds = 0;
+        java.util.Map<String, List<Location>> at = new java.util.HashMap<>();
 
         for (ViewFacts view : facts.views()) {
-            if (view.kind() == Kind.IMAGE && !view.hasContentDescription()) noDescription.add(view.label());
+            if (view.kind() == Kind.IMAGE && !view.hasContentDescription()) {
+                mark(at, "noDescription", view);
+                noDescription.add(view.label());
+            }
             if (view.clickable() && ((view.widthDp() >= 0 && view.widthDp() < MIN_TOUCH_TARGET_DP)
                     || (view.heightDp() >= 0 && view.heightDp() < MIN_TOUCH_TARGET_DP))) {
+                mark(at, "smallTargets", view);
                 smallTargets.add(view.label() + " (" + describeSize(view) + ")");
             }
             if (view.textColor() != null && view.backgroundColor() != null) {
                 double ratio = contrastRatio(view.textColor(), view.backgroundColor());
                 double needed = view.textSizeSp() >= LARGE_TEXT_SP ? MIN_CONTRAST_LARGE_TEXT : MIN_CONTRAST;
-                if (ratio < needed) lowContrast.add(view.label() + String.format(Locale.ROOT, " (%.1f:1)", ratio));
+                if (ratio < needed) {
+                    mark(at, "lowContrast", view);
+                    lowContrast.add(view.label() + String.format(Locale.ROOT, " (%.1f:1)", ratio));
+                }
             }
-            if (view.textSizeSp() > 0 && view.textSizeSp() < SMALL_TEXT_SP) smallText.add(view.label() + " (" + view.textSizeSp() + "sp)");
-            if (view.marginLeft() != view.marginRight() || view.paddingLeft() != view.paddingRight()) leftRight.add(view.label());
-            if (view.hardcodedText()) hardcodedText.add(view.label());
-            if (view.backgroundColor() != null && luminance(view.backgroundColor()) > 0.8) lightLiteralBackgrounds++;
+            if (view.textSizeSp() > 0 && view.textSizeSp() < SMALL_TEXT_SP) {
+                mark(at, "smallText", view);
+                smallText.add(view.label() + " (" + view.textSizeSp() + "sp)");
+            }
+            if (view.marginLeft() != view.marginRight() || view.paddingLeft() != view.paddingRight()) {
+                mark(at, "leftRight", view);
+                leftRight.add(view.label());
+            }
+            if (view.hardcodedText()) {
+                mark(at, "hardcodedText", view);
+                hardcodedText.add(view.label());
+            }
+            if (view.backgroundColor() != null && luminance(view.backgroundColor()) > 0.8) {
+                lightLiteralBackgrounds++;
+                mark(at, "light", view);
+            }
         }
 
         if (!noDescription.isEmpty()) {
@@ -318,47 +344,51 @@ public final class CompatibilityAnalyzer {
                     "Images without a description (" + noDescription.size() + ")",
                     "Screen readers such as TalkBack cannot say what an image is for when it has no contentDescription.",
                     "Add a contentDescription to each informative image (through the widget's injected attributes), or mark purely decorative images as not important for accessibility.",
-                    sample(noDescription)));
+                    sample(noDescription)).withLocations(at.get("noDescription")));
         }
         if (!smallTargets.isEmpty()) {
             out.add(new Finding("a11y.touch-target", Category.COMPATIBILITY, Severity.WARNING,
                     "Tappable widgets smaller than 48 dp (" + smallTargets.size() + ")",
                     "Small buttons are hard to hit for everyone, and difficult or impossible for people with motor impairments. Android's guideline is at least 48 x 48 dp.",
                     "Make the widget at least 48 dp wide and tall, or keep it small and add padding or a larger touch area around it.",
-                    sample(smallTargets)));
+                    sample(smallTargets)).withLocations(at.get("smallTargets")));
         }
         if (!lowContrast.isEmpty()) {
             out.add(new Finding("a11y.contrast", Category.COMPATIBILITY, Severity.WARNING,
                     "Text with too little contrast (" + lowContrast.size() + ")",
                     "Text that is close in colour to its background is hard to read, especially in sunlight or for low vision. The guideline is a ratio of at least 4.5:1 (3:1 for large text).",
                     "Darken the text or lighten the background (or the reverse) until the ratio reaches the guideline.",
-                    sample(lowContrast)));
+                    sample(lowContrast)).withLocations(at.get("lowContrast")));
         }
         if (!smallText.isEmpty()) {
             out.add(new Finding("a11y.small-text", Category.COMPATIBILITY, Severity.INFO,
                     "Text smaller than 12 sp (" + smallText.size() + ")",
                     "Very small text is hard to read and does not help people who rely on large fonts.",
-                    "Use 12 sp or more for body text.", sample(smallText)));
+                    "Use 12 sp or more for body text.", sample(smallText)).withLocations(at.get("smallText")));
         }
         if (!leftRight.isEmpty()) {
             out.add(new Finding("rtl.asymmetric-spacing", Category.COMPATIBILITY, Severity.INFO,
                     "Different left and right spacing (" + leftRight.size() + " widgets)",
                     "Left and right margins and padding do not flip in right-to-left languages such as Arabic and Hebrew, so the layout looks mirrored wrongly there.",
                     "If the app should support right-to-left languages, use start and end margins and padding instead of left and right (through injected attributes) and declare supportsRtl in the manifest.",
-                    sample(leftRight)));
+                    sample(leftRight)).withLocations(at.get("leftRight")));
         }
         if (!hardcodedText.isEmpty()) {
             out.add(new Finding("quality.hardcoded-text", Category.QUALITY, Severity.INFO,
                     "Text typed into widgets instead of string resources (" + hardcodedText.size() + ")",
                     "Text that is not a string resource cannot be translated and is harder to change in one place.",
-                    "Move the texts to the string resources of the project (Resources editor) and refer to them.", sample(hardcodedText)));
+                    "Move the texts to the string resources of the project (Resources editor) and refer to them.", sample(hardcodedText)).withLocations(at.get("hardcodedText")));
         }
         if (!facts.hasNightResources() && lightLiteralBackgrounds >= 1) {
             out.add(new Finding("dark.fixed-light-colors", Category.COMPATIBILITY, lightLiteralBackgrounds >= 5 ? Severity.WARNING : Severity.INFO,
                     "Light colours are fixed and there are no dark-mode resources (" + lightLiteralBackgrounds + " widgets)",
                     "Widgets with a fixed light background stay light when the phone is in dark mode, and the project has no values-night resources, so the screens glare next to other dark apps.",
-                    "Use colour resources and add a night version of them (values-night), or choose a theme that follows the system.", null));
+                    "Use colour resources and add a night version of them (values-night), or choose a theme that follows the system.", null).withLocations(at.get("light")));
         }
+    }
+
+    private static void mark(java.util.Map<String, List<Location>> at, String key, ViewFacts view) {
+        at.computeIfAbsent(key, k -> new ArrayList<>()).add(Location.widget(view.screen(), view.id()));
     }
 
     private static String describeSize(ViewFacts view) {
