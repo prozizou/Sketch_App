@@ -262,9 +262,34 @@ public final class CompatibilityAnalyzer {
         return trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*");
     }
 
-    private static String stripLineComment(String line) {
-        int comment = line.indexOf("//");
-        return comment < 0 ? line : line.substring(0, comment);
+    /** The code of a line: text in string and char literals blanked out, and a trailing // comment removed. */
+    static String stripLineComment(String line) {
+        StringBuilder out = new StringBuilder(line.length());
+        char quote = 0;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (quote != 0) {
+                if (c == '\\') {
+                    out.append("  ");
+                    i++;
+                    continue;
+                }
+                if (c == quote) {
+                    quote = 0;
+                    out.append(c);
+                } else {
+                    out.append(' ');
+                }
+            } else if (c == '"' || c == '\'') {
+                quote = c;
+                out.append(c);
+            } else if (c == '/' && i + 1 < line.length() && line.charAt(i + 1) == '/') {
+                break;
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private static String countSuffix(int count) {
