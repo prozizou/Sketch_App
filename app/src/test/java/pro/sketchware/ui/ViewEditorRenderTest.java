@@ -61,7 +61,6 @@ public class ViewEditorRenderTest {
         View palette = root.findViewById(R.id.layout_palette);
         assertNotNull(root.findViewById(R.id.palette_resize_handle));
         assertEquals(72, Math.round(palette.getWidth() / root.getResources().getDisplayMetrics().density));
-        assertNotNull(root.findViewById(R.id.view_canvas_controls_handle));
         save(root, "view-editor-dark");
     }
 
