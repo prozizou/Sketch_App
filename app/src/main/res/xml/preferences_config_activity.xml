@@ -296,4 +296,22 @@
             app:summary="Restore every option to its default."
             app:title="Reset settings" />
     </PreferenceCategory>
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category-experimental"
+        app:title="Features you can switch off">
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="ff-build-doctor"
+            app:summary="Explain build failures in the compile log, with causes and fixes."
+            app:title="Build Doctor" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="ff-project-analysis"
+            app:summary="Check a project for compatibility, security and dependency problems."
+            app:title="Project analysis" />
+    </PreferenceCategory>
 </PreferenceScreen>

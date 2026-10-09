@@ -863,6 +863,12 @@ ACTION_VIEW
     <string name="git_restore_confirm">The files go back to how they were in this version, as changes you can review and commit. A snapshot of the current project is taken first. Continue?</string>
     <string name="git_discard_confirm">Throw away every change since the last commit? A snapshot of the current project is taken first.</string>
     <string name="git_done_reopen">The project files changed. Open the project again to continue.</string>
+    <string name="build_doctor_title">Build Doctor</string>
+    <string name="build_doctor_menu">Build Doctor</string>
+    <string name="build_doctor_none">No known problem was recognised in this log. The log below is the reference.</string>
+    <string name="finding_cause">Why</string>
+    <string name="finding_solution">What to do</string>
+    <string name="finding_evidence">Found in</string>
     <string name="design_drawer_menu_title_logcat_reader">Logcat Reader Manager</string>
     <string name="design_drawer_menu_subtitle_logcat_reader">Read logs from enabled projects</string>
     <string name="myprojects_list_menu_title_restore_projects">Restore Projects</string>
