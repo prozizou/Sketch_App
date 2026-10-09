@@ -94,7 +94,6 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private boolean T = false;
     private LinearLayout paletteGroup;
     private View palettePanel;
-    private com.google.android.material.button.MaterialButton togglePaletteButton;
     private boolean paletteExpanded = true;
     private boolean focusPreview;
     private boolean paletteBeforeFocus = true;
@@ -530,7 +529,6 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private void setupWidgetPaletteUi(Context context) {
         dip = wB.a(context, 1.0f); // the rest of initialize() sets it later, but the sidebar needs it now
         palettePanel = findViewById(R.id.layout_palette);
-        togglePaletteButton = findViewById(R.id.btn_toggle_palette);
         android.content.SharedPreferences prefs = context.getSharedPreferences("view_editor_ui", Context.MODE_PRIVATE);
         uiPrefs = prefs;
         currentFrame = PhoneFrame.byKey(prefs.getString("phone_frame", PhoneFrame.DEFAULT_KEY));
@@ -539,35 +537,18 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         previewOrientation = "portrait".equals(savedOrientation) ? pro.sketchware.editor.preview.Orientation.PORTRAIT
                 : "landscape".equals(savedOrientation) ? pro.sketchware.editor.preview.Orientation.LANDSCAPE : null;
         previewSafeAreas = prefs.getBoolean("preview_safe_areas", false);
-        paletteExpanded = prefs.getBoolean("palette_expanded", true);
+        // The palette's close button was removed, so a palette hidden in an older version is shown again.
+        paletteExpanded = true;
         paletteWidthDp = SidebarWidth.clampDp(prefs.getFloat("palette_width_dp", SidebarWidth.DEFAULT_DP));
         applyPaletteWidth();
         applyPaletteExpanded();
         setupPaletteResize(prefs);
         setupPinchZoom(context);
-        togglePaletteButton.setOnClickListener(v -> {
-            paletteExpanded = !paletteExpanded;
-            prefs.edit().putBoolean("palette_expanded", paletteExpanded).apply();
-            applyPaletteExpanded();
-            isLayoutChanged = true;
-            requestLayout();
-        });
         android.widget.EditText search = findViewById(R.id.search_widgets);
         search.addTextChangedListener(new com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher(
                 text -> paletteWidget.filter(text.toString())));
-        zoomLabel = findViewById(R.id.tv_vzoom);
-        findViewById(R.id.btn_vzoom_in).setOnClickListener(v -> setPreviewZoom(previewZoom + 0.25f));
-        findViewById(R.id.btn_vzoom_out).setOnClickListener(v -> setPreviewZoom(previewZoom - 0.25f));
-        findViewById(R.id.btn_vfit).setOnClickListener(v -> setPreviewZoom(1f));
-        findViewById(R.id.btn_focus_preview).setOnClickListener(v -> setFocusPreview(!focusPreview));
-        findViewById(R.id.btn_phone_frame).setOnClickListener(v -> showPhoneFramePicker());
-        View devicePreviewButton = findViewById(R.id.btn_device_preview);
-        devicePreviewButton.setOnClickListener(v -> showDevicePreviewDialog());
-        boolean devicePreviewOn = pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.DEVICE_PREVIEW);
-        devicePreviewButton.setVisibility(devicePreviewOn ? View.VISIBLE : View.GONE);
-        // The zoom bar can be moved off the preview; where it was left is remembered.
-        new FloatingBarDragger(findViewById(R.id.view_canvas_controls), findViewById(R.id.view_canvas_controls_handle),
-                this, "view_zoom_bar", 8 * dip, 6 * dip);
+        // The zoom bar was removed from the preview: pinch to zoom remains. Phone frame and Device preview are in
+        // the project menu (⋮).
     }
 
     /** Applies the sidebar width to the panel; a narrow sidebar keeps only the "+" of "+ Widget". */
@@ -700,7 +681,6 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
             paletteExpanded = paletteBeforeFocus;
         }
         applyPaletteExpanded();
-        togglePaletteButton.setVisibility(focus ? View.GONE : View.VISIBLE);
         if (focusPreviewListener != null) focusPreviewListener.accept(focus);
         isLayoutChanged = true;
         requestLayout();
@@ -720,7 +700,6 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
 
     private void applyPaletteExpanded() {
         palettePanel.setVisibility(paletteExpanded ? View.VISIBLE : View.GONE);
-        togglePaletteButton.setIconResource(paletteExpanded ? R.drawable.ic_mtrl_close : R.drawable.ic_mtrl_component);
     }
 
     private void initialize(Context context) {
@@ -1379,7 +1358,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     }
 
     /** Pick the device the screen is previewed on, its orientation and whether to mark the unsafe areas. */
-    private void showDevicePreviewDialog() {
+    public void showDevicePreviewDialog() {
         Context context = getContext();
         java.util.List<pro.sketchware.editor.preview.DevicePreset> presets = pro.sketchware.editor.preview.DevicePreset.ALL;
         int pad = (int) (20 * dip);
@@ -1436,7 +1415,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     }
 
     /** A grid of the available frames (and "no frame") to pick from. */
-    private void showPhoneFramePicker() {
+    public void showPhoneFramePicker() {
         Context context = getContext();
         android.widget.GridLayout grid = new android.widget.GridLayout(context);
         grid.setColumnCount(3);

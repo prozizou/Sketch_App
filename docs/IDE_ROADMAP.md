@@ -230,3 +230,17 @@ generated Java **and** the project's own Java files (`files/java`) together, wit
 - **Not done**: favorites, configuration profiles, change history and undo, per-project settings, automatic
   optimization, a toolchain section (Gradle/AGP/Kotlin/SDK versions do not apply: projects are built on the phone
   without Gradle), and "restart needed" labels (no setting was checked to need one).
+
+### What's new, View editor clean-up, Project health redirect
+
+- **What's new** (`WhatsNewDialog`, entries in `whats_new_entries` read by `WhatsNewCatalog`): shown once after an
+  update, and any time from the home menu (What's new). Each entry opens its feature: App Settings directly; a
+  project feature (Project health, Auto-fix, Navigation graph, Data designer, Device preview, Block debugger) asks
+  which project, then opens it on that feature (`DesignActivity.EXTRA_OPEN_FEATURE`). A feature turned off in App
+  Settings says so instead.
+- **View editor**: the palette's close button and the zoom bar over the preview are removed. The palette stays
+  visible; pinch to zoom remains; Phone frame and Device preview moved to the project menu (⋮ > Preview). Focus
+  preview has no button any more.
+- **Project health redirect**: a result that arrives while the editor is still reloading the project (the editor was
+  closed by Android while the analysis was open) is applied after loading instead of being lost, and the widget is
+  looked for for up to 2 seconds while a heavy screen is built.

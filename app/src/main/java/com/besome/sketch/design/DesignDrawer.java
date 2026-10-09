@@ -98,6 +98,10 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toProjectAnalysis();
         } else if (id == R.id.item_data_designer) {
             designActivity.toDataDesigner();
+        } else if (id == R.id.item_phone_frame) {
+            designActivity.toPhoneFrame();
+        } else if (id == R.id.item_device_preview) {
+            designActivity.toDevicePreview();
         } else if (id == R.id.item_git) {
             designActivity.toGit();
         } else if (id == R.id.item_snapshots) {
@@ -168,6 +172,12 @@ public class DesignDrawer extends LinearLayout {
         addRow(project, R.id.item_git, R.drawable.ic_mtrl_sync, R.string.design_drawer_menu_title_git, R.string.design_drawer_menu_subtitle_git);
         addRow(project, R.id.item_snapshots, R.drawable.ic_mtrl_history, R.string.design_drawer_menu_title_snapshots, R.string.design_drawer_menu_subtitle_snapshots);
         addRow(project, R.id.item_collection_manager, R.drawable.ic_mtrl_bookmark, R.string.design_drawer_menu_title_collection, R.string.design_drawer_menu_description_collection);
+
+        Section preview = addSection(content, "Preview");
+        addRow(preview, R.id.item_phone_frame, R.drawable.ic_mtrl_screen, R.string.phone_frame_title, R.string.design_drawer_menu_subtitle_phone_frame);
+        if (FeatureFlags.isEnabled(FeatureFlag.DEVICE_PREVIEW)) {
+            addRow(preview, R.id.item_device_preview, R.drawable.ic_mtrl_devices, R.string.design_drawer_menu_title_device_preview, R.string.design_drawer_menu_subtitle_device_preview);
+        }
 
         Section resources = addSection(content, "Resources");
         addRow(resources, R.id.item_image_manager, R.drawable.ic_mtrl_image, R.string.design_drawer_menu_title_image, R.string.design_drawer_menu_description_image);
