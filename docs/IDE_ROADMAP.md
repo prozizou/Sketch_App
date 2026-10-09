@@ -213,3 +213,20 @@ generated Java **and** the project's own Java files (`files/java`) together, wit
   AsyncTask, ProgressDialog, shared storage, onBackPressed, Wi-Fi and device identifiers (they need the logic
   rewritten), libraries, left/right spacing, unused variables, loops and logic errors...). They stay
   in the list with their Open button.
+
+### App Settings: categories and search
+
+- The single long page is replaced by a main page with a search bar, eight categories (Appearance & Editor, Projects &
+  Storage, Backup & Security, Build & Signing, Performance, Updates, Diagnostics, Advanced & Experimental), Restore
+  defaults and the version. Each category opens its own screen (`PreferenceScreen` with `rootKey`, back returns to
+  the main page). Every existing setting keeps its key, storage and behaviour; a test checks that none was lost or
+  duplicated and that each `dependency` stays in the same category.
+- **Search** (`SettingsSearch`, index read from the preferences XML by `SettingsIndex`): every word must match the
+  title, description, category or keywords (English and French synonyms), ignoring case and accents; title matches
+  come first. A result opens its category, scrolls to the row and flashes it.
+- **Reset this section** at the end of each category resets only that page's settings.
+- **Theme** row opens the existing appearance screen; **Signing keystore** in Backup & Security opens the keystore row
+  of Build & Signing. Experimental features sit under a risk notice.
+- **Not done**: favorites, configuration profiles, change history and undo, per-project settings, automatic
+  optimization, a toolchain section (Gradle/AGP/Kotlin/SDK versions do not apply: projects are built on the phone
+  without Gradle), and "restart needed" labels (no setting was checked to need one).

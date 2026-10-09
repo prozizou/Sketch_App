@@ -1,394 +1,563 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory
+    <Preference
         app:iconSpaceReserved="false"
-        app:key="category-editor"
-        app:title="Editor">
+        app:key="settings-search"
+        app:title="Search settings…" />
 
-        <SwitchPreferenceCompat
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_palette"
+        app:key="screen-appearance"
+        app:summary="Theme, blocks, auto-save, editor tools"
+        app:title="Appearance &amp; Editor">
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="built-in-blocks"
-            app:summary="Show built-in blocks in Logic Editor. Slower to load."
-            app:title="Built-in blocks" />
+            app:key="category-appearance"
+            app:title="Appearance">
 
-        <SwitchPreferenceCompat
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="app-theme"
+                app:summary="Light, dark or follow the system"
+                app:title="Theme" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="always-show-blocks"
-            app:summary="Show variable blocks even without variables."
-            app:title="Show all variable blocks" />
+            app:key="category-editor"
+            app:title="Blocks">
 
-        <SwitchPreferenceCompat
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="built-in-blocks"
+                app:summary="Show built-in blocks in Logic Editor. Slower to load."
+                app:title="Built-in blocks" />
+
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="always-show-blocks"
+                app:summary="Show variable blocks even without variables."
+                app:title="Show all variable blocks" />
+
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="use-asd-highlighter"
+                app:summary="Highlight syntax in block text inputs."
+                app:title="Block text highlighting" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="use-asd-highlighter"
-            app:summary="Highlight syntax in block text inputs."
-            app:title="Block text highlighting" />
+            app:key="category-auto-save"
+            app:title="Auto-save">
 
-        <ListPreference
-            app:defaultValue="0"
-            app:entries="@array/app_settings_auto_save_interval_entries"
-            app:entryValues="@array/app_settings_auto_save_interval_values"
+            <ListPreference
+                app:defaultValue="0"
+                app:entries="@array/app_settings_auto_save_interval_entries"
+                app:entryValues="@array/app_settings_auto_save_interval_values"
+                app:iconSpaceReserved="false"
+                app:key="auto-save-interval"
+                app:title="Auto-save"
+                app:useSimpleSummaryProvider="true" />
+
+            <ListPreference
+                app:defaultValue="snapshot"
+                app:entries="@array/app_settings_auto_save_mode_entries"
+                app:entryValues="@array/app_settings_auto_save_mode_values"
+                app:iconSpaceReserved="false"
+                app:key="auto-save-mode"
+                app:title="Auto-save method"
+                app:useSimpleSummaryProvider="true" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="auto-save-interval"
-            app:title="Auto-save"
-            app:useSimpleSummaryProvider="true" />
+            app:key="category-editor-tools"
+            app:title="Editor tools">
 
-        <ListPreference
-            app:defaultValue="snapshot"
-            app:entries="@array/app_settings_auto_save_mode_entries"
-            app:entryValues="@array/app_settings_auto_save_mode_values"
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-device-preview"
+                app:summary="Preview a screen on tablets, foldables and in landscape, with safe areas, from the View editor."
+                app:title="Device preview" />
+
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-block-debugger"
+                app:summary="Step through an event's blocks in the Logic editor and see the value of every variable."
+                app:title="Block debugger" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_folder"
+        app:key="screen-projects"
+        app:summary="Version codes, installing, cache and space"
+        app:title="Projects &amp; Storage">
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="auto-save-mode"
-            app:title="Auto-save method"
-            app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
+            app:key="category-projects"
+            app:title="Projects">
 
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-projects"
-        app:title="Projects">
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="use-new-version-control"
+                app:summary="Set a custom version code and name per project."
+                app:title="Version control" />
 
-        <SwitchPreferenceCompat
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="auto-version-code"
+                app:summary="Add 1 to the version code after each successful build."
+                app:title="Auto-increment version code" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="use-new-version-control"
-            app:summary="Set a custom version code and name per project."
-            app:title="Version control" />
+            app:key="category-install"
+            app:title="Installing">
 
-        <SwitchPreferenceCompat
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="root-auto-install-projects"
+                app:summary="Install built APKs automatically using root."
+                app:title="Install with root" />
+
+            <SwitchPreferenceCompat
+                app:dependency="root-auto-install-projects"
+                app:iconSpaceReserved="false"
+                app:key="root-auto-open-after-installing"
+                app:summary="Open the app after a root install."
+                app:title="Launch after install" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="auto-version-code"
-            app:summary="Add 1 to the version code after each successful build."
-            app:title="Auto-increment version code" />
+            app:key="category-storage"
+            app:title="Storage">
 
-        <SwitchPreferenceCompat
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="clear-cache"
+                app:title="Clear cache" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="storage-usage"
+                app:summary="See what takes up space."
+                app:title="Storage usage" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_shield_lock"
+        app:key="screen-backup"
+        app:summary="Snapshots, backups, recovery, keystore"
+        app:title="Backup &amp; Security">
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="root-auto-install-projects"
-            app:summary="Install built APKs automatically using root."
-            app:title="Install with root" />
+            app:key="category-backup"
+            app:title="Backups">
 
-        <SwitchPreferenceCompat
-            app:dependency="root-auto-install-projects"
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="auto-snapshots"
+                app:summary="Keep restorable copies of a project when you save it and before each build."
+                app:title="Automatic snapshots" />
+
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="auto-backup"
+                app:summary="Back up a project when you save and close it."
+                app:title="Automatic backup" />
+
+            <ListPreference
+                app:defaultValue="daily"
+                app:dependency="auto-backup"
+                app:entries="@array/app_settings_backup_frequency_entries"
+                app:entryValues="@array/app_settings_backup_frequency_values"
+                app:iconSpaceReserved="false"
+                app:key="auto-backup-frequency"
+                app:title="Backup frequency"
+                app:useSimpleSummaryProvider="true" />
+
+            <ListPreference
+                app:defaultValue="5"
+                app:dependency="auto-backup"
+                app:entries="@array/app_settings_backup_retention_entries"
+                app:entryValues="@array/app_settings_backup_retention_values"
+                app:iconSpaceReserved="false"
+                app:key="backup-retention"
+                app:title="Keep per project"
+                app:useSimpleSummaryProvider="true" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="restore-backup"
+                app:summary="Latest backup or pick a file."
+                app:title="Restore a backup" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="root-auto-open-after-installing"
-            app:summary="Open the app after a root install."
-            app:title="Launch after install" />
+            app:key="category-recovery"
+            app:title="Recovery">
 
-        <Preference
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="crash-recovery"
+                app:summary="Offer recovery after an unexpected close."
+                app:title="Crash recovery" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="health-check"
-            app:summary="Scan projects for common problems."
-            app:title="Project health check" />
-    </PreferenceCategory>
+            app:key="category-backup-location"
+            app:title="Location">
 
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-backup"
-        app:title="Backup &amp; Recovery">
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="backup-dir"
+                app:title="@string/common_word_backup_directory" />
 
-        <SwitchPreferenceCompat
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="backup-filename"
+                app:summary="Naming pattern of backup files."
+                app:title="Backup filename format" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="auto-snapshots"
-            app:summary="Keep restorable copies of a project when you save it and before each build."
-            app:title="Automatic snapshots" />
+            app:key="category-security"
+            app:title="Security">
 
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:key="auto-backup"
-            app:summary="Back up a project when you save and close it."
-            app:title="Automatic backup" />
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="signing-keystore"
+                app:summary="Opens the keystore settings in Build &amp; Signing"
+                app:title="Signing keystore" />
+        </PreferenceCategory>
+    </PreferenceScreen>
 
-        <ListPreference
-            app:defaultValue="daily"
-            app:dependency="auto-backup"
-            app:entries="@array/app_settings_backup_frequency_entries"
-            app:entryValues="@array/app_settings_backup_frequency_values"
-            app:iconSpaceReserved="false"
-            app:key="auto-backup-frequency"
-            app:title="Backup frequency"
-            app:useSimpleSummaryProvider="true" />
-
-        <ListPreference
-            app:defaultValue="5"
-            app:dependency="auto-backup"
-            app:entries="@array/app_settings_backup_retention_entries"
-            app:entryValues="@array/app_settings_backup_retention_values"
-            app:iconSpaceReserved="false"
-            app:key="backup-retention"
-            app:title="Keep per project"
-            app:useSimpleSummaryProvider="true" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="restore-backup"
-            app:summary="Latest backup or pick a file."
-            app:title="Restore a backup" />
-
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:key="crash-recovery"
-            app:summary="Offer recovery after an unexpected close."
-            app:title="Crash recovery" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="backup-dir"
-            app:title="@string/common_word_backup_directory" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="backup-filename"
-            app:summary="Naming pattern of backup files."
-            app:title="Backup filename format" />
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-build"
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_package"
+        app:key="screen-build"
+        app:summary="Build mode, signing keys, releases, export"
         app:title="Build &amp; Signing">
 
-        <ListPreference
-            app:defaultValue="debug"
-            app:entries="@array/app_settings_build_mode_entries"
-            app:entryValues="@array/app_settings_build_mode_values"
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="build-mode"
-            app:title="Build mode" />
+            app:key="category-build"
+            app:title="Build">
 
-        <Preference
+            <ListPreference
+                app:defaultValue="debug"
+                app:entries="@array/app_settings_build_mode_entries"
+                app:entryValues="@array/app_settings_build_mode_values"
+                app:iconSpaceReserved="false"
+                app:key="build-mode"
+                app:title="Build mode" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="build-history"
+                app:summary="Recent builds and their results."
+                app:title="Build history" />
+
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-build-doctor"
+                app:summary="Explain build failures in the compile log, with causes and fixes."
+                app:title="Build Doctor" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="keystore-path"
-            app:title="Keystore file" />
+            app:key="category-signing"
+            app:title="Signing">
 
-        <Preference
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="keystore-path"
+                app:title="Keystore file" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="keystore-alias"
+                app:title="Key alias" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="keystore-verify"
+                app:summary="Check password, aliases and expiry."
+                app:title="Verify keystore" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="keystore-create"
+                app:summary="Generate a new signing key."
+                app:title="Create keystore" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="keystore-alias"
-            app:title="Key alias" />
+            app:key="category-release"
+            app:title="Releases">
 
-        <Preference
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-release-manager"
+                app:summary="Keep each exported release with its R8 mapping, and show the Releases screen."
+                app:title="Release manager" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="keystore-verify"
-            app:summary="Check password, aliases and expiry."
-            app:title="Verify keystore" />
+            app:key="category-export"
+            app:title="Android Studio export">
 
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="keystore-create"
-            app:summary="Generate a new signing key."
-            app:title="Create keystore" />
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="ff-export-ci"
+                app:summary="Add a GitHub Actions file that builds the project when you push the Android Studio export to GitHub."
+                app:title="GitHub Actions in Android Studio export" />
 
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="build-history"
-            app:summary="Recent builds and their results."
-            app:title="Build history" />
-    </PreferenceCategory>
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:dependency="ff-export-ci"
+                app:key="ff-export-ci-lint"
+                app:summary="Also run Android lint in that workflow."
+                app:title="Run lint on GitHub" />
 
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-storage"
-        app:title="Storage">
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:dependency="ff-export-ci"
+                app:key="ff-export-ci-tests"
+                app:summary="Also run the project's unit tests in that workflow."
+                app:title="Run unit tests on GitHub" />
+        </PreferenceCategory>
+    </PreferenceScreen>
 
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="clear-cache"
-            app:title="Clear cache" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="storage-usage"
-            app:summary="See what takes up space."
-            app:title="Storage usage" />
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-performance"
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_sprint"
+        app:key="screen-performance"
+        app:summary="Memory alerts, low-memory builds, palettes"
         app:title="Performance">
 
-        <SwitchPreferenceCompat
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="show-every-single-block"
-            app:summary="Show every palette block. Slower to open palettes."
-            app:title="Show all palette blocks" />
+            app:key="category-memory"
+            app:title="Memory">
 
-        <SwitchPreferenceCompat
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="memory-alerts"
+                app:summary="Warn and save a snapshot when memory runs low."
+                app:title="Memory alerts" />
+
+            <ListPreference
+                app:defaultValue="85"
+                app:dependency="memory-alerts"
+                app:entries="@array/app_settings_memory_threshold_entries"
+                app:entryValues="@array/app_settings_memory_threshold_values"
+                app:iconSpaceReserved="false"
+                app:key="memory-alert-threshold"
+                app:title="Alert threshold"
+                app:useSimpleSummaryProvider="true" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="memory-alerts"
-            app:summary="Warn and save a snapshot when memory runs low."
-            app:title="Memory alerts" />
+            app:key="category-build-speed"
+            app:title="Build optimization">
 
-        <ListPreference
-            app:defaultValue="85"
-            app:dependency="memory-alerts"
-            app:entries="@array/app_settings_memory_threshold_entries"
-            app:entryValues="@array/app_settings_memory_threshold_values"
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-memory-aware-build"
+                app:summary="Use fewer threads in the dex and shrinker steps on phones with little memory, to avoid running out of memory."
+                app:title="Memory-aware build" />
+
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:dependency="ff-memory-aware-build"
+                app:key="ff-force-low-memory-build"
+                app:summary="Always use the smallest build settings, even on a phone with a lot of memory."
+                app:title="Always use low-memory build" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="memory-alert-threshold"
-            app:title="Alert threshold"
-            app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
+            app:key="category-editor-speed"
+            app:title="Editor speed">
 
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-updates"
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="show-every-single-block"
+                app:summary="Show every palette block. Slower to open palettes."
+                app:title="Show all palette blocks" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_update"
+        app:key="screen-updates"
+        app:summary="Version and update channel"
         app:title="Updates">
 
-        <Preference
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="app-version"
-            app:selectable="false"
-            app:title="Current version" />
+            app:key="category-updates"
+            app:title="Updates">
 
-        <ListPreference
-            app:defaultValue="stable"
-            app:entries="@array/app_settings_update_channel_entries"
-            app:entryValues="@array/app_settings_update_channel_values"
-            app:iconSpaceReserved="false"
-            app:key="update-channel"
-            app:title="Update channel"
-            app:useSimpleSummaryProvider="true" />
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="app-version"
+                app:selectable="false"
+                app:title="Current version" />
 
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="check-updates"
-            app:summary="Look for a newer version now."
-            app:title="Check for updates" />
-    </PreferenceCategory>
+            <ListPreference
+                app:defaultValue="stable"
+                app:entries="@array/app_settings_update_channel_entries"
+                app:entryValues="@array/app_settings_update_channel_values"
+                app:iconSpaceReserved="false"
+                app:key="update-channel"
+                app:title="Update channel"
+                app:useSimpleSummaryProvider="true" />
 
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-diagnostics"
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="check-updates"
+                app:summary="Look for a newer version now."
+                app:title="Check for updates" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_bug_report"
+        app:key="screen-diagnostics"
+        app:summary="Health check, logs, reports"
         app:title="Diagnostics">
 
-        <Preference
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="view-logs"
-            app:summary="View, share or clear app logs."
-            app:title="Logs" />
+            app:key="category-health"
+            app:title="Project health">
 
-        <Preference
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="health-check"
+                app:summary="Scan projects for common problems."
+                app:title="Project health check" />
+
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-project-analysis"
+                app:summary="Check a project for compatibility, security and dependency problems."
+                app:title="Project analysis" />
+
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-auto-fix"
+                app:summary="Show the Auto-fix button in the project health screen."
+                app:title="Auto-fix" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="diagnostic-report"
-            app:summary="Device and app info to share."
-            app:title="Diagnostic report" />
-    </PreferenceCategory>
+            app:key="category-diagnostics"
+            app:title="Logs &amp; reports">
 
-    <PreferenceCategory
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="view-logs"
+                app:summary="View, share or clear app logs."
+                app:title="Logs" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="diagnostic-report"
+                app:summary="Device and app info to share."
+                app:title="Diagnostic report" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <PreferenceScreen
+        app:icon="@drawable/ic_mtrl_terminal"
+        app:key="screen-advanced"
+        app:summary="Settings file, generators, experimental features"
+        app:title="Advanced &amp; Experimental">
+
+        <PreferenceCategory
+            app:iconSpaceReserved="false"
+            app:key="category-advanced"
+            app:title="Settings file">
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="export-settings"
+                app:summary="Save these settings to a file."
+                app:title="Export settings" />
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="import-settings"
+                app:summary="Load settings from an exported file."
+                app:title="Import settings" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
+            app:iconSpaceReserved="false"
+            app:key="category-developer"
+            app:title="Developer tools">
+
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="ff-data-designer"
+                app:summary="Generate a REST client, a SQLite database or Firebase models into the project's Java files."
+                app:title="Data designer" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
+            app:iconSpaceReserved="false"
+            app:key="category-experimental"
+            app:title="Experimental">
+
+            <Preference
+                app:iconSpaceReserved="false"
+                app:key="experimental-warning"
+                app:selectable="false"
+                app:summary="These features can change or break between versions. Turn one off if a screen or a build misbehaves."
+                app:title="Still being tested" />
+
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="ff-layout-guides"
+                app:summary="Show alignment guides and distances around the selected widget in the View editor."
+                app:title="Alignment guides" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <Preference
+        app:icon="@drawable/ic_mtrl_reset"
+        app:key="reset-settings"
+        app:summary="Restore every option to its default."
+        app:title="Restore defaults" />
+
+    <Preference
         app:iconSpaceReserved="false"
-        app:key="category-advanced"
-        app:title="Advanced">
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="export-settings"
-            app:summary="Save these settings to a file."
-            app:title="Export settings" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="import-settings"
-            app:summary="Load settings from an exported file."
-            app:title="Import settings" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="reset-settings"
-            app:summary="Restore every option to its default."
-            app:title="Reset settings" />
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category-experimental"
-        app:title="Features you can switch off">
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-build-doctor"
-            app:summary="Explain build failures in the compile log, with causes and fixes."
-            app:title="Build Doctor" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-memory-aware-build"
-            app:summary="Use fewer threads in the dex and shrinker steps on phones with little memory, to avoid running out of memory."
-            app:title="Memory-aware build" />
-
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:dependency="ff-memory-aware-build"
-            app:key="ff-force-low-memory-build"
-            app:summary="Always use the smallest build settings, even on a phone with a lot of memory."
-            app:title="Always use low-memory build" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-project-analysis"
-            app:summary="Check a project for compatibility, security and dependency problems."
-            app:title="Project analysis" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-release-manager"
-            app:summary="Keep each exported release with its R8 mapping, and show the Releases screen."
-            app:title="Release manager" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-device-preview"
-            app:summary="Preview a screen on tablets, foldables and in landscape, with safe areas, from the View editor."
-            app:title="Device preview" />
-
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:key="ff-layout-guides"
-            app:summary="Show alignment guides and distances around the selected widget in the View editor."
-            app:title="Alignment guides" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-block-debugger"
-            app:summary="Step through an event's blocks in the Logic editor and see the value of every variable."
-            app:title="Block debugger" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-data-designer"
-            app:summary="Generate a REST client, a SQLite database or Firebase models into the project's Java files."
-            app:title="Data designer" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="ff-auto-fix"
-            app:summary="Show the Auto-fix button in the project health screen."
-            app:title="Auto-fix" />
-
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:key="ff-export-ci"
-            app:summary="Add a GitHub Actions file that builds the project when you push the Android Studio export to GitHub."
-            app:title="GitHub Actions in Android Studio export" />
-
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:dependency="ff-export-ci"
-            app:key="ff-export-ci-lint"
-            app:summary="Also run Android lint in that workflow."
-            app:title="Run lint on GitHub" />
-
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="false"
-            app:dependency="ff-export-ci"
-            app:key="ff-export-ci-tests"
-            app:summary="Also run the project's unit tests in that workflow."
-            app:title="Run unit tests on GitHub" />
-    </PreferenceCategory>
+        app:key="settings-footer"
+        app:selectable="false" />
 </PreferenceScreen>

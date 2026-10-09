@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  * answer handed back on the main thread. Only the Android SDK and Java 7 are used. Path parameters are URL-encoded.
  */
 public final class RestClientGenerator {
-    private static final Pattern PATH_PARAM = Pattern.compile("\\{([^}/]*)}");
+    private static final Pattern PATH_PARAM = Pattern.compile("\\{([^}/]*)\\}");
 
     private RestClientGenerator() {
     }
