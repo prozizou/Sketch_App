@@ -303,12 +303,14 @@
         app:title="Features you can switch off">
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="ff-build-doctor"
             app:summary="Explain build failures in the compile log, with causes and fixes."
             app:title="Build Doctor" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="ff-memory-aware-build"
             app:summary="Use fewer threads in the dex and shrinker steps on phones with little memory, to avoid running out of memory."
@@ -322,12 +324,14 @@
             app:title="Always use low-memory build" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="ff-project-analysis"
             app:summary="Check a project for compatibility, security and dependency problems."
             app:title="Project analysis" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="ff-release-manager"
             app:summary="Keep each exported release with its R8 mapping, and show the Releases screen."

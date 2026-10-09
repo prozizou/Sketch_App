@@ -37,6 +37,9 @@ health score; CI file generation; visual regression tests.
 - Risky or new features are behind `FeatureFlag`s, switchable in App Settings.
 - Existing project formats are never changed; analyses are read-only.
 
+Feature flags: a switch missing from the settings file means the flag's default; the settings screen declares the same default so
+the switch shows the real state on an existing installation.
+
 Health score: starts at 100 and loses 15 / 5 / 1 per error / warning / info finding; a rule repeated many times costs at
 most twice its weight, so one noisy rule cannot empty the score; never below 0.
 
