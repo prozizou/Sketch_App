@@ -5,10 +5,15 @@ import static pro.sketchware.utility.GsonUtils.getGson;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,13 +22,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
+import androidx.fragment.app.FragmentManager;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceDataStore;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceGroup;
+import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreferenceCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.besome.sketch.tools.NewKeyStoreActivity;
@@ -34,8 +43,11 @@ import com.google.gson.JsonParseException;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import a.a.a.wq;
@@ -43,16 +55,20 @@ import mod.hey.studios.util.Helper;
 import mod.jbk.util.LogUtil;
 import pro.sketchware.BuildConfig;
 import pro.sketchware.R;
+import pro.sketchware.activities.settings.SettingsActivity;
 import pro.sketchware.control.UpdateChecker;
 import pro.sketchware.databinding.DialogCreateNewFileLayoutBinding;
+import pro.sketchware.databinding.DialogSettingsSearchBinding;
 import pro.sketchware.databinding.PreferenceActivityBinding;
 import pro.sketchware.settings.AppSettingsDialogs;
 import pro.sketchware.settings.AutoBackup;
+import pro.sketchware.settings.SettingsIndex;
+import pro.sketchware.settings.SettingsSearch;
 import pro.sketchware.settings.StorageTools;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 
-public class ConfigActivity extends BaseAppCompatActivity {
+public class ConfigActivity extends BaseAppCompatActivity implements PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
 
     public static final File SETTINGS_FILE = new File(FileUtil.getExternalStorageDir(), ".sketch_nws/data/settings.json");
     public static final String SETTING_ALWAYS_SHOW_BLOCKS = "always-show-blocks";
@@ -90,6 +106,9 @@ public class ConfigActivity extends BaseAppCompatActivity {
     public static final String SETTING_MEMORY_THRESHOLD = "memory-alert-threshold";
     /** "stable", "beta" or "dev". */
     public static final String SETTING_UPDATE_CHANNEL = "update-channel";
+
+    /** Fragment argument: key of a row to scroll to and flash once the screen is shown. */
+    private static final String ARG_HIGHLIGHT = "highlight";
 
     private static final Map<String, Object> DEFAULTS = new LinkedHashMap<>();
 
@@ -228,20 +247,22 @@ public class ConfigActivity extends BaseAppCompatActivity {
         return DEFAULTS.get(key);
     }
 
+    private PreferenceActivityBinding binding;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
-        var binding = PreferenceActivityBinding.inflate(getLayoutInflater());
+        binding = PreferenceActivityBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         binding.topAppBar.setTitle("App Settings");
         binding.topAppBar.setNavigationOnClickListener(Helper.getBackPressedClickListener(this));
-        var fragment = new PreferenceFragment();
-        fragment.setSnackbarView(binding.getRoot());
-        getSupportFragmentManager().beginTransaction()
-                .replace(binding.fragmentContainer.getId(), fragment)
-                .commit();
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(binding.fragmentContainer.getId(), new PreferenceFragment())
+                    .commit();
+        }
 
         {
             View view1 = binding.appBarLayout;
@@ -272,17 +293,84 @@ public class ConfigActivity extends BaseAppCompatActivity {
         }
     }
 
+    /**
+     * Opens a category of the main page in its own screen, with back going to the main page.
+     */
+    @Override
+    public boolean onPreferenceStartScreen(@NonNull PreferenceFragmentCompat caller, @NonNull PreferenceScreen screen) {
+        openScreen(screen.getKey(), null);
+        return true;
+    }
+
+    /**
+     * Shows a settings screen and, optionally, scrolls to one of its rows and flashes it.
+     *
+     * @param screenKey    the category to open, {@code null} for the main page
+     * @param highlightKey the row to point out, or {@code null}
+     */
+    public void openScreen(@Nullable String screenKey, @Nullable String highlightKey) {
+        FragmentManager fragments = getSupportFragmentManager();
+        if (screenKey == null) {
+            fragments.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            if (highlightKey != null
+                    && fragments.findFragmentById(binding.fragmentContainer.getId()) instanceof PreferenceFragment main) {
+                main.highlight(highlightKey);
+            }
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, screenKey);
+        if (highlightKey != null) {
+            args.putString(ARG_HIGHLIGHT, highlightKey);
+        }
+        var fragment = new PreferenceFragment();
+        fragment.setArguments(args);
+        fragments.beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(binding.fragmentContainer.getId(), fragment)
+                .addToBackStack(screenKey)
+                .commit();
+    }
+
+    private void showScreen(CharSequence title, boolean keepScroll) {
+        binding.topAppBar.setTitle(title);
+        if (!keepScroll) {
+            binding.contentLayout.scrollTo(0, 0);
+            binding.appBarLayout.setExpanded(true, false);
+        }
+    }
+
+    /**
+     * Puts the given settings back to their defaults and persists.
+     */
+    public static void resetSettings(Collection<String> keys) {
+        DataStore.getInstance().resetKeys(keys);
+    }
+
+    /**
+     * One screen of App Settings: the main page with its search bar and eight categories, or one category.
+     * Each category only holds some of the rows, so every set-up step skips the rows it doesn't find.
+     */
     public static class PreferenceFragment extends PreferenceFragmentCompat {
-        private View snackbarView;
         private DataStore dataStore;
+        @Nullable
+        private String rootKey;
+        private boolean highlightPending;
 
         @Override
         public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
+            this.rootKey = rootKey;
             dataStore = DataStore.getInstance();
             getPreferenceManager().setPreferenceDataStore(dataStore);
             setPreferencesFromResource(R.xml.preferences_config_activity, rootKey);
             applyCompactLayout(getPreferenceScreen());
 
+            setUpAdvanced();
+            if (rootKey == null) {
+                // The categories' rows are inflated here too, but only shown once a category is opened.
+                setUpMainPage();
+                return;
+            }
             setUpEditor();
             setUpProjects();
             setUpBackupAndRecovery();
@@ -290,42 +378,259 @@ public class ConfigActivity extends BaseAppCompatActivity {
             setUpStorage();
             setUpUpdates();
             setUpDiagnostics();
-            setUpAdvanced();
+            addSectionReset();
+        }
+
+        @Override
+        public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+            String highlightKey = getArguments() == null ? null : getArguments().getString(ARG_HIGHLIGHT);
+            if (highlightKey != null && savedInstanceState == null) {
+                highlight(highlightKey);
+            }
+        }
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            if (getActivity() instanceof ConfigActivity activity) {
+                CharSequence title = rootKey == null ? "App Settings" : getPreferenceScreen().getTitle();
+                activity.showScreen(title, highlightPending);
+            }
         }
 
         /**
-         * Gives every row the compact Material 3 layouts and lets titles wrap instead of being cut off.
+         * Gives every row its Material 3 layout and lets titles wrap instead of being cut off.
          */
         private void applyCompactLayout(PreferenceGroup group) {
             for (int i = 0; i < group.getPreferenceCount(); i++) {
                 Preference preference = group.getPreference(i);
+                String key = preference.getKey() == null ? "" : preference.getKey();
                 if (preference instanceof PreferenceCategory) {
                     preference.setLayoutResource(R.layout.preference_category_compact);
+                } else if (key.equals("settings-search")) {
+                    preference.setLayoutResource(R.layout.preference_search);
+                } else if (key.equals("settings-footer")) {
+                    preference.setLayoutResource(R.layout.preference_footer);
+                } else if (key.equals("experimental-warning")) {
+                    preference.setLayoutResource(R.layout.preference_warning);
+                } else if (preference instanceof PreferenceScreen || preference.getIcon() != null) {
+                    preference.setLayoutResource(R.layout.preference_icon_row);
+                    preference.setSingleLineTitle(false);
+                    if (preference instanceof PreferenceScreen) {
+                        preference.setWidgetLayoutResource(R.layout.preference_widget_chevron);
+                    }
                 } else {
                     preference.setLayoutResource(R.layout.preference_compact);
                     preference.setSingleLineTitle(false);
                 }
-                if (preference instanceof PreferenceGroup child) {
+                // A category's rows are only shown once it is opened.
+                if (preference instanceof PreferenceGroup child && !(preference instanceof PreferenceScreen && rootKey == null)) {
                     applyCompactLayout(child);
                 }
             }
         }
 
-        @NonNull
-        private <T extends Preference> T require(String key) {
-            T preference = findPreference(key);
-            if (preference == null) {
-                throw new IllegalStateException("Missing preference " + key);
-            }
-            return preference;
+        @Nullable
+        private <T extends Preference> T find(String key) {
+            return findPreference(key);
         }
 
+        /**
+         * Sets what a row does when tapped, if this screen shows that row.
+         */
         private void onClick(String key, Runnable action) {
-            Preference preference = require(key);
+            Preference preference = find(key);
+            if (preference == null) {
+                return;
+            }
             preference.setOnPreferenceClickListener(clicked -> {
                 action.run();
                 return true;
             });
+        }
+
+        private View snackbarView() {
+            return getActivity() instanceof ConfigActivity activity ? activity.binding.getRoot() : requireView();
+        }
+
+        /* ------------------------------------------------------------ Main page */
+
+        private void setUpMainPage() {
+            onClick("settings-search", this::showSearch);
+            Preference footer = find("settings-footer");
+            if (footer != null) {
+                footer.setTitle("NWS • Version " + BuildConfig.VERSION_NAME);
+                footer.setSummary("Build " + BuildConfig.VERSION_CODE);
+            }
+        }
+
+        /**
+         * Searches every setting, in every category, as the user types.
+         */
+        private void showSearch() {
+            SettingsSearch search = new SettingsSearch(SettingsIndex.read(requireContext(), R.xml.preferences_config_activity));
+            List<SettingsSearch.Entry> categories = new ArrayList<>();
+            for (SettingsSearch.Entry entry : search.entries()) {
+                if (entry.isScreen()) {
+                    categories.add(entry);
+                }
+            }
+
+            DialogSettingsSearchBinding searchBinding = DialogSettingsSearchBinding.inflate(getLayoutInflater());
+            List<SettingsSearch.Entry> shown = new ArrayList<>(categories);
+            ArrayAdapter<SettingsSearch.Entry> adapter = new ArrayAdapter<>(requireContext(),
+                    android.R.layout.simple_list_item_2, android.R.id.text1, shown) {
+                @NonNull
+                @Override
+                public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                    View row = super.getView(position, convertView, parent);
+                    SettingsSearch.Entry entry = getItem(position);
+                    TextView title = row.findViewById(android.R.id.text1);
+                    TextView detail = row.findViewById(android.R.id.text2);
+                    title.setText(entry.title());
+                    detail.setText(entry.isScreen() ? entry.summary() : entry.location());
+                    return row;
+                }
+            };
+            searchBinding.searchResults.setAdapter(adapter);
+            searchBinding.searchResults.setEmptyView(searchBinding.searchEmpty);
+
+            AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                    .setView(searchBinding.getRoot())
+                    .setNegativeButton(R.string.common_word_close, null)
+                    .create();
+            searchBinding.searchInput.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence text, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence text, int start, int before, int count) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable text) {
+                    String query = text.toString();
+                    shown.clear();
+                    shown.addAll(query.trim().isEmpty() ? categories : search.search(query, 40));
+                    searchBinding.searchEmpty.setText("No setting matches \u201c" + query.trim() + "\u201d");
+                    adapter.notifyDataSetChanged();
+                }
+            });
+            searchBinding.searchResults.setOnItemClickListener((parent, view, position, id) -> {
+                SettingsSearch.Entry entry = shown.get(position);
+                dialog.dismiss();
+                if (getActivity() instanceof ConfigActivity activity) {
+                    if (entry.isScreen()) {
+                        activity.openScreen(entry.key(), null);
+                    } else {
+                        activity.openScreen(entry.screenKey(), entry.key());
+                    }
+                }
+            });
+            dialog.setOnShowListener(shownDialog -> {
+                dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                searchBinding.searchInput.requestFocus();
+            });
+            dialog.show();
+        }
+
+        /**
+         * Scrolls to a row of this screen and flashes it, so a search result is easy to spot.
+         */
+        void highlight(String key) {
+            highlightPending = true;
+            RecyclerView list = getListView();
+            list.postDelayed(() -> {
+                highlightPending = false;
+                if (!isAdded() || !(list.getAdapter() instanceof PreferenceGroup.PreferencePositionCallback positions)) {
+                    return;
+                }
+                int position = positions.getPreferenceAdapterPosition(key);
+                if (position < 0) {
+                    return;
+                }
+                RecyclerView.ViewHolder holder = list.findViewHolderForAdapterPosition(position);
+                if (holder == null) {
+                    scrollToPreference(key);
+                    return;
+                }
+                View item = holder.itemView;
+                if (getActivity() instanceof ConfigActivity activity) {
+                    NestedScrollView scroller = activity.binding.contentLayout;
+                    int[] itemAt = new int[2];
+                    int[] scrollerAt = new int[2];
+                    item.getLocationInWindow(itemAt);
+                    scroller.getLocationInWindow(scrollerAt);
+                    int target = scroller.getScrollY() + itemAt[1] - scrollerAt[1] - scroller.getHeight() / 3;
+                    activity.binding.appBarLayout.setExpanded(false, true);
+                    scroller.smoothScrollTo(0, Math.max(0, target));
+                }
+                item.postDelayed(() -> {
+                    if (item.getBackground() != null) {
+                        item.getBackground().setHotspot(item.getWidth() / 2f, item.getHeight() / 2f);
+                    }
+                    item.setPressed(true);
+                    item.postDelayed(() -> item.setPressed(false), 700);
+                }, 350);
+            }, 200);
+        }
+
+        /**
+         * Adds "Reset this section" at the end of a category, for its own settings only.
+         */
+        private void addSectionReset() {
+            PreferenceScreen screen = getPreferenceScreen();
+            List<String> keys = new ArrayList<>();
+            collectResettableKeys(screen, keys);
+            if (keys.isEmpty()) {
+                return;
+            }
+            PreferenceCategory category = new PreferenceCategory(requireContext());
+            category.setKey("category-section-reset");
+            category.setTitle("Defaults");
+            category.setIconSpaceReserved(false);
+            category.setLayoutResource(R.layout.preference_category_compact);
+            screen.addPreference(category);
+
+            Preference reset = new Preference(requireContext());
+            reset.setKey("reset-section");
+            reset.setPersistent(false);
+            reset.setIconSpaceReserved(false);
+            reset.setLayoutResource(R.layout.preference_compact);
+            reset.setSingleLineTitle(false);
+            reset.setTitle("Reset " + screen.getTitle());
+            reset.setSummary("Put the " + keys.size() + (keys.size() == 1 ? " setting" : " settings")
+                    + " of this page back to their defaults. Other pages are left as they are.");
+            reset.setOnPreferenceClickListener(preference -> {
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Reset " + screen.getTitle() + "?")
+                        .setMessage("Only the settings on this page go back to their defaults.")
+                        .setNegativeButton(R.string.common_word_cancel, null)
+                        .setPositiveButton(R.string.common_word_reset, (dialog, which) -> {
+                            resetSettings(keys);
+                            reload();
+                            Snackbar.make(snackbarView(), "Defaults restored for " + screen.getTitle(),
+                                    BaseTransientBottomBar.LENGTH_SHORT).show();
+                        })
+                        .show();
+                return true;
+            });
+            category.addPreference(reset);
+        }
+
+        private static void collectResettableKeys(PreferenceGroup group, List<String> keys) {
+            for (int i = 0; i < group.getPreferenceCount(); i++) {
+                Preference preference = group.getPreference(i);
+                String key = preference.getKey();
+                if (key != null && (DEFAULTS.containsKey(key) || SETTING_BACKUP_FILENAME.equals(key))) {
+                    keys.add(key);
+                }
+                if (preference instanceof PreferenceGroup child) {
+                    collectResettableKeys(child, keys);
+                }
+            }
         }
 
         private AppCompatActivity host() {
@@ -335,8 +640,17 @@ public class ConfigActivity extends BaseAppCompatActivity {
         /* ------------------------------------------------------------ Editor */
 
         private void setUpEditor() {
-            ListPreference interval = require(SETTING_AUTO_SAVE_INTERVAL);
-            Preference mode = require(SETTING_AUTO_SAVE_MODE);
+            onClick("app-theme", () -> {
+                Intent intent = new Intent(requireContext(), SettingsActivity.class);
+                intent.putExtra(SettingsActivity.FRAGMENT_TAG_EXTRA, SettingsActivity.SETTINGS_APPEARANCE_FRAGMENT);
+                startActivity(intent);
+            });
+
+            ListPreference interval = find(SETTING_AUTO_SAVE_INTERVAL);
+            Preference mode = find(SETTING_AUTO_SAVE_MODE);
+            if (interval == null || mode == null) {
+                return;
+            }
             mode.setEnabled(!"0".equals(interval.getValue()));
             interval.setOnPreferenceChangeListener((preference, newValue) -> {
                 mode.setEnabled(!"0".equals(newValue));
@@ -347,20 +661,23 @@ public class ConfigActivity extends BaseAppCompatActivity {
         /* ------------------------------------------------------------ Projects */
 
         private void setUpProjects() {
-            SwitchPreferenceCompat installWithRoot = require(SETTING_ROOT_AUTO_INSTALL_PROJECTS);
+            onClick("health-check", () -> AppSettingsDialogs.showHealthCheck(requireActivity()));
+
+            SwitchPreferenceCompat installWithRoot = find(SETTING_ROOT_AUTO_INSTALL_PROJECTS);
+            if (installWithRoot == null) {
+                return;
+            }
             installWithRoot.setOnPreferenceClickListener(preference -> {
                 if (installWithRoot.isChecked()) {
                     Shell.getShell(shell -> {
                         if (!shell.isRoot()) {
-                            Snackbar.make(snackbarView, "Couldn't acquire root access", BaseTransientBottomBar.LENGTH_SHORT).show();
+                            Snackbar.make(snackbarView(), "Couldn't acquire root access", BaseTransientBottomBar.LENGTH_SHORT).show();
                             installWithRoot.setChecked(false);
                         }
                     });
                 }
                 return true;
             });
-
-            onClick("health-check", () -> AppSettingsDialogs.showHealthCheck(requireActivity()));
         }
 
         /* ------------------------------------------------------------ Backup & Recovery */
@@ -371,7 +688,18 @@ public class ConfigActivity extends BaseAppCompatActivity {
         }
 
         private void setUpBackupAndRecovery() {
-            Preference backupDir = require(SETTING_BACKUP_DIRECTORY);
+            onClick("signing-keystore", () -> {
+                if (getActivity() instanceof ConfigActivity activity) {
+                    activity.openScreen("screen-build", SETTING_KEYSTORE_PATH);
+                }
+            });
+            onClick("restore-backup", () ->
+                    AppSettingsDialogs.showRestoreBackup(requireActivity(), getParentFragmentManager()));
+
+            Preference backupDir = find(SETTING_BACKUP_DIRECTORY);
+            if (backupDir == null) {
+                return;
+            }
             backupDir.setSummary(describeBackupDirectory());
             backupDir.setOnPreferenceClickListener(preference -> {
                 DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
@@ -402,7 +730,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 return true;
             });
 
-            Preference backupFilename = require(SETTING_BACKUP_FILENAME);
+            Preference backupFilename = find(SETTING_BACKUP_FILENAME);
             backupFilename.setOnPreferenceClickListener(preference -> {
                 DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
                 binding.chipGroupTypes.setVisibility(View.GONE);
@@ -425,7 +753,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                         .setPositiveButton(R.string.common_word_save, null)
                         .setNeutralButton(R.string.common_word_reset, (dialogInterface, which) -> {
                             getDataStore().putString(SETTING_BACKUP_FILENAME, null);
-                            Snackbar.make(snackbarView, "Reset to default complete.", BaseTransientBottomBar.LENGTH_SHORT).show();
+                            Snackbar.make(snackbarView(), "Reset to default complete.", BaseTransientBottomBar.LENGTH_SHORT).show();
                         })
                         .create();
 
@@ -445,15 +773,12 @@ public class ConfigActivity extends BaseAppCompatActivity {
             });
 
             // A smaller retention takes effect right away instead of at the next backup.
-            Preference retention = require(SETTING_BACKUP_RETENTION);
+            Preference retention = find(SETTING_BACKUP_RETENTION);
             retention.setOnPreferenceChangeListener((preference, newValue) -> {
                 getDataStore().putString(SETTING_BACKUP_RETENTION, (String) newValue);
                 new Thread(AutoBackup::pruneAll).start();
                 return true;
             });
-
-            onClick("restore-backup", () ->
-                    AppSettingsDialogs.showRestoreBackup(requireActivity(), getParentFragmentManager()));
         }
 
         /* ------------------------------------------------------------ Build & Signing */
@@ -467,13 +792,17 @@ public class ConfigActivity extends BaseAppCompatActivity {
         }
 
         private void setUpBuildAndSigning() {
-            ListPreference buildMode = require(SETTING_BUILD_MODE);
+            onClick("build-history", () -> AppSettingsDialogs.showBuildHistory(requireActivity()));
+            ListPreference buildMode = find(SETTING_BUILD_MODE);
+            if (buildMode == null) {
+                return;
+            }
             buildMode.setSummaryProvider((Preference.SummaryProvider<ListPreference>) preference ->
                     "release".equals(preference.getValue())
                             ? "Release · exports default to your keystore"
                             : "Debug · exports default to the test key");
 
-            Preference keystore = require(SETTING_KEYSTORE_PATH);
+            Preference keystore = find(SETTING_KEYSTORE_PATH);
             keystore.setSummary(describeKeystore());
             keystore.setOnPreferenceClickListener(preference -> {
                 AppSettingsDialogs.pickKeystore(requireActivity(), getParentFragmentManager(),
@@ -481,7 +810,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 return true;
             });
 
-            Preference alias = require(SETTING_KEYSTORE_ALIAS);
+            Preference alias = find(SETTING_KEYSTORE_ALIAS);
             alias.setSummary(describeAlias());
             alias.setOnPreferenceClickListener(preference -> {
                 DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
@@ -521,11 +850,9 @@ public class ConfigActivity extends BaseAppCompatActivity {
             });
 
             onClick("keystore-create", () -> {
-                Snackbar.make(snackbarView, "New keystores are saved to the default location.", BaseTransientBottomBar.LENGTH_LONG).show();
+                Snackbar.make(snackbarView(), "New keystores are saved to the default location.", BaseTransientBottomBar.LENGTH_LONG).show();
                 startActivity(new Intent(requireContext(), NewKeyStoreActivity.class));
             });
-
-            onClick("build-history", () -> AppSettingsDialogs.showBuildHistory(requireActivity()));
         }
 
         private String describeAlias() {
@@ -542,7 +869,10 @@ public class ConfigActivity extends BaseAppCompatActivity {
         }
 
         private void refreshCacheSummary() {
-            Preference clearCache = require("clear-cache");
+            Preference clearCache = find("clear-cache");
+            if (clearCache == null) {
+                return;
+            }
             clearCache.setSummary("Calculating…");
             var appContext = requireContext().getApplicationContext();
             new Thread(() -> {
@@ -561,8 +891,10 @@ public class ConfigActivity extends BaseAppCompatActivity {
         /* ------------------------------------------------------------ Updates */
 
         private void setUpUpdates() {
-            Preference version = require("app-version");
-            version.setSummary(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+            Preference version = find("app-version");
+            if (version != null) {
+                version.setSummary(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+            }
             onClick("check-updates", () -> new UpdateChecker().check(host(), true));
         }
 
@@ -590,15 +922,11 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 return;
             }
             setPreferenceScreen(null);
-            onCreatePreferences(null, null);
+            onCreatePreferences(null, rootKey);
         }
 
         public DataStore getDataStore() {
             return dataStore;
-        }
-
-        public void setSnackbarView(View snackbarView) {
-            this.snackbarView = snackbarView;
         }
     }
 
@@ -638,6 +966,20 @@ public class ConfigActivity extends BaseAppCompatActivity {
         public synchronized void resetToDefaults() {
             settings.clear();
             settings.putAll(DEFAULTS);
+            persist();
+        }
+
+        /**
+         * Puts the given settings back to their defaults and persists. A setting without a default is removed.
+         */
+        public synchronized void resetKeys(Collection<String> keys) {
+            for (String key : keys) {
+                if (DEFAULTS.containsKey(key)) {
+                    settings.put(key, DEFAULTS.get(key));
+                } else {
+                    settings.remove(key);
+                }
+            }
             persist();
         }
 
