@@ -66,6 +66,10 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             showDependencyTree();
             return true;
         });
+        menu.add(R.string.analysis_menu_navigation).setOnMenuItemClickListener(item -> {
+            showNavigation();
+            return true;
+        });
         menu.add(R.string.analysis_menu_rerun).setOnMenuItemClickListener(item -> {
             analyse();
             return true;
@@ -104,7 +108,8 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             executor.execute(() -> {
                 try {
                     ProjectFactsLoader.Loaded result = ProjectFactsLoader.load(scId);
-                    AnalysisReport analysed = ProjectAnalyzer.run(result.facts(), result.files(), result.libraryNames(), result.classesByLibrary());
+                    AnalysisReport analysed = ProjectAnalyzer.run(result.facts(), result.files(), result.libraryNames(), result.classesByLibrary(),
+                            result.logicScreens());
                     runOnUiThread(() -> {
                         loaded = result;
                         report = analysed;
@@ -176,6 +181,48 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
         android.widget.ScrollView vertical = new android.widget.ScrollView(this);
         vertical.addView(horizontal);
         new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_tree_title).setView(vertical).setPositiveButton(android.R.string.ok, null).show();
+    }
+
+    /** Which screen opens which, from the Intent blocks and the project's Java files, with a Mermaid copy. */
+    private void showNavigation() {
+        if (loaded == null) return;
+        java.util.Map<String, String> javaFiles = new java.util.LinkedHashMap<>();
+        for (SourceFile source : loaded.facts().sources()) {
+            if (source.name().endsWith(".java")) javaFiles.put(source.name(), source.content());
+        }
+        pro.sketchware.logic.NavigationGraph graph = pro.sketchware.logic.NavigationGraph.build(loaded.logicScreens(), javaFiles);
+        StringBuilder text = new StringBuilder();
+        java.util.List<String> unreachable = graph.unreachable();
+        for (String screen : graph.screens()) {
+            text.append(screen);
+            if (pro.sketchware.logic.NavigationGraph.isFragment(screen)) text.append("  (").append(getString(R.string.analysis_nav_fragment)).append(')');
+            if (unreachable.contains(screen)) text.append("  [").append(getString(R.string.analysis_nav_unreachable)).append(']');
+            text.append('\n');
+            for (pro.sketchware.logic.NavigationGraph.Edge edge : graph.edgesFrom(screen)) {
+                text.append("   -> ").append(edge.to()).append("   ").append(edge.fromJava() ? "Java: " : "").append(edge.via()).append('\n');
+            }
+        }
+        if (graph.screens().isEmpty()) text.append(getString(R.string.analysis_nav_empty));
+        TextView view = new TextView(this);
+        view.setTypeface(Typeface.MONOSPACE);
+        view.setTextSize(11);
+        view.setTextIsSelectable(true);
+        view.setText(text);
+        int padding = SketchwareUtil.dpToPx(16);
+        view.setPadding(padding, padding / 2, padding, padding / 2);
+        android.widget.HorizontalScrollView horizontal = new android.widget.HorizontalScrollView(this);
+        horizontal.addView(view);
+        android.widget.ScrollView vertical = new android.widget.ScrollView(this);
+        vertical.addView(horizontal);
+        new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_nav_title).setView(vertical)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.analysis_nav_copy_mermaid, (dialog, which) -> {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    if (clipboard != null) {
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("navigation", graph.toMermaid()));
+                    }
+                })
+                .show();
     }
 
     private String categoryLabel(Category category) {

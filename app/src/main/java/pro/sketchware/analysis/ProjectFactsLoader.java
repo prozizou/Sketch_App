@@ -48,7 +48,8 @@ import pro.sketchware.utility.FilePathUtil;
 public final class ProjectFactsLoader {
     /** Everything gathered about a project. */
     public record Loaded(ProjectFacts facts, List<SourceFile> files, List<String> libraryNames, Map<String, Library> builtInGraph,
-                         List<String> builtInRoots, Set<String> excludedBuiltIn, Map<String, Set<String>> classesByLibrary) {
+                         List<String> builtInRoots, Set<String> excludedBuiltIn, Map<String, Set<String>> classesByLibrary,
+                         List<pro.sketchware.logic.LogicScreen> logicScreens) {
     }
 
     private static final String TAG = "ProjectFactsLoader";
@@ -105,7 +106,15 @@ public final class ProjectFactsLoader {
 
         ProjectFacts facts = new ProjectFacts(yB.c(metadata, "my_sc_pkg_name"), minSdk, targetSdk, permissions(paths, scId), sources,
                 new HashSet<>(libraryNames), appCompat, nativeAbis(paths, scId), views(scId), hasNightResources(paths, scId));
-        return new Loaded(facts, otherFiles, libraryNames, graph, roots, excluded, classesByLibrary);
+        List<pro.sketchware.logic.LogicScreen> logic;
+        try {
+            logic = pro.sketchware.logic.LogicFactsLoader.load(scId);
+        } catch (RuntimeException e) {
+            // The logic checks are skipped rather than failing the whole analysis
+            AppLog.e(TAG, "Couldn't read the blocks: " + e);
+            logic = List.of();
+        }
+        return new Loaded(facts, otherFiles, libraryNames, graph, roots, excluded, classesByLibrary, logic);
     }
 
     // ---- libraries

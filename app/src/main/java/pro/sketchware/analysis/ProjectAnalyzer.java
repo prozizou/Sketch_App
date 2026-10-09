@@ -16,7 +16,25 @@ public final class ProjectAnalyzer {
      * @param classesByLibrary  the classes each of those libraries contains; a library missing from the map is not checked
      */
     public static AnalysisReport run(ProjectFacts facts, List<SourceFile> files, List<String> libraryNames, Map<String, Set<String>> classesByLibrary) {
+        return run(facts, files, libraryNames, classesByLibrary, List.of());
+    }
+
+    /** Also checks the blocks of {@code logicScreens} and the navigation between screens. */
+    public static AnalysisReport run(ProjectFacts facts, List<SourceFile> files, List<String> libraryNames, Map<String, Set<String>> classesByLibrary,
+                                     List<pro.sketchware.logic.LogicScreen> logicScreens) {
         List<Finding> findings = new ArrayList<>();
+        if (!logicScreens.isEmpty()) {
+            List<String> javaNames = new ArrayList<>();
+            Map<String, String> javaFiles = new java.util.LinkedHashMap<>();
+            for (SourceFile source : facts.sources()) {
+                if (source.name().endsWith(".java")) {
+                    javaNames.add(source.name());
+                    javaFiles.put(source.name(), source.content());
+                }
+            }
+            findings.addAll(pro.sketchware.logic.LogicAnalyzer.analyze(logicScreens, javaNames));
+            findings.addAll(pro.sketchware.logic.NavigationGraph.build(logicScreens, javaFiles).findings());
+        }
         findings.addAll(CompatibilityAnalyzer.analyze(facts));
         findings.addAll(DesignSystemChecker.analyze(facts.views()));
         findings.addAll(SecurityScanner.analyze(facts, files, libraryNames));

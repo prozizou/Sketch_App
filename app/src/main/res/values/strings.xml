@@ -885,6 +885,12 @@ ACTION_VIEW
     <string name="analysis_menu_tree">Dependency tree</string>
     <string name="analysis_menu_rerun">Run again</string>
     <string name="analysis_tree_title">Dependency tree</string>
+    <string name="analysis_menu_navigation">Navigation graph</string>
+    <string name="analysis_nav_title">Navigation between screens</string>
+    <string name="analysis_nav_fragment">fragment</string>
+    <string name="analysis_nav_unreachable">nothing opens it</string>
+    <string name="analysis_nav_empty">The project has no screens.</string>
+    <string name="analysis_nav_copy_mermaid">Copy as Mermaid</string>
     <string name="analysis_tree_empty">No built-in library is used by this project.</string>
     <string name="analysis_tree_excluded">excluded</string>
     <string name="analysis_tree_repeated">see above</string>
