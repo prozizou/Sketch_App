@@ -18,6 +18,7 @@ public final class ProjectAnalyzer {
     public static AnalysisReport run(ProjectFacts facts, List<SourceFile> files, List<String> libraryNames, Map<String, Set<String>> classesByLibrary) {
         List<Finding> findings = new ArrayList<>();
         findings.addAll(CompatibilityAnalyzer.analyze(facts));
+        findings.addAll(DesignSystemChecker.analyze(facts.views()));
         findings.addAll(SecurityScanner.analyze(facts, files, libraryNames));
         findings.addAll(DependencyInspector.findDuplicateClasses(classesByLibrary));
         findings.addAll(DependencyInspector.findVersionConflicts(libraryNames));
