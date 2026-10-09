@@ -6,6 +6,7 @@ import com.android.tools.r8.OutputMode
 import com.android.tools.r8.R8
 import com.android.tools.r8.R8Command
 import com.android.tools.r8.origin.Origin
+import pro.sketchware.build.BuildMemory
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -32,6 +33,12 @@ class R8Compiler(
             .setMode(CompilationMode.RELEASE)
             .build()
 
-        R8.run(command)
+        // On phones with little memory fewer threads keep the peak low; null means the compiler's own default
+        val executor = BuildMemory.newCompilerExecutor()
+        try {
+            if (executor == null) R8.run(command) else R8.run(command, executor)
+        } finally {
+            executor?.shutdown()
+        }
     }
 }

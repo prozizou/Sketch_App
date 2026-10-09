@@ -52,7 +52,7 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 | 6 | Project analysis screen and Health Score | 2-5 | low | **Done** (screen compiled by CI, not tried on a device) |
 | 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | **Done** for mapping retention, release history and size analysis (engines tested; screen and export hook compiled by CI, not tried on a device). Versioning already existed (auto version code, build history) and is unchanged |
 | 8 | CI file generation for Android Studio export | - | low | **Done**, off by default (generator tested and its YAML parsed with a YAML parser; the export wiring is compiled by CI, **not verified on a device**) |
-| 9 | Memory-aware compiler | build pipeline study | high | Planned |
+| 9 | Memory-aware compiler | build pipeline study | high | **Partly done**: thread limit for D8 and R8 on devices with little memory (policy tested; call sites compiled by CI; **effect not measured on a real 2 GB phone**) |
 | 10 | View editor: undo/redo, multi-selection, smart snap and guides (pure geometry engine first) | - | high | Planned |
 | 11 | Canvas: orientation, tablet and foldable previews, safe-area overlays | 10 | medium | Planned |
 | 12 | Properties inspector additions, design system | 10 | high | Planned |
@@ -132,3 +132,16 @@ feature flag, and be added only with regression tests.
   release of the same type, shows details and runs the size analysis. Can be switched off in App Settings.
 - Limitations: it only records exports made after this change; the size analysis reads the file at the path where it was exported,
   so a moved or deleted file cannot be analysed; there is no in-app sharing of the mapping, its path is shown.
+
+### Step 9: memory-aware compiler (first part)
+
+- Study result: `largeHeap` is already on; ECJ is single-threaded; AAPT2 is a native process; D8 and R8 run with their own thread
+  pools, and the dex and shrinker steps are where the memory peak is. Libraries are already pre-dexed (`dexs`).
+- `MemoryProfile` chooses from total RAM, the low-RAM flag, the app's heap limit, cores and a user switch: LOW (RAM at or below
+  3 GB, low-RAM flag, or a heap of 256 MB or less: 1 thread, garbage collection requested before the heavy steps), NORMAL (2 threads)
+  or HIGH (at least 6 GB and 6 cores: up to 4 threads).
+- `BuildMemory` gives D8 and R8 a thread pool of that size (`D8.run(command, executor)` / `R8.run(command, executor)`, verified against
+  the R8 jar's API). With the switch off the compilers behave exactly as before.
+- Switches in App Settings: Memory-aware build (on by default), Always use low-memory build (off).
+- Limitations: **the benefit has not been measured on a 2 GB device**; fewer threads lowers the peak but makes those steps slower.
+  ECJ and AAPT2 are not changed. Nothing is cached differently. A full "will this build fit" estimate is not attempted.

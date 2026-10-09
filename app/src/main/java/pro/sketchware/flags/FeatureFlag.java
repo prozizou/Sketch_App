@@ -9,6 +9,10 @@ public enum FeatureFlag {
     BUILD_DOCTOR("ff-build-doctor", true),
     /** The project analysis screen: compatibility, security, dependencies and health score. */
     PROJECT_ANALYSIS("ff-project-analysis", true),
+    /** Limits the compilers' threads on phones with little memory. */
+    MEMORY_AWARE_BUILD("ff-memory-aware-build", true),
+    /** Uses the smallest build settings whatever the device. */
+    FORCE_LOW_MEMORY_BUILD("ff-force-low-memory-build", false),
     /** Keeps each exported release with its R8 mapping, and the Releases screen. */
     RELEASE_MANAGER("ff-release-manager", true),
     /** Adds a GitHub Actions workflow to the project exported for Android Studio. */

@@ -310,9 +310,28 @@
 
         <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
+            app:key="ff-memory-aware-build"
+            app:summary="Use fewer threads in the dex and shrinker steps on phones with little memory, to avoid running out of memory."
+            app:title="Memory-aware build" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:dependency="ff-memory-aware-build"
+            app:key="ff-force-low-memory-build"
+            app:summary="Always use the smallest build settings, even on a phone with a lot of memory."
+            app:title="Always use low-memory build" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
             app:key="ff-project-analysis"
             app:summary="Check a project for compatibility, security and dependency problems."
             app:title="Project analysis" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="ff-release-manager"
+            app:summary="Keep each exported release with its R8 mapping, and show the Releases screen."
+            app:title="Release manager" />
 
         <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
