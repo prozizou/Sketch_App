@@ -896,6 +896,8 @@ ACTION_VIEW
     <string name="analysis_autofix_contrast">Black or white text where the contrast is too low (%1$d)</string>
     <string name="analysis_autofix_spacing">Round margins and padding to the 4 dp rhythm (%1$d)</string>
     <string name="analysis_autofix_text_scale">Round text sizes to the Material type scale (%1$d)</string>
+    <string name="analysis_autofix_hardcoded_text">Move typed-in texts to strings.xml (%1$d)</string>
+    <string name="analysis_autofix_strings_problem">Texts were not moved because strings.xml could not be read (%1$s). Fix it in the Resources editor, then try again.</string>
     <string name="analysis_autofix_unconnected_blocks">Delete blocks that are not connected to their event (%1$d)</string>
     <string name="analysis_autofix_details">See every change</string>
     <string name="analysis_autofix_apply">Fix</string>
