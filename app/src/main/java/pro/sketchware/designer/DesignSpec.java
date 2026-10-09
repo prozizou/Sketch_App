@@ -38,7 +38,7 @@ public final class DesignSpec {
         }
     }
 
-    private static final Pattern PATH_PARAM = Pattern.compile("\\{([^}/]*)}");
+    private static final Pattern PATH_PARAM = Pattern.compile("\\{([^}/]*)\\}");
 
     private DesignSpec() {
     }
