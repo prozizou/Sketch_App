@@ -27,4 +27,5 @@
     <item name="item_project_analysis" type="id" />
     <item name="item_release_manager" type="id" />
     <item name="item_collection_manager" type="id" />
+    <item name="menu_logic_debug" type="id" />
 </resources>

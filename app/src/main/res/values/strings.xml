@@ -886,6 +886,16 @@ ACTION_VIEW
     <string name="analysis_menu_rerun">Run again</string>
     <string name="analysis_tree_title">Dependency tree</string>
     <string name="analysis_menu_navigation">Navigation graph</string>
+    <string name="block_debugger_menu">Step through blocks</string>
+    <string name="block_debugger_title">Step through blocks</string>
+    <string name="block_debugger_empty">This event has no blocks to run.</string>
+    <string name="block_debugger_position">Step %1$d of %2$d</string>
+    <string name="block_debugger_next">Next</string>
+    <string name="block_debugger_previous">Previous</string>
+    <string name="block_debugger_not_simulated">This block needs the phone (views, network, files…), so it is listed but not run, and what it returns is unknown (?).</string>
+    <string name="block_debugger_finished">End of the event.</string>
+    <string name="block_debugger_no_variables">No variables or lists yet.</string>
+    <string name="block_debugger_disclaimer">Simulated in the editor from the values the screen starts with: variables, numbers, text, conditions, loops, lists and toasts. The app on a phone can behave differently, for example when other events have changed the variables.</string>
     <string name="analysis_nav_title">Navigation between screens</string>
     <string name="analysis_nav_fragment">fragment</string>
     <string name="analysis_nav_unreachable">nothing opens it</string>

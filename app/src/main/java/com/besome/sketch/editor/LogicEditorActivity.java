@@ -2166,6 +2166,31 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         }
     }
 
+    /** Simulates the blocks of the open event step by step, starting from the values the screen starts with. */
+    private void showBlockDebugger() {
+        if (M == null) return;
+        String javaName = M.getJavaName();
+        java.util.Map<String, Integer> variables = new java.util.LinkedHashMap<>();
+        for (Pair<Integer, String> variable : jC.a(scId).k(javaName)) {
+            if (variable.first == null || variable.second == null) continue;
+            String name = variable.first == 6 ? pro.sketchware.logic.LogicScreen.declaredName(variable.second) : variable.second;
+            if (variable.first != 9 && !name.isEmpty()) variables.put(name, variable.first);
+        }
+        java.util.List<String> lists = new ArrayList<>();
+        for (Pair<Integer, String> list : jC.a(scId).j(javaName)) {
+            if (list.second != null) lists.add(list.second);
+        }
+        pro.sketchware.logic.BlockDebuggerDialog.show(this,
+                pro.sketchware.logic.LogicFactsLoader.event(id + "_" + eventName, o.getBlocks()), variables, lists,
+                blockId -> {
+                    try {
+                        return o.findViewWithTag(Integer.valueOf(blockId));
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                });
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.logic_menu, menu);
@@ -2175,6 +2200,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         boolean codeShown = viewMode.showsCode();
         codeItem.setIcon(codeShown ? R.drawable.ic_mtrl_block : R.drawable.ic_mtrl_code);
         codeItem.setTitle(codeShown ? R.string.logic_code_hide : R.string.logic_code_show);
+        if (pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.BLOCK_DEBUGGER)) {
+            menu.add(Menu.NONE, R.id.menu_logic_debug, 200, R.string.block_debugger_menu)
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        }
         return true;
     }
 
@@ -2194,6 +2223,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             SketchwareUtil.toast(getString(R.string.logic_saved));
         } else if (itemId == R.id.menu_logic_showsource) {
             setViewMode(viewMode.toggled());
+        } else if (itemId == R.id.menu_logic_debug) {
+            showBlockDebugger();
         }
 
         return super.onOptionsItemSelected(menuItem);

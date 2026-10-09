@@ -19,6 +19,8 @@ public enum FeatureFlag {
     DEVICE_PREVIEW("ff-device-preview", true),
     /** Alignment guides and distances around the selected widget in the View editor. */
     LAYOUT_GUIDES("ff-layout-guides", false),
+    /** Step through an event's blocks in the Logic editor, with the value of every variable. */
+    BLOCK_DEBUGGER("ff-block-debugger", true),
     /** Adds a GitHub Actions workflow to the project exported for Android Studio. */
     EXPORT_CI_WORKFLOW("ff-export-ci", false),
     /** With the workflow: also run lint. */

@@ -74,6 +74,24 @@ public final class BlockSimulator {
         return new Result(List.copyOf(simulator.steps), List.copyOf(simulator.output), stop);
     }
 
+    /**
+     * The values the generated code gives variables when the screen opens: false, 0 and empty text for the
+     * Variable manager's types 0, 1 and 2. Other types (maps, custom declarations) are left unknown.
+     */
+    public static Map<String, Object> initialValues(Map<String, Integer> variables) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        variables.forEach((name, type) -> {
+            switch (type) {
+                case 0 -> values.put(name, Boolean.FALSE);
+                case 1 -> values.put(name, 0d);
+                case 2 -> values.put(name, "");
+                default -> {
+                }
+            }
+        });
+        return values;
+    }
+
     private static int idOf(LogicBlock block) {
         try {
             return Integer.parseInt(block.id());

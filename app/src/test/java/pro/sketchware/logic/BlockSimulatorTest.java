@@ -112,4 +112,13 @@ public class BlockSimulatorTest {
         assertEquals("?", BlockSimulator.show(null));
         assertEquals("%m.liststr", BlockSimulator.paramType("add %s to %m.listStr", 1));
     }
+
+    @Test
+    public void startsFromTheGeneratedDefaults() {
+        Map<String, Object> values = BlockSimulator.initialValues(Map.of("flag", 0, "n", 1, "s", 2, "m", 3));
+        assertEquals(Boolean.FALSE, values.get("flag"));
+        assertEquals(0d, values.get("n"));
+        assertEquals("", values.get("s"));
+        assertFalse(values.containsKey("m"));
+    }
 }

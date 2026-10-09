@@ -351,6 +351,13 @@
             app:title="Alignment guides" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="ff-block-debugger"
+            app:summary="Step through an event's blocks in the Logic editor and see the value of every variable."
+            app:title="Block debugger" />
+
+        <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
             app:key="ff-export-ci"
             app:summary="Add a GitHub Actions file that builds the project when you push the Android Studio export to GitHub."
