@@ -171,6 +171,16 @@
             android:textSize="11sp" />
 
         <ImageButton
+            android:id="@+id/btn_device_preview"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Device preview"
+            android:padding="7dp"
+            android:src="@drawable/ic_mtrl_devices"
+            app:tint="?attr/colorOnSurface" />
+
+        <ImageButton
             android:id="@+id/btn_phone_frame"
             android:layout_width="30dp"
             android:layout_height="30dp"

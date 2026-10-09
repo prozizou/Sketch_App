@@ -15,6 +15,10 @@ public enum FeatureFlag {
     FORCE_LOW_MEMORY_BUILD("ff-force-low-memory-build", false),
     /** Keeps each exported release with its R8 mapping, and the Releases screen. */
     RELEASE_MANAGER("ff-release-manager", true),
+    /** Preview a screen on other devices: tablets, foldables, orientation, safe areas. Does nothing until a device is picked. */
+    DEVICE_PREVIEW("ff-device-preview", true),
+    /** Alignment guides and distances around the selected widget in the View editor. */
+    LAYOUT_GUIDES("ff-layout-guides", false),
     /** Adds a GitHub Actions workflow to the project exported for Android Studio. */
     EXPORT_CI_WORKFLOW("ff-export-ci", false),
     /** With the workflow: also run lint. */

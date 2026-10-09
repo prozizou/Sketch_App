@@ -338,6 +338,19 @@
             app:title="Release manager" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="ff-device-preview"
+            app:summary="Preview a screen on tablets, foldables and in landscape, with safe areas, from the View editor."
+            app:title="Device preview" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="ff-layout-guides"
+            app:summary="Show alignment guides and distances around the selected widget in the View editor."
+            app:title="Alignment guides" />
+
+        <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
             app:key="ff-export-ci"
             app:summary="Add a GitHub Actions file that builds the project when you push the Android Studio export to GitHub."

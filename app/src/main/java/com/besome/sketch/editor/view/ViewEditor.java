@@ -117,6 +117,11 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private LinearLayout bgStatus;
     private ImageView phoneFrame;
     private PhoneFrame currentFrame = PhoneFrame.byKey(PhoneFrame.DEFAULT_KEY);
+    private pro.sketchware.editor.preview.DevicePreset previewDevice = pro.sketchware.editor.preview.DevicePreset.ALL.get(0);
+    /** {@code null} keeps the screen as the device holds it. */
+    private pro.sketchware.editor.preview.Orientation previewOrientation;
+    private boolean previewSafeAreas;
+    private PreviewOverlay previewOverlay;
     private android.content.SharedPreferences uiPrefs;
     private TextView fileName;
     private ImageView imgPhoneTopBg;
@@ -527,6 +532,11 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         android.content.SharedPreferences prefs = context.getSharedPreferences("view_editor_ui", Context.MODE_PRIVATE);
         uiPrefs = prefs;
         currentFrame = PhoneFrame.byKey(prefs.getString("phone_frame", PhoneFrame.DEFAULT_KEY));
+        previewDevice = pro.sketchware.editor.preview.DevicePreset.byKey(prefs.getString("preview_device", pro.sketchware.editor.preview.DevicePreset.THIS_DEVICE_KEY));
+        String savedOrientation = prefs.getString("preview_orientation", "");
+        previewOrientation = "portrait".equals(savedOrientation) ? pro.sketchware.editor.preview.Orientation.PORTRAIT
+                : "landscape".equals(savedOrientation) ? pro.sketchware.editor.preview.Orientation.LANDSCAPE : null;
+        previewSafeAreas = prefs.getBoolean("preview_safe_areas", false);
         paletteExpanded = prefs.getBoolean("palette_expanded", true);
         paletteWidthDp = SidebarWidth.clampDp(prefs.getFloat("palette_width_dp", SidebarWidth.DEFAULT_DP));
         applyPaletteWidth();
@@ -549,6 +559,10 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         findViewById(R.id.btn_vfit).setOnClickListener(v -> setPreviewZoom(1f));
         findViewById(R.id.btn_focus_preview).setOnClickListener(v -> setFocusPreview(!focusPreview));
         findViewById(R.id.btn_phone_frame).setOnClickListener(v -> showPhoneFramePicker());
+        View devicePreviewButton = findViewById(R.id.btn_device_preview);
+        devicePreviewButton.setOnClickListener(v -> showDevicePreviewDialog());
+        boolean devicePreviewOn = pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.DEVICE_PREVIEW);
+        devicePreviewButton.setVisibility(devicePreviewOn ? View.VISIBLE : View.GONE);
         // The zoom bar can be moved off the preview; where it was left is remembered.
         new FloatingBarDragger(findViewById(R.id.view_canvas_controls), findViewById(R.id.view_canvas_controls_handle),
                 this, "view_zoom_bar", 8 * dip, 6 * dip);
@@ -795,6 +809,9 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         phoneFrame.setFocusable(false);
         phoneFrame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         shape.addView(phoneFrame, new FrameLayout.LayoutParams(0, 0));
+
+        previewOverlay = new PreviewOverlay(context);
+        shape.addView(previewOverlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         dropHint = new TextView(context);
         dropHint.setText(R.string.view_drop_components_here);
@@ -1106,14 +1123,18 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         bgStatus.setVisibility(T ? View.GONE : View.VISIBLE);
 
         viewPane.setVisibility(View.VISIBLE);
-        displayWidth = getResources().getDisplayMetrics().widthPixels;
-        displayHeight = getResources().getDisplayMetrics().heightPixels;
-        boolean isLandscapeMode = displayWidth > displayHeight;
+        int realWidth = getResources().getDisplayMetrics().widthPixels;
+        int realHeight = getResources().getDisplayMetrics().heightPixels;
+        int[] previewSize = previewPixels(realWidth, realHeight);
+        displayWidth = previewSize[0];
+        displayHeight = previewSize[1];
+        boolean showsFrame = currentFrame != null && !previewOverridesSize();
+        boolean isLandscapeMode = realWidth > realHeight;
         int var4 = (int) (dip * (!isLandscapeMode ? 12.0F : 24.0F));
         int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
         // A frame with thick bezels (an old phone's chin, say) takes its room from the preview.
         float frameScale = phoneFrameScale();
-        if (currentFrame != null) {
+        if (showsFrame) {
             var4 = Math.max(var4, (int) Math.ceil(Math.max(currentFrame.insetLeft(), currentFrame.insetRight()) * frameScale) + 2);
             var5 = Math.max(var5, (int) Math.ceil(Math.max(currentFrame.insetTop(), currentFrame.insetBottom()) * frameScale) + 2);
         }
@@ -1121,8 +1142,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         final int marginY = var5;
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
-        int var9 = displayWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
-        int var8 = displayHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
+        int var9 = realWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
+        int var8 = realHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
         if (screenType == 0 && da) {
             Log.d("ViewEditor", "hmmm");
             var8 -= (int) (dip * 56.0F);
@@ -1179,13 +1200,17 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         var11 = var5;
         viewPane.setX(var10);
         viewPane.setY(var8 - (int) ((var11 - var3 * var11) / 2.0F));
-        updatePhoneFrame(marginX, marginY, displayWidth * var3, displayHeight * var3);
+        phoneFrame.setVisibility(showsFrame ? View.VISIBLE : View.GONE);
+        if (showsFrame) {
+            updatePhoneFrame(marginX, marginY, displayWidth * var3, displayHeight * var3);
+        }
+        updatePreviewOverlay(marginX, marginY, var3);
         isLayoutChanged = false;
     }
 
     /** Scale of the frame picture: a side bezel of about 7dp, top and bottom never thicker than 40dp. */
     private float phoneFrameScale() {
-        if (currentFrame == null) {
+        if (currentFrame == null || previewOverridesSize()) {
             return 0f;
         }
         return PhoneFrameDrawable.scaleFor(currentFrame, 7 * dip, 40 * dip);
@@ -1230,6 +1255,121 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
             uiPrefs.edit().putString("phone_frame", frame == null ? PhoneFrame.NONE_KEY : frame.key()).apply();
         }
         showPhoneFrame(frame);
+    }
+
+    private boolean previewActive() {
+        return pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.DEVICE_PREVIEW);
+    }
+
+    /** True when the preview is not simply the device's own screen, so the phone bezel no longer fits. */
+    private boolean previewOverridesSize() {
+        return previewActive() && (!previewDevice.isThisDevice() || previewOrientation != null);
+    }
+
+    /** Pixel size of the previewed screen: the chosen device in its orientation, or this device's screen as is. */
+    private int[] previewPixels(int realWidth, int realHeight) {
+        if (!previewActive()) {
+            return new int[]{realWidth, realHeight};
+        }
+        if (previewDevice.isThisDevice()) {
+            if (previewOrientation == null) {
+                return new int[]{realWidth, realHeight};
+            }
+            int shortSide = Math.min(realWidth, realHeight);
+            int longSide = Math.max(realWidth, realHeight);
+            return previewOrientation == pro.sketchware.editor.preview.Orientation.PORTRAIT
+                    ? new int[]{shortSide, longSide} : new int[]{longSide, shortSide};
+        }
+        pro.sketchware.editor.preview.Orientation orientation = previewOrientation == null
+                ? pro.sketchware.editor.preview.Orientation.PORTRAIT : previewOrientation;
+        return new int[]{Math.round(previewDevice.width(orientation) * dip), Math.round(previewDevice.height(orientation) * dip)};
+    }
+
+    private void updatePreviewOverlay(int screenLeft, int screenTop, float scale) {
+        if (previewOverlay == null) {
+            return;
+        }
+        if (!previewActive() || (previewDevice.isThisDevice() && previewOrientation == null && !previewSafeAreas)) {
+            previewOverlay.update(null, false, "", 0, 0, 1f);
+            return;
+        }
+        pro.sketchware.editor.preview.Orientation orientation = displayWidth > displayHeight
+                ? pro.sketchware.editor.preview.Orientation.LANDSCAPE : pro.sketchware.editor.preview.Orientation.PORTRAIT;
+        int widthDp = Math.round(displayWidth / dip);
+        int heightDp = Math.round(displayHeight / dip);
+        pro.sketchware.editor.preview.SafeArea area = pro.sketchware.editor.preview.SafeArea.of(previewDevice, orientation, widthDp, heightDp);
+        String label = widthDp + " × " + heightDp + " dp · " + pro.sketchware.editor.preview.WindowSizeClass.of(widthDp, heightDp).label();
+        previewOverlay.update(area, previewSafeAreas, label, screenLeft, screenTop, dip * scale);
+    }
+
+    private void savePreviewChoice() {
+        if (uiPrefs != null) {
+            uiPrefs.edit()
+                    .putString("preview_device", previewDevice.key())
+                    .putString("preview_orientation", previewOrientation == null ? ""
+                            : previewOrientation == pro.sketchware.editor.preview.Orientation.PORTRAIT ? "portrait" : "landscape")
+                    .putBoolean("preview_safe_areas", previewSafeAreas)
+                    .apply();
+        }
+        isLayoutChanged = true;
+        requestLayout();
+    }
+
+    /** Pick the device the screen is previewed on, its orientation and whether to mark the unsafe areas. */
+    private void showDevicePreviewDialog() {
+        Context context = getContext();
+        java.util.List<pro.sketchware.editor.preview.DevicePreset> presets = pro.sketchware.editor.preview.DevicePreset.ALL;
+        int pad = (int) (20 * dip);
+        LinearLayout content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(pad, (int) (8 * dip), pad, 0);
+
+        android.widget.RadioGroup group = new android.widget.RadioGroup(context);
+        for (int i = 0; i < presets.size(); i++) {
+            pro.sketchware.editor.preview.DevicePreset preset = presets.get(i);
+            android.widget.RadioButton radio = new android.widget.RadioButton(context);
+            radio.setId(i + 1);
+            radio.setText(preset.isThisDevice() ? preset.name()
+                    : preset.name() + " (" + preset.widthDp() + " × " + preset.heightDp() + " dp)");
+            group.addView(radio);
+            if (preset == previewDevice) {
+                group.check(i + 1);
+            }
+        }
+        content.addView(group);
+
+        android.widget.CheckBox landscape = new android.widget.CheckBox(context);
+        landscape.setText("Landscape");
+        landscape.setChecked(previewOrientation == pro.sketchware.editor.preview.Orientation.LANDSCAPE
+                || (previewOrientation == null && displayWidth > displayHeight && previewDevice.isThisDevice()));
+        content.addView(landscape);
+
+        android.widget.CheckBox safeAreas = new android.widget.CheckBox(context);
+        safeAreas.setText("Mark the areas the system or a hinge can cover");
+        safeAreas.setChecked(previewSafeAreas);
+        content.addView(safeAreas);
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(context);
+        scroll.addView(content);
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+                .setTitle("Device preview")
+                .setView(scroll)
+                .setPositiveButton(R.string.common_word_ok, (dialog, which) -> {
+                    int id = group.getCheckedRadioButtonId();
+                    previewDevice = id > 0 ? presets.get(id - 1) : presets.get(0);
+                    pro.sketchware.editor.preview.Orientation chosen = landscape.isChecked()
+                            ? pro.sketchware.editor.preview.Orientation.LANDSCAPE
+                            : pro.sketchware.editor.preview.Orientation.PORTRAIT;
+                    // "This device" in the orientation it already has stays untouched, so the default view is unchanged.
+                    boolean deviceIsLandscape = getResources().getDisplayMetrics().widthPixels > getResources().getDisplayMetrics().heightPixels;
+                    boolean naturalChoice = previewDevice.isThisDevice()
+                            && (chosen == pro.sketchware.editor.preview.Orientation.LANDSCAPE) == deviceIsLandscape;
+                    previewOrientation = naturalChoice ? null : chosen;
+                    previewSafeAreas = safeAreas.isChecked();
+                    savePreviewChoice();
+                })
+                .setNegativeButton(R.string.common_word_cancel, null)
+                .show();
     }
 
     /** A grid of the available frames (and "no frame") to pick from. */
