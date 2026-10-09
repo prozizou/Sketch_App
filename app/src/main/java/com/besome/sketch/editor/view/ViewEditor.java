@@ -122,6 +122,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private pro.sketchware.editor.preview.Orientation previewOrientation;
     private boolean previewSafeAreas;
     private PreviewOverlay previewOverlay;
+    private GuidesOverlay guidesOverlay;
     private android.content.SharedPreferences uiPrefs;
     private TextView fileName;
     private ImageView imgPhoneTopBg;
@@ -220,6 +221,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
             selectedItem.setSelection(false);
             selectedItem = null;
         }
+        refreshGuides();
         if (widgetSelectedListener != null) widgetSelectedListener.a(false, "");
     }
 
@@ -813,6 +815,9 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         previewOverlay = new PreviewOverlay(context);
         shape.addView(previewOverlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        guidesOverlay = new GuidesOverlay(context);
+        shape.addView(guidesOverlay, new FrameLayout.LayoutParams(displayWidth, displayHeight));
+
         dropHint = new TextView(context);
         dropHint.setText(R.string.view_drop_components_here);
         dropHint.setGravity(Gravity.CENTER);
@@ -823,7 +828,10 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         dropHint.setClickable(false);
         dropHint.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         shape.addView(dropHint, new FrameLayout.LayoutParams(0, 0));
-        viewPane.getViewTreeObserver().addOnGlobalLayoutListener(this::updateDropHint);
+        viewPane.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            updateDropHint();
+            refreshGuides();
+        });
 
         vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         useVibrate = new DB(context, "P12").a("P12I0", true);
@@ -1116,6 +1124,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         }
         itemView.setSelection(true);
         selectedItem = itemView;
+        refreshGuides();
     }
 
     private void a() {
@@ -1200,6 +1209,11 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         var11 = var5;
         viewPane.setX(var10);
         viewPane.setY(var8 - (int) ((var11 - var3 * var11) / 2.0F));
+        guidesOverlay.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, var5));
+        guidesOverlay.setScaleX(var3);
+        guidesOverlay.setScaleY(var3);
+        guidesOverlay.setX(viewPane.getX());
+        guidesOverlay.setY(viewPane.getY());
         phoneFrame.setVisibility(showsFrame ? View.VISIBLE : View.GONE);
         if (showsFrame) {
             updatePhoneFrame(marginX, marginY, displayWidth * var3, displayHeight * var3);
@@ -1255,6 +1269,42 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
             uiPrefs.edit().putString("phone_frame", frame == null ? PhoneFrame.NONE_KEY : frame.key()).apply();
         }
         showPhoneFrame(frame);
+    }
+
+    /** Pane-pixel rectangle of {@code view}, as the guide engine wants it. */
+    private pro.sketchware.editor.layout.Box boxInPane(View view) {
+        android.graphics.Rect rect = new android.graphics.Rect(0, 0, view.getWidth(), view.getHeight());
+        viewPane.offsetDescendantRectToMyCoords(view, rect);
+        return new pro.sketchware.editor.layout.Box(rect.left, rect.top, rect.right, rect.bottom);
+    }
+
+    /** Shows alignment guides and distances for the selected widget, or clears them. */
+    private void refreshGuides() {
+        if (guidesOverlay == null) {
+            return;
+        }
+        if (!pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.LAYOUT_GUIDES)
+                || !(selectedItem instanceof View selected) || selected.getWidth() == 0
+                || !(selected.getParent() instanceof ViewGroup parent) || !selected.isAttachedToWindow()) {
+            guidesOverlay.clear();
+            return;
+        }
+        try {
+            pro.sketchware.editor.layout.Box target = boxInPane(selected);
+            java.util.List<pro.sketchware.editor.layout.Box> siblings = new java.util.ArrayList<>();
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                View child = parent.getChildAt(i);
+                if (child != selected && child.getVisibility() == View.VISIBLE && child.getWidth() > 0 && child.getHeight() > 0
+                        && child.getTag() != null) {
+                    siblings.add(boxInPane(child));
+                }
+            }
+            pro.sketchware.editor.layout.Box parentBox = boxInPane(parent);
+            guidesOverlay.show(target, pro.sketchware.editor.layout.GuideEngine.alignments(target, siblings, parentBox, 1f),
+                    pro.sketchware.editor.layout.GuideEngine.gaps(target, siblings, parentBox));
+        } catch (RuntimeException e) {
+            guidesOverlay.clear();
+        }
     }
 
     private boolean previewActive() {
@@ -1564,6 +1614,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         }
         selectedItem = syVar;
         selectedItem.setSelection(true);
+        refreshGuides();
         if (widgetSelectedListener != null) {
             widgetSelectedListener.a(z, selectedItem.getBean().id);
         }
