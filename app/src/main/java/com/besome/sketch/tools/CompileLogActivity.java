@@ -26,6 +26,11 @@ import java.io.File;
 import java.util.List;
 
 import mod.hey.studios.code.SrcCodeEditor;
+import pro.sketchware.R;
+import pro.sketchware.analysis.BuildDoctor;
+import pro.sketchware.analysis.FindingsDialog;
+import pro.sketchware.flags.FeatureFlag;
+import pro.sketchware.flags.FeatureFlags;
 import mod.hey.studios.util.CompileLogHelper;
 import mod.hey.studios.util.Helper;
 import mod.jbk.diagnostic.CompileDiagnosticParser;
@@ -92,14 +97,20 @@ public class CompileLogActivity extends BaseAppCompatActivity {
         final String monospacedFontLabel = "Monospaced font";
         final String fontSizeLabel = "Font size";
         final String copyLogLabel = "Copy log";
+        final String buildDoctorLabel = getString(R.string.build_doctor_menu);
 
         PopupMenu options = new PopupMenu(this, binding.formatButton);
         options.getMenu().add(wrapTextLabel).setCheckable(true).setChecked(getWrappedTextPreference());
         options.getMenu().add(monospacedFontLabel).setCheckable(true).setChecked(getMonospacedFontPreference());
         options.getMenu().add(fontSizeLabel);
         options.getMenu().add(copyLogLabel);
+        if (FeatureFlags.isEnabled(FeatureFlag.BUILD_DOCTOR)) options.getMenu().add(buildDoctorLabel);
 
         options.setOnMenuItemClickListener(menuItem -> {
+            if (menuItem.getTitle().toString().equals(buildDoctorLabel)) {
+                showBuildDoctor();
+                return true;
+            }
             switch (menuItem.getTitle().toString()) {
                 case wrapTextLabel -> {
                     menuItem.setChecked(!menuItem.isChecked());
@@ -160,6 +171,11 @@ public class CompileLogActivity extends BaseAppCompatActivity {
         intent.putExtra(SrcCodeEditor.EXTRA_LINE, diagnostic.line());
         intent.putExtra(SrcCodeEditor.EXTRA_COLUMN, diagnostic.column());
         startActivity(intent);
+    }
+
+    private void showBuildDoctor() {
+        String log = compileErrorSaver.getLogsFromFile();
+        FindingsDialog.show(this, getString(R.string.build_doctor_title), BuildDoctor.diagnose(log), getString(R.string.build_doctor_none));
     }
 
     private void copyLog() {

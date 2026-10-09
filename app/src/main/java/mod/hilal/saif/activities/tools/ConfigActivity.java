@@ -118,6 +118,9 @@ public class ConfigActivity extends BaseAppCompatActivity {
         DEFAULTS.put(SETTING_MEMORY_ALERTS, true);
         DEFAULTS.put(SETTING_MEMORY_THRESHOLD, "85");
         DEFAULTS.put(SETTING_UPDATE_CHANNEL, "stable");
+        for (pro.sketchware.flags.FeatureFlag flag : pro.sketchware.flags.FeatureFlag.values()) {
+            DEFAULTS.put(flag.key(), flag.enabledByDefault());
+        }
     }
 
     public static String getBackupPath() {

@@ -52,6 +52,10 @@ import mod.jbk.build.BuiltInLibraries;
 import mod.jbk.build.compiler.bundle.AppBundleCompiler;
 import mod.jbk.export.GetKeyStoreCredentialsDialog;
 import mod.jbk.util.TestkeySignBridge;
+import pro.sketchware.export.CiWorkflowGenerator;
+import pro.sketchware.flags.FeatureFlag;
+import pro.sketchware.flags.FeatureFlags;
+import pro.sketchware.releases.ReleaseArchive;
 import pro.sketchware.R;
 import pro.sketchware.databinding.ExportProjectBinding;
 import pro.sketchware.settings.BuildHistory;
@@ -229,6 +233,13 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             }
             if (pathNativeLibraries.exists()) {
                 FileUtil.copyDirectory(pathNativeLibraries, new File(project_metadata.generatedFilesPath, "jniLibs"));
+            }
+
+            if (FeatureFlags.isEnabled(FeatureFlag.EXPORT_CI_WORKFLOW)) {
+                String workflowPath = project_metadata.projectMyscPath + File.separator + CiWorkflowGenerator.WORKFLOW_PATH;
+                FileUtil.makeDir(new File(workflowPath).getParent());
+                FileUtil.writeFile(workflowPath, CiWorkflowGenerator.androidWorkflow(new CiWorkflowGenerator.Options(
+                        FeatureFlags.isEnabled(FeatureFlag.EXPORT_CI_LINT), FeatureFlags.isEnabled(FeatureFlag.EXPORT_CI_TESTS))));
             }
 
             ArrayList<String> toCompress = new ArrayList<>();
@@ -745,7 +756,10 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             activity.get().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             // Dismiss the ProgressDialog
             activity.get().i();
+            // recordExport may move the project on to the next version code, so note the version that was just built
+            String builtVersionCode = project_metadata.versionCode;
             recordExport(BuildHistory.STATUS_SUCCESS, null);
+            archiveRelease(builtVersionCode);
 
             if (new File(getCorrectResultFilename(project_metadata.releaseApkPath)).exists()) {
                 activity.get().f(getCorrectResultFilename(project_metadata.projectName + "_release.apk"));
@@ -784,6 +798,41 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             }
             loading_sign_apk.setVisibility(View.GONE);
             activity.get().sign_apk_button.setVisibility(View.VISIBLE);
+        }
+
+        /**
+         * Keeps this release, and the R8 mapping of this build if there is one, for the Releases screen. Runs in the
+         * background; a failure here never affects the export.
+         */
+        private void archiveRelease(String builtVersionCode) {
+            if (!FeatureFlags.isEnabled(FeatureFlag.RELEASE_MANAGER)) return;
+            final boolean bundle = buildingAppBundle;
+            final String scId = activity.get().sc_id;
+            final String projectName = project_metadata.projectName;
+            final String packageName = project_metadata.packageName;
+            final String versionName = project_metadata.versionName;
+            final File artifact = bundle
+                    ? new File(Environment.getExternalStorageDirectory(), "sketch_nws" + File.separator + "signed_aab" + File.separator + getCorrectResultFilename(projectName + ".aab"))
+                    : new File(getCorrectResultFilename(project_metadata.releaseApkPath));
+            // A mapping older than this build belongs to an earlier one (for example when the shrinker was off)
+            File builtMapping = new File(project_metadata.proguardMappingPath);
+            final File mapping = builtMapping.isFile() && builtMapping.lastModified() >= startedAt ? builtMapping : null;
+            new Thread(() -> {
+                try {
+                    if (!artifact.isFile()) return;
+                    ReleaseArchive.Release release = new ReleaseArchive.Release();
+                    release.projectId = scId;
+                    release.projectName = projectName;
+                    release.packageName = packageName;
+                    release.versionName = versionName;
+                    release.versionCode = builtVersionCode;
+                    release.type = bundle ? "aab" : "apk";
+                    release.time = System.currentTimeMillis();
+                    new ReleaseArchive(new File(Environment.getExternalStorageDirectory(), ".sketch_nws/releases")).record(release, artifact, mapping);
+                } catch (Throwable t) {
+                    Log.e("AppExporter", "Couldn't keep the release", t);
+                }
+            }).start();
         }
 
         /**

@@ -130,6 +130,8 @@ import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
 import pro.sketchware.activities.search.ProjectSearchActivity;
 import pro.sketchware.activities.git.ProjectGitActivity;
 import pro.sketchware.activities.snapshots.AutoSnapshots;
+import pro.sketchware.analysis.ProjectAnalysisActivity;
+import pro.sketchware.releases.ReleaseManagerActivity;
 import pro.sketchware.activities.snapshots.ProjectSnapshotsActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;
@@ -1025,6 +1027,26 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             Intent intent = new Intent(getApplicationContext(), ProjectSnapshotsActivity.class);
             intent.putExtra("sc_id", sc_id);
             openSnapshots.launch(intent);
+        });
+    }
+
+    void toReleaseManager() {
+        Intent intent = new Intent(getApplicationContext(), ReleaseManagerActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
+    }
+
+    void toDataDesigner() {
+        Intent intent = new Intent(getApplicationContext(), pro.sketchware.designer.DataDesignerActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
+    }
+
+    void toProjectAnalysis() {
+        saveThen(() -> {
+            Intent intent = new Intent(getApplicationContext(), ProjectAnalysisActivity.class);
+            intent.putExtra("sc_id", sc_id);
+            startActivity(intent);
         });
     }
 

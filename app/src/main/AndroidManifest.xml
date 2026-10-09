@@ -275,6 +275,9 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar.Translucent"
             android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity android:name="pro.sketchware.activities.snapshots.ProjectSnapshotsActivity" />
+        <activity android:name="pro.sketchware.analysis.ProjectAnalysisActivity" />
+        <activity android:name="pro.sketchware.releases.ReleaseManagerActivity" />
+        <activity android:name="pro.sketchware.designer.DataDesignerActivity" />
         <activity
             android:name="pro.sketchware.activities.git.ProjectGitActivity"
             android:windowSoftInputMode="adjustResize" />

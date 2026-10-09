@@ -14,6 +14,9 @@ import java.util.LinkedList;
 
 import a.a.a.ProjectBuilder;
 import mod.hey.studios.project.ProjectSettings;
+import java.util.concurrent.ExecutorService;
+
+import pro.sketchware.build.BuildMemory;
 import pro.sketchware.utility.FileUtil;
 
 public class DexCompiler {
@@ -41,13 +44,25 @@ public class DexCompiler {
             libraryFiles.add(Paths.get(jarPath));
         }
 
-        D8.run(D8Command.builder()
+        D8Command command = D8Command.builder()
                 .setMode(CompilationMode.RELEASE)
                 .setIntermediate(true)
                 .setMinApiLevel(minApiLevel)
                 .addLibraryFiles(libraryFiles)
                 .setOutput(new File(builder.yq.binDirectoryPath, "dex").toPath(), OutputMode.DexIndexed)
                 .addProgramFiles(programFiles)
-                .build());
+                .build();
+
+        // On phones with little memory fewer threads keep the peak low; null means the compiler's own default
+        ExecutorService executor = BuildMemory.newCompilerExecutor();
+        try {
+            if (executor == null) {
+                D8.run(command);
+            } else {
+                D8.run(command, executor);
+            }
+        } finally {
+            if (executor != null) executor.shutdown();
+        }
     }
 }
