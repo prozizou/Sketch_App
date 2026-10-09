@@ -160,6 +160,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.getInstance();
     public ProjectFileBean M;
     public PaletteBlock m;
+    /** Optional extra: the id of a block to point out once the event is loaded (from the project health screen). */
+    public static final String EXTRA_HIGHLIGHT_BLOCK = "highlight_block";
     public BlockPane o;
     public String scId = "";
     public String id = "";
@@ -282,7 +284,27 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 o.getRoot().k();
                 o.b();
             });
+            String highlight = getIntent().getStringExtra(EXTRA_HIGHLIGHT_BLOCK);
+            if (highlight != null) {
+                runOnUiThread(() -> o.postDelayed(() -> flashBlock(highlight), 300));
+            }
         }
+    }
+
+    /** Brings the block with that id into view if the canvas allows it, and makes it blink a few times. */
+    private void flashBlock(String blockId) {
+        View block;
+        try {
+            block = o.findViewWithTag(Integer.valueOf(blockId));
+        } catch (NumberFormatException e) {
+            return;
+        }
+        if (block == null) return;
+        block.requestRectangleOnScreen(new android.graphics.Rect(0, 0, block.getWidth(), block.getHeight()), false);
+        android.animation.ObjectAnimator blink = android.animation.ObjectAnimator.ofFloat(block, View.ALPHA, 1f, 0.2f, 1f);
+        blink.setDuration(500);
+        blink.setRepeatCount(2);
+        blink.start();
     }
 
     private void redo() {

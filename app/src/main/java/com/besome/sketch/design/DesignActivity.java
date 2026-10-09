@@ -221,6 +221,23 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             refresh();
         }
     });
+    /** The project health screen can send the user to a screen, and to a widget on it. */
+    private final ActivityResultLauncher<Intent> openProjectAnalysis = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) return;
+        ProjectFileBean file = result.getData().getParcelableExtra(ProjectAnalysisActivity.EXTRA_PROJECT_FILE);
+        String widget = result.getData().getStringExtra(ProjectAnalysisActivity.EXTRA_SELECT_WIDGET);
+        if (file == null) return;
+        projectFile = file;
+        viewPager.setCurrentItem(0);
+        refresh();
+        if (widget != null && viewTabAdapter != null) {
+            viewPager.postDelayed(() -> {
+                if (viewTabAdapter != null && !viewTabAdapter.viewEditor.selectWidget(widget)) {
+                    SketchwareUtil.toast(getString(R.string.analysis_location_missing, widget));
+                }
+            }, 250);
+        }
+    });
     private final ActivityResultLauncher<Intent> openLibraryManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             refresh();
@@ -1046,7 +1063,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         saveThen(() -> {
             Intent intent = new Intent(getApplicationContext(), ProjectAnalysisActivity.class);
             intent.putExtra("sc_id", sc_id);
-            startActivity(intent);
+            openProjectAnalysis.launch(intent);
         });
     }
 

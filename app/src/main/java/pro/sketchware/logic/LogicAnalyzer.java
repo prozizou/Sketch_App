@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import pro.sketchware.analysis.Category;
 import pro.sketchware.analysis.Finding;
+import pro.sketchware.analysis.Location;
 import pro.sketchware.analysis.Severity;
 
 /**
@@ -35,38 +36,51 @@ public final class LogicAnalyzer {
      * @param customJavaFiles  file names of the project's own Java files (Java manager), like {@code Util.java}
      */
     public static List<Finding> analyze(List<LogicScreen> screens, Collection<String> customJavaFiles) {
-        Map<String, List<String>> evidence = new LinkedHashMap<>();
+        Map<String, String> paths = new LinkedHashMap<>();
+        for (String file : customJavaFiles) paths.put(file, file);
+        return analyze(screens, paths);
+    }
+
+    /** @param customJavaFiles the project's own Java files: shown name to the path to open */
+    public static List<Finding> analyze(List<LogicScreen> screens, Map<String, String> customJavaFiles) {
+        Collector evidence = new Collector();
         for (LogicScreen screen : screens) {
             analyzeScreen(screen, evidence);
         }
-        for (String file : customJavaFiles) {
+        for (Map.Entry<String, String> entry : customJavaFiles.entrySet()) {
+            String file = entry.getKey();
             String simple = simpleName(file);
             for (LogicScreen screen : screens) {
                 if (simple.equals(screen.className())) {
+                    evidence.current = Location.source(entry.getValue(), file, 1);
                     add(evidence, "sync.custom-java-duplicates-screen", file);
                 }
             }
         }
         List<Finding> out = new ArrayList<>();
-        for (Map.Entry<String, List<String>> entry : evidence.entrySet()) {
-            out.add(finding(entry.getKey(), entry.getValue()));
+        for (Map.Entry<String, List<String>> entry : evidence.items.entrySet()) {
+            out.add(finding(entry.getKey(), entry.getValue()).withLocations(evidence.locations.get(entry.getKey())));
         }
         return out;
     }
 
-    private static void analyzeScreen(LogicScreen screen, Map<String, List<String>> evidence) {
+    private static void analyzeScreen(LogicScreen screen, Collector evidence) {
         String where = screen.javaName();
         StringBuilder usage = new StringBuilder();
         Set<String> calledMoreBlocks = new java.util.HashSet<>();
         for (LogicEvent event : screen.events()) {
             BlockGraph graph = new BlockGraph(event);
             String at = where + " > " + event.key();
+            evidence.screen = where;
+            evidence.eventKey = event.key();
+            evidence.current = evidence.block("");
             Set<String> reachable = graph.reachable();
             int unconnected = event.blocks().size() - reachable.size();
             if (unconnected > 0) {
                 add(evidence, "logic.unconnected-blocks", at + " (" + unconnected + ")");
             }
             for (LogicBlock block : event.blocks()) {
+                evidence.current = evidence.block(block.id());
                 usage.append(' ').append(block.spec());
                 for (String p : block.parameters()) usage.append(' ').append(p);
                 for (String ref : BlockGraph.references(block)) {
@@ -86,20 +100,23 @@ public final class LogicAnalyzer {
         }
         String text = usage.toString();
         for (String variable : screen.variables().keySet()) {
+            evidence.current = null;
             if (!containsWord(text, variable)) add(evidence, "logic.unused-variable", where + " > " + variable);
         }
         for (String list : screen.lists()) {
+            evidence.current = null;
             if (!containsWord(text, list)) add(evidence, "logic.unused-list", where + " > " + list);
         }
         for (String moreBlock : screen.moreBlocks()) {
             if (!calledMoreBlocks.contains(moreBlock) && !text.contains("_" + moreBlock + "(")) {
+                evidence.current = Location.event(where, moreBlock + "_moreBlock", "");
                 add(evidence, "logic.unused-moreblock", where + " > " + moreBlock);
             }
         }
     }
 
     private static void checkBlock(LogicScreen screen, BlockGraph graph, LogicBlock block, String at,
-                                   Map<String, List<String>> evidence, Set<String> calledMoreBlocks) {
+                                   Collector evidence, Set<String> calledMoreBlocks) {
         String op = block.opCode();
         String here = at + " #" + block.id();
         switch (op) {
@@ -166,7 +183,7 @@ public final class LogicAnalyzer {
         }
     }
 
-    private static void checkHeavyInLoop(BlockGraph graph, LogicBlock loop, String here, Map<String, List<String>> evidence) {
+    private static void checkHeavyInLoop(BlockGraph graph, LogicBlock loop, String here, Collector evidence) {
         if (loop.subStack1() < 0) return;
         for (LogicBlock inner : graph.bodyBlocks(loop.subStack1(), false)) {
             if (HEAVY_IN_LOOP.contains(inner.opCode())) {
@@ -177,9 +194,10 @@ public final class LogicAnalyzer {
     }
 
     /** A break must be inside a loop, or the generated Java does not compile. */
-    private static void checkBreaks(BlockGraph graph, int first, boolean insideLoop, String at, Map<String, List<String>> evidence) {
+    private static void checkBreaks(BlockGraph graph, int first, boolean insideLoop, String at, Collector evidence) {
         for (LogicBlock block : graph.stack(first)) {
             if ("break".equals(block.opCode()) && !insideLoop) {
+                evidence.current = evidence.block(block.id());
                 add(evidence, "logic.break-outside-loop", at + " #" + block.id());
             }
             boolean inside = insideLoop || BlockGraph.isLoop(block.opCode());
@@ -207,8 +225,24 @@ public final class LogicAnalyzer {
         return name.endsWith(".java") ? name.substring(0, name.length() - 5) : name;
     }
 
-    private static void add(Map<String, List<String>> evidence, String id, String item) {
-        evidence.computeIfAbsent(id, k -> new ArrayList<>()).add(item);
+    private static void add(Collector evidence, String id, String item) {
+        evidence.items.computeIfAbsent(id, k -> new ArrayList<>()).add(item);
+        if (evidence.current != null) {
+            evidence.locations.computeIfAbsent(id, k -> new ArrayList<>()).add(evidence.current);
+        }
+    }
+
+    /** Evidence and locations by rule, and where the analysis currently is. */
+    private static final class Collector {
+        final Map<String, List<String>> items = new LinkedHashMap<>();
+        final Map<String, List<Location>> locations = new LinkedHashMap<>();
+        String screen = "";
+        String eventKey = "";
+        Location current;
+
+        Location block(String blockId) {
+            return Location.event(screen, eventKey, blockId);
+        }
     }
 
     private static Finding finding(String id, List<String> items) {

@@ -886,6 +886,10 @@ ACTION_VIEW
     <string name="analysis_menu_rerun">Run again</string>
     <string name="analysis_tree_title">Dependency tree</string>
     <string name="analysis_menu_navigation">Navigation graph</string>
+    <string name="analysis_open">Open</string>
+    <string name="analysis_open_where">Open which one?</string>
+    <string name="analysis_locations">Where (tap to open)</string>
+    <string name="analysis_location_missing">Not found any more: %1$s. Run the analysis again.</string>
     <string name="design_drawer_menu_title_data_designer">Data designer</string>
     <string name="design_drawer_menu_subtitle_data_designer">Generate a REST client, a SQLite database or Firebase models</string>
     <string name="block_debugger_menu">Step through blocks</string>

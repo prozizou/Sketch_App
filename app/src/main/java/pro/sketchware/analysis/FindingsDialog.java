@@ -26,13 +26,24 @@ public final class FindingsDialog {
     }
 
     public static Dialog show(Context context, CharSequence title, List<Finding> findings, CharSequence emptyMessage) {
+        return show(context, title, findings, emptyMessage, null);
+    }
+
+    /** @param onOpen called with a location the user tapped (the dialog closes first); null shows no locations */
+    public static Dialog show(Context context, CharSequence title, List<Finding> findings, CharSequence emptyMessage,
+                              java.util.function.Consumer<Location> onOpen) {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context).setTitle(title).setPositiveButton(android.R.string.ok, null);
+        Dialog[] shown = new Dialog[1];
         if (findings.isEmpty()) {
             builder.setMessage(emptyMessage);
         } else {
-            builder.setView(content(context, findings));
+            builder.setView(content(context, findings, onOpen == null ? null : location -> {
+                if (shown[0] != null) shown[0].dismiss();
+                onOpen.accept(location);
+            }));
         }
-        return builder.show();
+        shown[0] = builder.show();
+        return shown[0];
     }
 
     /** Shows findings with a button to go ahead anyway; Cancel leaves everything as it was. */
@@ -46,6 +57,10 @@ public final class FindingsDialog {
     }
 
     static ScrollView content(Context context, List<Finding> findings) {
+        return content(context, findings, null);
+    }
+
+    static ScrollView content(Context context, List<Finding> findings, java.util.function.Consumer<Location> onOpen) {
         LinearLayout list = new LinearLayout(context);
         list.setOrientation(LinearLayout.VERTICAL);
         int padding = SketchwareUtil.dpToPx(20);
@@ -56,10 +71,34 @@ public final class FindingsDialog {
             view.setTextIsSelectable(true);
             view.setPadding(0, SketchwareUtil.dpToPx(8), 0, SketchwareUtil.dpToPx(12));
             list.addView(view, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            if (onOpen != null && !finding.locations().isEmpty()) {
+                addLocations(context, list, finding.locations(), onOpen);
+            }
         }
         ScrollView scroll = new ScrollView(context);
         scroll.addView(list);
         return scroll;
+    }
+
+    /** One tappable row per location, under a "Where" heading. */
+    private static void addLocations(Context context, LinearLayout list, List<Location> locations, java.util.function.Consumer<Location> onOpen) {
+        TextView heading = new TextView(context);
+        heading.setText(R.string.analysis_locations);
+        heading.setTypeface(Typeface.DEFAULT_BOLD);
+        list.addView(heading);
+        int linkColor = MaterialColors.getColor(context, androidx.appcompat.R.attr.colorPrimary, 0);
+        android.util.TypedValue ripple = new android.util.TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true);
+        for (Location location : locations) {
+            TextView row = new TextView(context);
+            row.setText("› " + location.label());
+            row.setTextColor(linkColor);
+            row.setMinHeight(SketchwareUtil.dpToPx(40));
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setBackgroundResource(ripple.resourceId);
+            row.setOnClickListener(v -> onOpen.accept(location));
+            list.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
     }
 
     static CharSequence describe(Context context, Finding finding) {

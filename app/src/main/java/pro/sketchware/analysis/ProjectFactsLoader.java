@@ -272,7 +272,7 @@ public final class ProjectFactsLoader {
     private static void collectIfFile(File file, String shownName, List<SourceFile> into, long[] budget) {
         if (!file.isFile() || file.length() > MAX_FILE_BYTES || file.length() > budget[0]) return;
         try {
-            into.add(new SourceFile(shownName, readText(file)));
+            into.add(new SourceFile(shownName, readText(file), file.getAbsolutePath()));
             budget[0] -= file.length();
         } catch (IOException e) {
             AppLog.e(TAG, "Couldn't read " + file + ": " + e);

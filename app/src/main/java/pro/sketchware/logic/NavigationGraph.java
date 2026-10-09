@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import pro.sketchware.analysis.Category;
 import pro.sketchware.analysis.Finding;
+import pro.sketchware.analysis.Location;
 import pro.sketchware.analysis.Severity;
 
 /**
@@ -27,13 +28,21 @@ public final class NavigationGraph {
     private final List<String> screens = new ArrayList<>();
     private final List<Edge> edges = new ArrayList<>();
     private final Set<String> javaClasses = new LinkedHashSet<>();
+    /** Java file name to the path to open it. */
+    private final Map<String, String> javaPaths = new java.util.HashMap<>();
 
     private NavigationGraph() {
     }
 
     /** @param javaFiles the project's own Java files: name to content */
     public static NavigationGraph build(List<LogicScreen> logicScreens, Map<String, String> javaFiles) {
+        return build(logicScreens, javaFiles, Map.of());
+    }
+
+    /** @param javaPaths where to open each of {@code javaFiles}, by name; a name missing from it is opened by name */
+    public static NavigationGraph build(List<LogicScreen> logicScreens, Map<String, String> javaFiles, Map<String, String> javaPaths) {
         NavigationGraph graph = new NavigationGraph();
+        graph.javaPaths.putAll(javaPaths);
         for (LogicScreen screen : logicScreens) {
             graph.screens.add(screen.className());
         }
@@ -114,16 +123,22 @@ public final class NavigationGraph {
             out.add(new Finding("nav.unreachable-screen", Category.QUALITY, Severity.INFO,
                     "Screens no block or Java file opens (" + unreachable.size() + ")",
                     "No Intent block and no Java file of the project opens these screens, so users may never reach them (unless another app or a notification opens them).",
-                    "Open them from another screen, or delete them if they are left over.", String.join(", ", unreachable)));
+                    "Open them from another screen, or delete them if they are left over.", String.join(", ", unreachable),
+                    unreachable.stream().map(screen -> Location.screen(screen + ".java")).toList()));
         }
         List<Edge> unknown = unknownTargets();
         if (!unknown.isEmpty()) {
             List<String> items = new ArrayList<>();
-            for (Edge edge : unknown) items.add(edge.from() + " > " + edge.via() + " -> " + edge.to());
+            List<Location> at = new ArrayList<>();
+            for (Edge edge : unknown) {
+                items.add(edge.from() + " > " + edge.via() + " -> " + edge.to());
+                at.add(edge.fromJava() ? Location.source(javaPaths.getOrDefault(edge.via(), edge.via()), edge.via(), 1)
+                        : Location.event(edge.from() + ".java", edge.via(), ""));
+            }
             out.add(new Finding("nav.unknown-target", Category.QUALITY, Severity.ERROR,
                     "Intents to screens that do not exist (" + unknown.size() + ")",
                     "The generated code refers to a screen class that is not in the project, so the build fails.",
-                    "Pick an existing screen in the Intent block, or create the screen again.", String.join(", ", items)));
+                    "Pick an existing screen in the Intent block, or create the screen again.", String.join(", ", items), at));
         }
         return out;
     }
