@@ -131,7 +131,7 @@ import pro.sketchware.activities.search.ProjectSearchActivity;
 import pro.sketchware.activities.git.ProjectGitActivity;
 import pro.sketchware.activities.snapshots.AutoSnapshots;
 import pro.sketchware.analysis.ProjectAnalysisActivity;
-import pro.sketchware.release.ReleaseManagerActivity;
+import pro.sketchware.releases.ReleaseManagerActivity;
 import pro.sketchware.activities.snapshots.ProjectSnapshotsActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;

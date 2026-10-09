@@ -55,7 +55,7 @@ import mod.jbk.util.TestkeySignBridge;
 import pro.sketchware.export.CiWorkflowGenerator;
 import pro.sketchware.flags.FeatureFlag;
 import pro.sketchware.flags.FeatureFlags;
-import pro.sketchware.release.ReleaseArchive;
+import pro.sketchware.releases.ReleaseArchive;
 import pro.sketchware.R;
 import pro.sketchware.databinding.ExportProjectBinding;
 import pro.sketchware.settings.BuildHistory;
