@@ -33,7 +33,8 @@ public class AutoFixTest {
             view("button1", Kind.BUTTON, true, 30, 20, 0xff000000, 0xffffffff, 14, 8, 8),
             view("textview1", Kind.TEXT, false, -2, -2, 0xffbbbbbb, 0xffffffff, 9, 15, 6),
             view("textview2", Kind.TEXT, false, -2, -2, null, null, 13, 0, 0),
-            view("textview3", Kind.TEXT, false, -2, -2, null, null, 11, 0, 0));
+            view("textview3", Kind.TEXT, false, -2, -2, null, null, 11, 0, 0),
+            new ViewFacts("main", "textview4", Kind.TEXT, -2, -2, false, true, null, null, 14, 0, 0, 0, 0, true));
 
     private static ProjectFacts facts(List<ViewFacts> views) {
         return new ProjectFacts("com.my.app", 24, 35, Set.of(), List.of(), Set.of(), true, Set.of(), views, true);
@@ -62,6 +63,8 @@ public class AutoFixTest {
         assertEquals(1, plan.count(AutoFix.Rule.TEXT_SCALE));                 // 13 sp -> 12 sp
         assertEquals(1, plan.count(AutoFix.Rule.CONTRAST));
         assertEquals(4, plan.count(AutoFix.Rule.SPACING));                    // 15 and 6, left and right
+        assertEquals(1, plan.count(AutoFix.Rule.HARDCODED_TEXT));
+        assertTrue(has(plan, "textview4", AutoFix.Field.TEXT_TO_RESOURCE, 0));
         assertTrue(has(plan, "textview2", AutoFix.Field.TEXT_SIZE, 12));
         assertTrue(has(plan, "textview1", AutoFix.Field.TEXT_SIZE, 12));
         assertTrue(has(plan, "textview1", AutoFix.Field.TEXT_COLOR, 0xff000000));

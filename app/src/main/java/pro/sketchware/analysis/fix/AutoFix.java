@@ -30,6 +30,8 @@ public final class AutoFix {
         CONTRAST("a11y.contrast", true),
         SPACING("design.spacing-off-scale", true),
         TEXT_SCALE("design.text-size-off-scale", true),
+        /** Moves typed-in text to strings.xml and points the widget at it. */
+        HARDCODED_TEXT("quality.hardcoded-text", true),
         /** Deletes blocks: off by default, since loose blocks are sometimes kept on purpose as drafts. */
         UNCONNECTED_BLOCKS("logic.unconnected-blocks", false);
 
@@ -47,7 +49,8 @@ public final class AutoFix {
         }
     }
 
-    public enum Field {WIDTH, HEIGHT, TEXT_SIZE, TEXT_COLOR, MARGIN_LEFT, MARGIN_RIGHT, PADDING_LEFT, PADDING_RIGHT, CONTENT_DESCRIPTION}
+    /** {@link #TEXT_TO_RESOURCE}: the widget's own text goes to strings.xml; the key is chosen when it is applied. */
+    public enum Field {WIDTH, HEIGHT, TEXT_SIZE, TEXT_COLOR, MARGIN_LEFT, MARGIN_RIGHT, PADDING_LEFT, PADDING_RIGHT, CONTENT_DESCRIPTION, TEXT_TO_RESOURCE}
 
     /**
      * Set {@code field} of widget {@code id} on layout {@code screen} (without {@code .xml}) to {@code value}, or to
@@ -65,6 +68,7 @@ public final class AutoFix {
                 case PADDING_LEFT -> "left padding " + value + " dp";
                 case PADDING_RIGHT -> "right padding " + value + " dp";
                 case CONTENT_DESCRIPTION -> "description \"" + text + "\"";
+                case TEXT_TO_RESOURCE -> "text moved to strings.xml";
             };
         }
     }
@@ -132,6 +136,9 @@ public final class AutoFix {
                 if (CompatibilityAnalyzer.contrastRatio(view.textColor(), view.backgroundColor()) < needed) {
                     put(changes, new WidgetChange(Rule.CONTRAST, view.screen(), view.id(), Field.TEXT_COLOR, readableOn(view.backgroundColor()), null));
                 }
+            }
+            if (view.hardcodedText()) {
+                put(changes, new WidgetChange(Rule.HARDCODED_TEXT, view.screen(), view.id(), Field.TEXT_TO_RESOURCE, 0, null));
             }
             spacing(changes, view, Field.MARGIN_LEFT, view.marginLeft());
             spacing(changes, view, Field.MARGIN_RIGHT, view.marginRight());
@@ -204,6 +211,7 @@ public final class AutoFix {
         int marginLeft = view.marginLeft(), marginRight = view.marginRight(), paddingLeft = view.paddingLeft(), paddingRight = view.paddingRight();
         Integer textColor = view.textColor();
         boolean described = view.hasContentDescription();
+        boolean hardcoded = view.hardcodedText();
         for (WidgetChange change : changes) {
             if (!change.screen().equals(view.screen()) || !change.id().equals(view.id())) continue;
             switch (change.field()) {
@@ -216,10 +224,11 @@ public final class AutoFix {
                 case PADDING_LEFT -> paddingLeft = change.value();
                 case PADDING_RIGHT -> paddingRight = change.value();
                 case CONTENT_DESCRIPTION -> described = true;
+                case TEXT_TO_RESOURCE -> hardcoded = false;
             }
         }
         return new ViewFacts(view.screen(), view.id(), view.kind(), width, height, view.clickable(), described, textColor,
-                view.backgroundColor(), textSize, marginLeft, marginRight, paddingLeft, paddingRight, view.hardcodedText());
+                view.backgroundColor(), textSize, marginLeft, marginRight, paddingLeft, paddingRight, hardcoded);
     }
 
     /** Findings this tool cannot fix, because they need a decision. */

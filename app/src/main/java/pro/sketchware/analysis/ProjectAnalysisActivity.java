@@ -302,6 +302,7 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             case CONTRAST -> R.string.analysis_autofix_contrast;
             case SPACING -> R.string.analysis_autofix_spacing;
             case TEXT_SCALE -> R.string.analysis_autofix_text_scale;
+            case HARDCODED_TEXT -> R.string.analysis_autofix_hardcoded_text;
             case UNCONNECTED_BLOCKS -> R.string.analysis_autofix_unconnected_blocks;
         };
     }
@@ -340,7 +341,8 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
                         setResult(RESULT_OK, new Intent().putExtra(EXTRA_PROJECT_CHANGED, true));
                         new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix)
                                 .setMessage(getString(R.string.analysis_autofix_done, result.applied(), needYou)
-                                        + (result.missing() > 0 ? "\n\n" + getString(R.string.analysis_autofix_missing, result.missing()) : ""))
+                                        + (result.missing() > 0 ? "\n\n" + getString(R.string.analysis_autofix_missing, result.missing()) : "")
+                                        + (result.stringsProblem() != null ? "\n\n" + getString(R.string.analysis_autofix_strings_problem, result.stringsProblem()) : ""))
                                 .setPositiveButton(android.R.string.ok, null).show();
                         analyse();
                     });

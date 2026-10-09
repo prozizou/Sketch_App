@@ -203,8 +203,9 @@ generated Java **and** the project's own Java files (`files/java`) together, wit
 - **Auto-fix** (`pro.sketchware.analysis.fix`): fixes, after a snapshot (undo from the Snapshots screen), the problems
   that have one safe answer: image descriptions (from the picture or widget name, to be checked), tappable widgets
   smaller than 48 dp, text below 12 sp, black or white text where contrast is too low, spacing rounded to the 4 dp
-  rhythm, text sizes rounded to the Material type scale, and (unticked by default) deleting blocks not connected to
-  their event. Tests check that once the plan is applied, the analyses no longer report those problems.
+  rhythm, text sizes rounded to the Material type scale, typed-in texts moved to the project's `strings.xml`
+  (`files/resource/values/strings.xml`, an existing key with the same text is reused; nothing is written if the file
+  cannot be read), and (unticked by default) deleting blocks not connected to their event. Tests check that once the plan is applied, the analyses no longer report those problems.
 - **Not auto-fixed, on purpose**: everything that needs a decision (target SDK, permissions, secrets, http addresses,
-  deprecated APIs, libraries, typed-in text, left/right spacing, unused variables, loops and logic errors...). They stay
+  deprecated APIs, libraries, left/right spacing, unused variables, loops and logic errors...). They stay
   in the list with their Open button.
