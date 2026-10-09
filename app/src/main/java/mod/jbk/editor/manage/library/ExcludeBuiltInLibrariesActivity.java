@@ -53,6 +53,11 @@ import mod.hey.studios.util.Helper;
 import mod.jbk.build.BuiltInLibraries;
 import mod.jbk.util.LogUtil;
 import pro.sketchware.R;
+import pro.sketchware.analysis.DependencyInspector;
+import pro.sketchware.analysis.ExclusionValidator;
+import pro.sketchware.analysis.FindingsDialog;
+import pro.sketchware.flags.FeatureFlag;
+import pro.sketchware.flags.FeatureFlags;
 import pro.sketchware.databinding.DialogSelectLibrariesBinding;
 import pro.sketchware.databinding.ManageLibraryExcludeBuiltinLibrariesBinding;
 import pro.sketchware.utility.FileUtil;
@@ -329,13 +334,52 @@ public class ExcludeBuiltInLibrariesActivity extends BaseAppCompatActivity {
 
         dialog.setView(binding.getRoot());
         dialog.setPositiveButton(Helper.getResString(R.string.common_word_save), (v, which) -> {
-            excludedLibraries = adapter.getSelectedBuiltInLibraries();
+            List<BuiltInLibraries.BuiltInLibrary> selected = adapter.getSelectedBuiltInLibraries();
             v.dismiss();
-            refresh();
+            applyAfterChecking(selected);
         });
         dialog.setNegativeButton(Helper.getResString(R.string.common_word_cancel), null);
 
         dialog.show();
+    }
+
+    /**
+     * Checks what the chosen exclusion would break and, if something might, shows it and lets the user decide.
+     * Nothing changes until the choice is confirmed.
+     */
+    private void applyAfterChecking(List<BuiltInLibraries.BuiltInLibrary> selected) {
+        if (selected.isEmpty() || !FeatureFlags.isEnabled(FeatureFlag.PROJECT_ANALYSIS)) {
+            excludedLibraries = selected;
+            refresh();
+            return;
+        }
+        Set<String> names = selected.stream().map(BuiltInLibraries.BuiltInLibrary::getName).collect(Collectors.toSet());
+        new Thread(() -> {
+            DependencyInspector.ExclusionCheck check;
+            try {
+                check = ExclusionValidator.check(sc_id, names);
+            } catch (RuntimeException e) {
+                LogUtil.e(TAG, "Couldn't check the exclusion", e);
+                runOnUiThread(() -> {
+                    excludedLibraries = selected;
+                    refresh();
+                });
+                return;
+            }
+            DependencyInspector.ExclusionCheck result = check;
+            runOnUiThread(() -> {
+                if (result.findings().isEmpty()) {
+                    excludedLibraries = selected;
+                    refresh();
+                } else {
+                    FindingsDialog.confirm(this, getString(R.string.exclusion_check_title), result.findings(),
+                            getString(result.safe() ? R.string.common_word_save : R.string.exclusion_apply_anyway), () -> {
+                                excludedLibraries = selected;
+                                refresh();
+                            });
+                }
+            });
+        }).start();
     }
 
     private static class SaveConfigTask extends MA {

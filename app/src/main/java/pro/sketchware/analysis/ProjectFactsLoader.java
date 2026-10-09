@@ -68,23 +68,9 @@ public final class ProjectFactsLoader {
         int minSdk = settings.getMinSdkVersion();
         int targetSdk = parseInt(settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, String.valueOf(Config.VAR_DEFAULT_TARGET_SDK_VERSION)), Config.VAR_DEFAULT_TARGET_SDK_VERSION);
 
-        // Library switches of the Library Manager
         boolean appCompat = isUsed(jC.c(scId).c());
-        List<String> roots = new ArrayList<>();
-        if (appCompat) {
-            roots.add(BuiltInLibraries.ANDROIDX_APPCOMPAT);
-            roots.add(BuiltInLibraries.ANDROIDX_COORDINATORLAYOUT);
-            roots.add(BuiltInLibraries.MATERIAL);
-        }
-        if (isUsed(jC.c(scId).d())) roots.add(BuiltInLibraries.FIREBASE_COMMON);
-        if (isUsed(jC.c(scId).b())) roots.add(BuiltInLibraries.PLAY_SERVICES_ADS);
-        if (isUsed(jC.c(scId).e())) roots.add(BuiltInLibraries.PLAY_SERVICES_MAPS);
-
-        Map<String, Library> graph = new TreeMap<>();
-        for (BuiltInLibraries.BuiltInLibrary library : BuiltInLibraries.KNOWN_BUILT_IN_LIBRARIES) {
-            Set<String> packages = library.getPackageName().map(p -> Set.of(p)).orElse(Set.of());
-            graph.put(library.getName(), new Library(library.getName(), library.getDependencyNames(), packages));
-        }
+        List<String> roots = builtInRoots(scId);
+        Map<String, Library> graph = builtInGraph();
         Set<String> excluded = new TreeSet<>();
         for (BuiltInLibraries.BuiltInLibrary library : ExcludeBuiltInLibrariesActivity.getExcludedLibraries(scId)) excluded.add(library.getName());
 
@@ -123,6 +109,45 @@ public final class ProjectFactsLoader {
     }
 
     // ---- libraries
+
+    /** The built-in libraries the Library Manager's switches ask for (AppCompat and Material, Firebase, AdMob, Maps). */
+    public static List<String> builtInRoots(String scId) {
+        List<String> roots = new ArrayList<>();
+        if (isUsed(jC.c(scId).c())) {
+            roots.add(BuiltInLibraries.ANDROIDX_APPCOMPAT);
+            roots.add(BuiltInLibraries.ANDROIDX_COORDINATORLAYOUT);
+            roots.add(BuiltInLibraries.MATERIAL);
+        }
+        if (isUsed(jC.c(scId).d())) roots.add(BuiltInLibraries.FIREBASE_COMMON);
+        if (isUsed(jC.c(scId).b())) roots.add(BuiltInLibraries.PLAY_SERVICES_ADS);
+        if (isUsed(jC.c(scId).e())) roots.add(BuiltInLibraries.PLAY_SERVICES_MAPS);
+        return roots;
+    }
+
+    /** Every built-in library with what it needs. */
+    public static Map<String, Library> builtInGraph() {
+        Map<String, Library> graph = new TreeMap<>();
+        for (BuiltInLibraries.BuiltInLibrary library : BuiltInLibraries.KNOWN_BUILT_IN_LIBRARIES) {
+            Set<String> packages = library.getPackageName().map(p -> Set.of(p)).orElse(Set.of());
+            graph.put(library.getName(), new Library(library.getName(), library.getDependencyNames(), packages));
+        }
+        return graph;
+    }
+
+    /** Java packages that the project's local libraries contain, which can stand in for an excluded built-in library. */
+    public static Set<String> packagesOfLocalLibraries(String scId) {
+        Set<String> packages = new HashSet<>();
+        for (HashMap<String, Object> local : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            Object jar = local.get("jarPath");
+            if (jar == null || !new File(jar.toString()).isFile()) continue;
+            try {
+                for (String className : ClassIndex.fromJar(new File(jar.toString())).all()) packages.add(ClassIndex.packageOf(className));
+            } catch (IOException | RuntimeException e) {
+                AppLog.e(TAG, "Couldn't read " + jar + ": " + e);
+            }
+        }
+        return packages;
+    }
 
     private static boolean isUsed(ProjectLibraryBean bean) {
         return bean != null && ProjectLibraryBean.LIB_USE_Y.equals(bean.useYn);

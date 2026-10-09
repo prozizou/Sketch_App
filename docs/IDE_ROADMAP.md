@@ -48,7 +48,7 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 | 2 | Build Doctor (explains build logs), shown in the compile log | 1 | low | **Done** |
 | 3 | Android Compatibility Center (SDK, permissions, deprecated APIs, AndroidX, ABI, accessibility, RTL, dark mode, edge-to-edge) | 1 | low | **Done** (engine tested; screen in step 6) |
 | 4 | Security Scanner (secrets, permissions, cleartext, known-vulnerable libraries) | 1 | low | **Done** (engine tested; screen in step 6) |
-| 5 | Dependency Inspector (tree, duplicate classes, version conflicts) and checked exclusions | 1 | medium | **Partly done**: inspector and tree are shown in the screen; the exclusion check is tested but **not yet wired** into the Exclude built-in libraries screen |
+| 5 | Dependency Inspector (tree, duplicate classes, version conflicts) and checked exclusions | 1 | medium | **Done** (engine tested; the screen and the exclusion check are compiled by CI, not tried on a device) |
 | 6 | Project analysis screen and Health Score | 2-5 | low | **Done** (screen compiled by CI, not tried on a device) |
 | 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | Planned |
 | 8 | CI file generation for Android Studio export | - | low | Planned |
@@ -103,5 +103,7 @@ feature flag, and be added only with regression tests.
   - The vulnerable-library list is short and hand-written; a clean result is not a guarantee.
   - The date-dependent Google Play requirement (target API) is a constant in `CompatibilityAnalyzer` that needs updating
     when Google changes it.
-  - The exclusion check is not wired into the Exclude built-in libraries screen yet.
+  - The exclusion check runs when you press Save in the library picker of Exclude built-in libraries: it lists what would be missing (or
+    left unused) and asks to confirm; it does not block, because a local library may legitimately replace an excluded one.
+    It sees a replacement only through the packages of the project's local libraries.
   - The screens have been compiled by CI but not used on a device.

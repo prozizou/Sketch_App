@@ -889,6 +889,8 @@ ACTION_VIEW
     <string name="analysis_tree_excluded">excluded</string>
     <string name="analysis_tree_repeated">see above</string>
     <string name="analysis_failed">The analysis could not run: %1$s</string>
+    <string name="exclusion_check_title">Before excluding these libraries</string>
+    <string name="exclusion_apply_anyway">Exclude anyway</string>
     <string name="design_drawer_menu_title_logcat_reader">Logcat Reader Manager</string>
     <string name="design_drawer_menu_subtitle_logcat_reader">Read logs from enabled projects</string>
     <string name="myprojects_list_menu_title_restore_projects">Restore Projects</string>

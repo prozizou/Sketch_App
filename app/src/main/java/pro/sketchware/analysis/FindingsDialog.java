@@ -35,6 +35,16 @@ public final class FindingsDialog {
         return builder.show();
     }
 
+    /** Shows findings with a button to go ahead anyway; Cancel leaves everything as it was. */
+    public static Dialog confirm(Context context, CharSequence title, List<Finding> findings, CharSequence confirmLabel, Runnable onConfirm) {
+        return new MaterialAlertDialogBuilder(context)
+                .setTitle(title)
+                .setView(content(context, findings))
+                .setPositiveButton(confirmLabel, (dialog, which) -> onConfirm.run())
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
     static ScrollView content(Context context, List<Finding> findings) {
         LinearLayout list = new LinearLayout(context);
         list.setOrientation(LinearLayout.VERTICAL);
