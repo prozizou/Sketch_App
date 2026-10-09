@@ -23,6 +23,8 @@ public enum FeatureFlag {
     BLOCK_DEBUGGER("ff-block-debugger", true),
     /** Generates a REST client, a SQLite database or Firebase models into the project's Java files. */
     DATA_DESIGNER("ff-data-designer", true),
+    /** The Auto-fix button of the project health screen. */
+    AUTO_FIX("ff-auto-fix", true),
     /** Adds a GitHub Actions workflow to the project exported for Android Studio. */
     EXPORT_CI_WORKFLOW("ff-export-ci", false),
     /** With the workflow: also run lint. */

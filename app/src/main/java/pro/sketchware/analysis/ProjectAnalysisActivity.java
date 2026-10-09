@@ -46,6 +46,10 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
     /** Result extras: the screen to show in the editor, and the widget to select on it. */
     public static final String EXTRA_PROJECT_FILE = "project_file";
     public static final String EXTRA_SELECT_WIDGET = "select_widget";
+    /** Result extra: the auto-fix changed the project's data, so the editor must reload the screen and save. */
+    public static final String EXTRA_PROJECT_CHANGED = "project_changed";
+
+    private boolean projectChanged;
 
     private ProjectFactsLoader.Loaded loaded;
     private Category filter;
@@ -73,6 +77,13 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             showDependencyTree();
             return true;
         });
+        if (pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.AUTO_FIX)) {
+            menu.add(R.string.analysis_autofix).setShowAsActionFlags(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS)
+                    .setOnMenuItemClickListener(item -> {
+                        showAutoFix();
+                        return true;
+                    });
+        }
         menu.add(R.string.analysis_menu_navigation).setOnMenuItemClickListener(item -> {
             showNavigation();
             return true;
@@ -232,6 +243,122 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
                 .show();
     }
 
+    /**
+     * Lists what can be fixed without asking, one switch per kind of fix, and applies the chosen ones after taking a
+     * snapshot. What needs a decision is counted and left alone.
+     */
+    private void showAutoFix() {
+        if (loaded == null || report == null) return;
+        pro.sketchware.analysis.fix.AutoFix.Plan plan = pro.sketchware.analysis.fix.AutoFix.plan(
+                loaded.facts().views(), loaded.logicScreens());
+        int needYou = pro.sketchware.analysis.fix.AutoFix.notFixable(report.findings()).size();
+        if (plan.isEmpty()) {
+            new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix)
+                    .setMessage(getString(R.string.analysis_autofix_nothing, needYou))
+                    .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        int pad = SketchwareUtil.dpToPx(20);
+        android.widget.LinearLayout content = new android.widget.LinearLayout(this);
+        content.setOrientation(android.widget.LinearLayout.VERTICAL);
+        content.setPadding(pad, pad / 2, pad, 0);
+        TextView intro = new TextView(this);
+        intro.setText(getString(R.string.analysis_autofix_intro, needYou));
+        content.addView(intro);
+        java.util.Map<pro.sketchware.analysis.fix.AutoFix.Rule, android.widget.CheckBox> boxes = new java.util.EnumMap<>(pro.sketchware.analysis.fix.AutoFix.Rule.class);
+        for (pro.sketchware.analysis.fix.AutoFix.Rule rule : pro.sketchware.analysis.fix.AutoFix.Rule.values()) {
+            int count = plan.count(rule);
+            if (count == 0) continue;
+            android.widget.CheckBox box = new android.widget.CheckBox(this);
+            box.setText(getString(autoFixLabel(rule), count));
+            box.setChecked(rule.onByDefault);
+            boxes.put(rule, box);
+            content.addView(box);
+        }
+        TextView details = new TextView(this);
+        details.setText(R.string.analysis_autofix_details);
+        details.setTextColor(MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary, 0));
+        details.setPadding(0, pad / 2, 0, 0);
+        details.setOnClickListener(v -> showAutoFixDetails(plan));
+        content.addView(details);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(content);
+        new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix).setView(scroll)
+                .setPositiveButton(R.string.analysis_autofix_apply, (dialog, which) -> {
+                    java.util.Set<pro.sketchware.analysis.fix.AutoFix.Rule> chosen = java.util.EnumSet.noneOf(pro.sketchware.analysis.fix.AutoFix.Rule.class);
+                    boxes.forEach((rule, box) -> {
+                        if (box.isChecked()) chosen.add(rule);
+                    });
+                    if (!chosen.isEmpty()) applyAutoFix(plan.only(chosen), needYou);
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private int autoFixLabel(pro.sketchware.analysis.fix.AutoFix.Rule rule) {
+        return switch (rule) {
+            case CONTENT_DESCRIPTION -> R.string.analysis_autofix_content_description;
+            case TOUCH_TARGET -> R.string.analysis_autofix_touch_target;
+            case SMALL_TEXT -> R.string.analysis_autofix_small_text;
+            case CONTRAST -> R.string.analysis_autofix_contrast;
+            case SPACING -> R.string.analysis_autofix_spacing;
+            case TEXT_SCALE -> R.string.analysis_autofix_text_scale;
+            case UNCONNECTED_BLOCKS -> R.string.analysis_autofix_unconnected_blocks;
+        };
+    }
+
+    /** Every change the plan would make, one per line. */
+    private void showAutoFixDetails(pro.sketchware.analysis.fix.AutoFix.Plan plan) {
+        StringBuilder text = new StringBuilder();
+        for (pro.sketchware.analysis.fix.AutoFix.WidgetChange change : plan.widgetChanges()) {
+            text.append(change.describe()).append('\n');
+        }
+        for (pro.sketchware.analysis.fix.AutoFix.BlockRemoval removal : plan.blockRemovals()) {
+            text.append(getString(R.string.analysis_autofix_remove_blocks, removal.javaName().replace(".java", ""),
+                    removal.eventKey(), removal.blockIds().size())).append('\n');
+        }
+        TextView view = new TextView(this);
+        view.setTypeface(Typeface.MONOSPACE);
+        view.setTextSize(11);
+        view.setTextIsSelectable(true);
+        view.setText(text);
+        int padding = SketchwareUtil.dpToPx(16);
+        view.setPadding(padding, padding / 2, padding, padding / 2);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(view);
+        new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix_details).setView(scroll)
+                .setPositiveButton(android.R.string.ok, null).show();
+    }
+
+    private void applyAutoFix(pro.sketchware.analysis.fix.AutoFix.Plan plan, int needYou) {
+        binding.progress.setVisibility(View.VISIBLE);
+        try {
+            executor.execute(() -> {
+                try {
+                    pro.sketchware.analysis.fix.AutoFixApplier.Result result = pro.sketchware.analysis.fix.AutoFixApplier.apply(scId, plan);
+                    runOnUiThread(() -> {
+                        projectChanged = true;
+                        setResult(RESULT_OK, new Intent().putExtra(EXTRA_PROJECT_CHANGED, true));
+                        new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix)
+                                .setMessage(getString(R.string.analysis_autofix_done, result.applied(), needYou)
+                                        + (result.missing() > 0 ? "\n\n" + getString(R.string.analysis_autofix_missing, result.missing()) : ""))
+                                .setPositiveButton(android.R.string.ok, null).show();
+                        analyse();
+                    });
+                } catch (Throwable t) {
+                    AppLog.e("ProjectAnalysis", "Auto-fix failed: " + t);
+                    runOnUiThread(() -> {
+                        binding.progress.setVisibility(View.INVISIBLE);
+                        new MaterialAlertDialogBuilder(this)
+                                .setMessage(getString(R.string.analysis_autofix_failed, t.getMessage() != null ? t.getMessage() : t.toString()))
+                                .setPositiveButton(android.R.string.ok, null).show();
+                    });
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closed) {
+            // The screen is gone
+        }
+    }
+
     /** One location opens at once; several are offered in a list. */
     private void openFirstOrChoose(Finding finding) {
         List<Location> locations = finding.locations();
@@ -303,6 +430,7 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             return;
         }
         Intent result = new Intent();
+        result.putExtra(EXTRA_PROJECT_CHANGED, projectChanged);
         result.putExtra(EXTRA_PROJECT_FILE, file);
         if (widgetId != null) result.putExtra(EXTRA_SELECT_WIDGET, widgetId);
         setResult(RESULT_OK, result);

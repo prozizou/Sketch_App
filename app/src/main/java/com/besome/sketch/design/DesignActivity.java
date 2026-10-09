@@ -226,6 +226,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) return;
         ProjectFileBean file = result.getData().getParcelableExtra(ProjectAnalysisActivity.EXTRA_PROJECT_FILE);
         String widget = result.getData().getStringExtra(ProjectAnalysisActivity.EXTRA_SELECT_WIDGET);
+        if (result.getData().getBooleanExtra(ProjectAnalysisActivity.EXTRA_PROJECT_CHANGED, false)) {
+            // The auto-fix changed widgets or blocks: show them and write them to disk
+            if (file == null) refresh();
+            saveThen(() -> {
+            });
+        }
         if (file == null) return;
         projectFile = file;
         viewPager.setCurrentItem(0);

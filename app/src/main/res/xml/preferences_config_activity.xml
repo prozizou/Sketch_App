@@ -365,6 +365,13 @@
             app:title="Data designer" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="ff-auto-fix"
+            app:summary="Show the Auto-fix button in the project health screen."
+            app:title="Auto-fix" />
+
+        <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
             app:key="ff-export-ci"
             app:summary="Add a GitHub Actions file that builds the project when you push the Android Studio export to GitHub."
