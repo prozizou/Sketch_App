@@ -19,11 +19,11 @@ import pro.sketchware.analysis.ViewFacts.Kind;
 public final class CompatibilityAnalyzer {
     /** Google Play asks new apps and updates to target a recent version; this is the level it asked for in 2025. */
     static final int PLAY_TARGET_SDK = 35;
-    private static final int MIN_TOUCH_TARGET_DP = 48;
-    private static final double MIN_CONTRAST = 4.5;
-    private static final double MIN_CONTRAST_LARGE_TEXT = 3.0;
-    private static final int LARGE_TEXT_SP = 18;
-    private static final int SMALL_TEXT_SP = 12;
+    static final int MIN_TOUCH_TARGET_DP = 48;
+    static final double MIN_CONTRAST = 4.5;
+    static final double MIN_CONTRAST_LARGE_TEXT = 3.0;
+    static final int LARGE_TEXT_SP = 18;
+    static final int SMALL_TEXT_SP = 12;
     private static final int MAX_EVIDENCE_LINES = 3;
 
     private record CodeRule(String id, Severity severity, Severity severityOnNewTarget, int newTargetFrom, Pattern pattern,
@@ -402,7 +402,7 @@ public final class CompatibilityAnalyzer {
 
     // ---- colour maths (WCAG)
 
-    static double luminance(int argb) {
+    public static double luminance(int argb) {
         return 0.2126 * linear((argb >> 16) & 0xFF) + 0.7152 * linear((argb >> 8) & 0xFF) + 0.0722 * linear(argb & 0xFF);
     }
 
@@ -411,7 +411,7 @@ public final class CompatibilityAnalyzer {
         return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     }
 
-    static double contrastRatio(int foreground, int background) {
+    public static double contrastRatio(int foreground, int background) {
         double a = luminance(foreground);
         double b = luminance(background);
         return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
