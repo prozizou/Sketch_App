@@ -14,7 +14,7 @@ Status words used below:
 
 | Area | Already in the app | Where |
 |---|---|---|
-| View editor canvas | Pinch zoom, zoom bar (50-200 %, Fit/100 %) that can be moved, device frames, dot grid, selection highlight | `editor/view/ViewEditor`, `PhoneFrame`, `DotGridFrameLayout`, `SelectionOverlay` |
+| View editor canvas | **Undo / redo per screen** (history in `cC`, buttons in the top bar), pinch zoom, zoom bar (50-200 %, Fit/100 %) that can be moved, device frames, dot grid, selection highlight | `editor/view/ViewEditor`, `PhoneFrame`, `DotGridFrameLayout`, `SelectionOverlay` |
 | Logic editor | Blocks, a code view and a split blocks/Java view, fit-to-screen | `editor/LogicEditorActivity`, `editor/logic/LogicViewMode`, `CanvasFit` |
 | Properties | Attribute catalogue, injected attributes | `pro/sketchware/properties`, `ViewProperty` |
 | Build | AAPT2, ECJ, Kotlin, D8, R8 with mapping, AAB export, signing, build history | `mod/jbk/build`, `mod/pranav/build`, `BuildHistory` |
@@ -23,7 +23,7 @@ Status words used below:
 | Reliability | Auto-backup, crash recovery, project metadata health check | `settings/AutoBackup`, `CrashRecovery`, `ProjectHealthCheck` |
 | Added earlier in this effort | Clickable compile log, project search, automatic snapshots, Git, Java completion and live diagnostics | see `git log` |
 
-**Not in the app (audit result):** snap/guides/alignment, multi-selection and undo/redo in the view editor; a block
+**Not in the app (audit result):** snap/guides/alignment and multi-selection in the view editor (undo/redo exists, see above; an earlier version of this audit wrongly listed it as missing); a block
 debugger; unused-block and loop detection; a navigation graph; REST/Room designers; a design system; a compatibility
 checker; a build log explainer; a dependency inspector; a memory-aware compiler; a security scanner; a combined
 health score; CI file generation; visual regression tests.
@@ -56,9 +56,9 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 | 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | **Done** for mapping retention, release history and size analysis (engines tested; screen and export hook compiled by CI, not tried on a device). Versioning already existed (auto version code, build history) and is unchanged |
 | 8 | CI file generation for Android Studio export | - | low | **Done**, off by default (generator tested and its YAML parsed with a YAML parser; the export wiring is compiled by CI, **not verified on a device**) |
 | 9 | Memory-aware compiler | build pipeline study | high | **Partly done**: thread limit for D8 and R8 on devices with little memory (policy tested; call sites compiled by CI; **effect not measured on a real 2 GB phone**) |
-| 10 | View editor: undo/redo, multi-selection, smart snap and guides (pure geometry engine first) | - | high | Planned |
-| 11 | Canvas: orientation, tablet and foldable previews, safe-area overlays | 10 | medium | Planned |
-| 12 | Properties inspector additions, design system | 10 | high | Planned |
+| 10 | View editor: undo/redo, multi-selection, smart snap and guides (pure geometry engine first) | - | high | **Partly done**: undo/redo already existed. Geometry engine (guides, gaps, snap, align, distribute, spacing scale) tested; alignment guides and distances shown for the selected widget (off by default). **Not done**: multi-selection, applying snap/align/distribute to the project (see limitations) |
+| 11 | Canvas: orientation, tablet and foldable previews, safe-area overlays | 10 | medium | **Done** (logic tested; the screen is compiled by CI, not tried on a device) |
+| 12 | Properties inspector additions, design system | 10 | high | **Partly done**: Design System checker (spacing, type scale, colours) in the project health screen. **Not done**: inspector additions, applying design tokens |
 | 13 | Block debugger, unused-block and loop detection, sync checks | - | high | Planned |
 | 14 | Navigation graph, REST / Firebase / Room designer | 13 | high | Planned |
 | 15 | Visual regression tests for screens | 10 | medium | Planned |
@@ -148,3 +148,25 @@ feature flag, and be added only with regression tests.
 - Switches in App Settings: Memory-aware build (on by default), Always use low-memory build (off).
 - Limitations: **the benefit has not been measured on a 2 GB device**; fewer threads lowers the peak but makes those steps slower.
   ECJ and AAPT2 are not changed. Nothing is cached differently. A full "will this build fit" estimate is not attempted.
+
+### Step 10-12: View editor (device preview, guides, design system)
+
+What the audit found: the view editor already has undo/redo, and its model is a **flow** model: a widget is placed by its
+parent (a LinearLayout index, a RelativeLayout rule), the project stores no x/y. That changes what "snap" can mean.
+
+- **Device preview** (`pro.sketchware.editor.preview`, `ViewEditor`, `PreviewOverlay`): a button in the zoom bar picks
+  this device, small/large phone, 7" and 10" tablet, closed/open foldable, in portrait or landscape. The screen is laid
+  out at that size in dp (so `match_parent` and weights behave as they would there) and scaled to fit. A label shows
+  the size and the Material window size class (compact / medium / expanded). Optional marking of the status bar,
+  gesture bar, camera cut-out and foldable hinge. The phone bezel is hidden while a size other than the device's own
+  is shown. "This device" is the default and keeps the previous behaviour. Remembered in the editor's UI preferences.
+- **Alignment guides** (`pro.sketchware.editor.layout.GuideEngine`, `GuidesOverlay`): for the selected widget, lines where
+  its edges or centre line up with siblings or the parent, and the gap in dp to the nearest neighbour or parent edge on
+  each side. Off by default (App Settings > Alignment guides).
+- **Engines ready but not applied**: `GuideEngine.snapMove`, `Arrange.align` / `Arrange.distribute` and `SpacingScale`
+  are tested but nothing in the editor calls them yet. Because positions are not stored, a drag cannot "snap to a
+  guide"; the realistic uses are suggestions for margins and gravity, and multi-selection, which is **not built**.
+- **Design System checker** (`DesignSystemChecker`): margins and padding off the 4 dp rhythm, text sizes off the Material 3
+  type scale or too many, too many typed-in colours, near-duplicate colours. Part of the project analysis.
+- Limitations: only left/right margins and padding are available to the checker; the foldable hinge and cut-out are
+  typical values, not those of a given model; nothing here has been run on a device.
