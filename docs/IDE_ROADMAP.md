@@ -59,8 +59,8 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 | 10 | View editor: undo/redo, multi-selection, smart snap and guides (pure geometry engine first) | - | high | **Partly done**: undo/redo already existed. Geometry engine (guides, gaps, snap, align, distribute, spacing scale) tested; alignment guides and distances shown for the selected widget (off by default). **Not done**: multi-selection, applying snap/align/distribute to the project (see limitations) |
 | 11 | Canvas: orientation, tablet and foldable previews, safe-area overlays | 10 | medium | **Done** (logic tested; the screen is compiled by CI, not tried on a device) |
 | 12 | Properties inspector additions, design system | 10 | high | **Partly done**: Design System checker (spacing, type scale, colours) in the project health screen. **Not done**: inspector additions, applying design tokens |
-| 13 | Block debugger, unused-block and loop detection, sync checks | - | high | Planned |
-| 14 | Navigation graph, REST / Firebase / Room designer | 13 | high | Planned |
+| 13 | Block debugger, unused-block and loop detection, sync checks | - | high | **Done** as a simulator, not a live debugger (see limitations). Engines tested; screens compiled by CI, not tried on a device |
+| 14 | Navigation graph, REST / Firebase / Room designer | 13 | high | **Done**: navigation graph; REST client, SQLite (in place of Room) and Firebase model generators. Generators tested; generated code compiled with ECJ -1.7; screen not tried on a device |
 | 15 | Visual regression tests for screens | 10 | medium | Planned |
 
 Items 9-15 touch the core editors or the build pipeline; each will start with a study of the existing code, ship behind a
@@ -170,3 +170,28 @@ parent (a LinearLayout index, a RelativeLayout rule), the project stores no x/y.
   type scale or too many, too many typed-in colours, near-duplicate colours. Part of the project analysis.
 - Limitations: only left/right margins and padding are available to the checker; the foldable hinge and cut-out are
   typical values, not those of a given model; nothing here has been run on a device.
+
+### Step 13-14: blocks and Java (`pro.sketchware.logic`, `pro.sketchware.designer`)
+
+What the audit found: an event is a list of blocks linked by `nextBlock`, `subStack1/2` and `@id` parameters; `Fx`
+generates Java from the first block; an empty boolean slot becomes `true` and an empty number `0`. ECJ compiles the
+generated Java **and** the project's own Java files (`files/java`) together, with `-proc:none`, at Java 1.7 by default.
+
+- **Block checks** (`LogicAnalyzer`, part of the project analysis): loose blocks that never run, unused variables /
+  lists / more blocks, calls to deleted more blocks, undeclared variables, Forever without Break (ANR), very long or
+  dead Repeat, slow or visible actions inside loops, constant or empty conditions, division by a typed or empty zero,
+  self-assignment, Break outside a loop, broken block links.
+- **Blocks / Java sync**: a project Java file named like a screen (duplicate class, edits in one never seen in the
+  other), more block calls and variables that no longer exist, Intents to screens that no longer exist.
+- **Navigation graph** (`NavigationGraph`, health screen > Navigation graph): which screen opens which, from the
+  Intent "set screen" blocks and `X.class` in the project's Java; screens nothing opens; copy as Mermaid.
+- **Block debugger** (`BlockSimulator`, Logic editor menu > Step through blocks): runs the open event inside the IDE one
+  statement at a time from the values the screen starts with, showing every variable and list, and flashes the block.
+  **Limitation: it is a simulator, not a debugger attached to the running app.** Views, network, files, Firebase and
+  other phone calls are listed but not run (their results are unknown), and other events that change variables are
+  not taken into account. A live debugger would need instrumented generated code and a channel to the running app.
+- **Data designer** (project drawer > Code): REST client (HttpURLConnection, background thread, answer on the main
+  thread; no PATCH, which HttpURLConnection refuses), SQLite database with typed models and CRUD methods, Firebase
+  models with `toMap()` / `fromMap()`. **Room is not offered**: it needs annotation processing, which these builds do
+  not run (`-proc:none`). Generated code is Java 7, checked by tests with JavaParser and compiled with ECJ `-1.7
+  -proc:none` against the Android API.
