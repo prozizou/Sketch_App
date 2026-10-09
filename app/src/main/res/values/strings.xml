@@ -914,6 +914,9 @@ ACTION_VIEW
     <string name="analysis_location_missing">Not found any more: %1$s. Run the analysis again.</string>
     <string name="design_drawer_menu_title_data_designer">Data designer</string>
     <string name="design_drawer_menu_subtitle_data_designer">Generate a REST client, a SQLite database or Firebase models</string>
+    <string name="design_drawer_menu_subtitle_phone_frame">Frame drawn around the View editor\'s preview</string>
+    <string name="design_drawer_menu_title_device_preview">Device preview</string>
+    <string name="design_drawer_menu_subtitle_device_preview">Preview the screen on tablets, foldables and in landscape</string>
     <string name="block_debugger_menu">Step through blocks</string>
     <string name="block_debugger_title">Step through blocks</string>
     <string name="block_debugger_empty">This event has no blocks to run.</string>
@@ -1105,13 +1108,19 @@ ACTION_VIEW
     <string name="whats_new_title">What\'s new in %1$s</string>
     <string name="whats_new_got_it">Got it</string>
     <string name="whats_new_menu">What\'s new</string>
-    <string-array name="whats_new_items">
-        <item>A guided first launch: welcome, file access and how to restore your old projects.</item>
-        <item>A lighter View editor: slimmer widget palette, collapsed categories and a Focus preview mode for a full-screen preview.</item>
-        <item>A redesigned View Manager with search, a view counter, a MAIN badge and a per-view menu.</item>
-        <item>Safer updates: the downloaded APK is verified (checksum, app and signing key) before it is installed.</item>
-        <item>New app identity and data folders. Use Backup and Restore to bring projects from the previous version.</item>
+    <string-array name="whats_new_entries">
+        <item>app_settings|App Settings in 8 categories|One page per category, a search for every setting, and a reset for each page.</item>
+        <item>project_health|Open from Project health|Each problem has an Open button that goes to the widget, the code line or the event concerned.</item>
+        <item>auto_fix|Auto-fix|Fixes in one tap what has a single safe answer: image descriptions, small touch targets, typed-in texts moved to strings.xml, deprecated APIs. A snapshot is taken first.</item>
+        <item>navigation_graph|Navigation graph|See which screen opens which, and screens that can\'t be reached.</item>
+        <item>data_designer|Data designer|Generate a REST client, a SQLite database or Firebase models into the project\'s Java files.</item>
+        <item>device_preview|Device preview|Preview a screen on tablets, foldables and in landscape, with safe areas.</item>
+        <item>block_debugger|Block debugger|Step through an event\'s blocks and see the value of every variable.</item>
     </string-array>
+    <string name="whats_new_open_in_project">Open in which project?</string>
+    <string name="whats_new_no_project">Create a project first to try this.</string>
+    <string name="whats_new_feature_off">%1$s is turned off in App Settings. Search for it there to turn it back on.</string>
+    <string name="whats_new_block_debugger_hint">Open an event, then use ⋮ &gt; Step through blocks.</string>
     <string name="src_edit_title">Edit this file by hand?</string>
     <string name="src_edit_message">%1$s will be replaced by your own version on every build. Changes you make later in views or blocks will not appear in it until you restore the generated version.</string>
     <string name="src_edit_action">Edit</string>

@@ -48,6 +48,10 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
     public static final String EXTRA_SELECT_WIDGET = "select_widget";
     /** Result extra: the auto-fix changed the project's data, so the editor must reload the screen and save. */
     public static final String EXTRA_PROJECT_CHANGED = "project_changed";
+    /** Intent extra: what to open once the analysis has run, {@link #START_AUTO_FIX} or {@link #START_NAVIGATION}. */
+    public static final String EXTRA_START = "start";
+    public static final String START_AUTO_FIX = "auto_fix";
+    public static final String START_NAVIGATION = "navigation";
 
     private boolean projectChanged;
 
@@ -133,6 +137,7 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
                         report = analysed;
                         binding.progress.setVisibility(View.INVISIBLE);
                         showReport();
+                        openRequestedStart();
                     });
                 } catch (Throwable t) {
                     AppLog.e("ProjectAnalysis", "Analysis failed: " + t);
@@ -202,6 +207,18 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
     }
 
     /** Which screen opens which, from the Intent blocks and the project's Java files, with a Mermaid copy. */
+    /** Opens, once, what the caller asked for in {@link #EXTRA_START}. */
+    private void openRequestedStart() {
+        String start = getIntent().getStringExtra(EXTRA_START);
+        if (start == null) return;
+        getIntent().removeExtra(EXTRA_START);
+        if (START_AUTO_FIX.equals(start) && pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.AUTO_FIX)) {
+            showAutoFix();
+        } else if (START_NAVIGATION.equals(start)) {
+            showNavigation();
+        }
+    }
+
     private void showNavigation() {
         if (loaded == null) return;
         java.util.Map<String, String> javaFiles = new java.util.LinkedHashMap<>();

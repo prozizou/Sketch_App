@@ -33,6 +33,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.NotificationCompat;
@@ -142,6 +143,12 @@ import pro.sketchware.utility.ThemeUtils;
 import pro.sketchware.utility.apk.ApkSignatures;
 
 public class DesignActivity extends BaseAppCompatActivity implements View.OnClickListener {
+    /**
+     * Intent extra: a feature to open once the project is loaded ({@code project_health}, {@code auto_fix},
+     * {@code navigation_graph}, {@code data_designer}, {@code device_preview} or {@code block_debugger}).
+     * Used by the "What's new" dialog of the home page.
+     */
+    public static final String EXTRA_OPEN_FEATURE = "open_feature";
     private static final long MAINTENANCE_INTERVAL_MS = 15_000L;
     /** A full auto-save only runs once the user has stopped touching the screen for this long. */
     private static final long AUTO_SAVE_IDLE_MS = 3_000L;
@@ -221,12 +228,26 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             refresh();
         }
     });
+    /** A Project health result that arrived before the project was loaded, see {@link #openProjectAnalysis}. */
+    @Nullable
+    private Intent pendingAnalysisResult;
     /** The project health screen can send the user to a screen, and to a widget on it. */
     private final ActivityResultLauncher<Intent> openProjectAnalysis = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) return;
-        ProjectFileBean file = result.getData().getParcelableExtra(ProjectAnalysisActivity.EXTRA_PROJECT_FILE);
-        String widget = result.getData().getStringExtra(ProjectAnalysisActivity.EXTRA_SELECT_WIDGET);
-        if (result.getData().getBooleanExtra(ProjectAnalysisActivity.EXTRA_PROJECT_CHANGED, false)) {
+        if (!projectLoaded) {
+            // This screen was recreated while the analysis was open: apply the result once the project is loaded
+            // again, otherwise loading would put the editor back on main.xml.
+            pendingAnalysisResult = result.getData();
+            return;
+        }
+        applyAnalysisResult(result.getData());
+    });
+
+    /** Shows the screen a Project health finding is about, and selects its widget. */
+    private void applyAnalysisResult(Intent data) {
+        ProjectFileBean file = data.getParcelableExtra(ProjectAnalysisActivity.EXTRA_PROJECT_FILE);
+        String widget = data.getStringExtra(ProjectAnalysisActivity.EXTRA_SELECT_WIDGET);
+        if (data.getBooleanExtra(ProjectAnalysisActivity.EXTRA_PROJECT_CHANGED, false)) {
             // The auto-fix changed widgets or blocks: show them and write them to disk
             if (file == null) refresh();
             saveThen(() -> {
@@ -236,14 +257,11 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         projectFile = file;
         viewPager.setCurrentItem(0);
         refresh();
-        if (widget != null && viewTabAdapter != null) {
-            viewPager.postDelayed(() -> {
-                if (viewTabAdapter != null && !viewTabAdapter.viewEditor.selectWidget(widget)) {
-                    SketchwareUtil.toast(getString(R.string.analysis_location_missing, widget));
-                }
-            }, 250);
+        if (widget != null) {
+            selectWidgetWhenShown(widget, 0);
         }
-    });
+    }
+
     private final ActivityResultLauncher<Intent> openLibraryManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             refresh();
@@ -1066,11 +1084,83 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     void toProjectAnalysis() {
+        toProjectAnalysis(null);
+    }
+
+    /** @param start what the analysis screen opens once it has run, see {@link ProjectAnalysisActivity#EXTRA_START} */
+    private void toProjectAnalysis(@Nullable String start) {
         saveThen(() -> {
             Intent intent = new Intent(getApplicationContext(), ProjectAnalysisActivity.class);
             intent.putExtra("sc_id", sc_id);
+            if (start != null) intent.putExtra(ProjectAnalysisActivity.EXTRA_START, start);
             openProjectAnalysis.launch(intent);
         });
+    }
+
+    /**
+     * The screen just opened may take a moment to build its widgets (a big layout, many images), so the widget a
+     * Project health finding points at is looked for a few times before giving up.
+     */
+    private void selectWidgetWhenShown(String widget, int attempt) {
+        viewPager.postDelayed(() -> {
+            if (isFinishing() || viewTabAdapter == null) return;
+            if (viewTabAdapter.viewEditor.selectWidget(widget)) return;
+            if (attempt < 8) {
+                selectWidgetWhenShown(widget, attempt + 1);
+            } else {
+                SketchwareUtil.toast(getString(R.string.analysis_location_missing, widget));
+            }
+        }, 250);
+    }
+
+    /** Opens the feature the "What's new" dialog asked for, once, after the project has loaded. */
+    private void openRequestedFeature() {
+        String feature = getIntent().getStringExtra(EXTRA_OPEN_FEATURE);
+        if (feature == null) return;
+        getIntent().removeExtra(EXTRA_OPEN_FEATURE);
+        pro.sketchware.flags.FeatureFlag flag = switch (feature) {
+            case "project_health", "navigation_graph" -> pro.sketchware.flags.FeatureFlag.PROJECT_ANALYSIS;
+            case "auto_fix" -> pro.sketchware.flags.FeatureFlag.AUTO_FIX;
+            case "data_designer" -> pro.sketchware.flags.FeatureFlag.DATA_DESIGNER;
+            case "device_preview" -> pro.sketchware.flags.FeatureFlag.DEVICE_PREVIEW;
+            case "block_debugger" -> pro.sketchware.flags.FeatureFlag.BLOCK_DEBUGGER;
+            default -> null;
+        };
+        if (flag == null) return;
+        boolean enabled = pro.sketchware.flags.FeatureFlags.isEnabled(flag)
+                && (!"auto_fix".equals(feature) || pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.PROJECT_ANALYSIS));
+        if (!enabled) {
+            SketchwareUtil.toast(getString(R.string.whats_new_feature_off, feature.replace('_', ' ')));
+            return;
+        }
+        switch (feature) {
+            case "project_health" -> toProjectAnalysis();
+            case "auto_fix" -> toProjectAnalysis(ProjectAnalysisActivity.START_AUTO_FIX);
+            case "navigation_graph" -> toProjectAnalysis(ProjectAnalysisActivity.START_NAVIGATION);
+            case "data_designer" -> toDataDesigner();
+            case "device_preview" -> {
+                viewPager.setCurrentItem(0);
+                viewPager.postDelayed(() -> {
+                    if (viewTabAdapter != null) viewTabAdapter.viewEditor.showDevicePreviewDialog();
+                }, 300);
+            }
+            case "block_debugger" -> {
+                viewPager.setCurrentItem(1);
+                Snackbar.make(findViewById(android.R.id.content), R.string.whats_new_block_debugger_hint, Snackbar.LENGTH_LONG).show();
+            }
+            default -> {
+            }
+        }
+    }
+
+    void toPhoneFrame() {
+        viewPager.setCurrentItem(0);
+        if (viewTabAdapter != null) viewTabAdapter.viewEditor.showPhoneFramePicker();
+    }
+
+    void toDevicePreview() {
+        viewPager.setCurrentItem(0);
+        if (viewTabAdapter != null) viewTabAdapter.viewEditor.showDevicePreviewDialog();
     }
 
     void toGit() {
@@ -1656,6 +1746,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     activity.h();
                     if (savedInstanceState == null) {
                         activity.checkForUnsavedProjectData();
+                        activity.openRequestedFeature();
+                    }
+                    if (activity.pendingAnalysisResult != null) {
+                        Intent pending = activity.pendingAnalysisResult;
+                        activity.pendingAnalysisResult = null;
+                        activity.applyAnalysisResult(pending);
                     }
                 });
             }
