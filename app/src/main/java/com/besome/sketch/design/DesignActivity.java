@@ -131,6 +131,7 @@ import pro.sketchware.activities.search.ProjectSearchActivity;
 import pro.sketchware.activities.git.ProjectGitActivity;
 import pro.sketchware.activities.snapshots.AutoSnapshots;
 import pro.sketchware.analysis.ProjectAnalysisActivity;
+import pro.sketchware.release.ReleaseManagerActivity;
 import pro.sketchware.activities.snapshots.ProjectSnapshotsActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;
@@ -1027,6 +1028,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             intent.putExtra("sc_id", sc_id);
             openSnapshots.launch(intent);
         });
+    }
+
+    void toReleaseManager() {
+        Intent intent = new Intent(getApplicationContext(), ReleaseManagerActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
     }
 
     void toProjectAnalysis() {

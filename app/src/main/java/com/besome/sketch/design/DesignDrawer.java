@@ -92,6 +92,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toSourceCodeViewer();
         } else if (id == R.id.item_xml_command_manager) {
             designActivity.toXMLCommandManager();
+        } else if (id == R.id.item_release_manager) {
+            designActivity.toReleaseManager();
         } else if (id == R.id.item_project_analysis) {
             designActivity.toProjectAnalysis();
         } else if (id == R.id.item_git) {
@@ -185,6 +187,9 @@ public class DesignDrawer extends LinearLayout {
         Section security = addSection(content, "Build & Security");
         if (FeatureFlags.isEnabled(FeatureFlag.PROJECT_ANALYSIS)) {
             addRow(security, R.id.item_project_analysis, R.drawable.ic_mtrl_shield_check, R.string.design_drawer_menu_title_analysis, R.string.design_drawer_menu_subtitle_analysis);
+        }
+        if (FeatureFlags.isEnabled(FeatureFlag.RELEASE_MANAGER)) {
+            addRow(security, R.id.item_release_manager, R.drawable.ic_mtrl_history, R.string.design_drawer_menu_title_releases, R.string.design_drawer_menu_subtitle_releases);
         }
         addRow(security, R.id.item_permission_manager, R.drawable.ic_mtrl_shield_check, R.string.text_title_menu_permission, R.string.text_subtitle_menu_permission);
         addRow(security, R.id.item_code_shrinking_manager, R.drawable.ic_mtrl_shield_lock, R.string.design_drawer_menu_proguard, R.string.design_drawer_menu_proguard_subtitle);

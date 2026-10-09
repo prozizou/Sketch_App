@@ -50,7 +50,7 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 | 4 | Security Scanner (secrets, permissions, cleartext, known-vulnerable libraries) | 1 | low | **Done** (engine tested; screen in step 6) |
 | 5 | Dependency Inspector (tree, duplicate classes, version conflicts) and checked exclusions | 1 | medium | **Done** (engine tested; the screen and the exclusion check are compiled by CI, not tried on a device) |
 | 6 | Project analysis screen and Health Score | 2-5 | low | **Done** (screen compiled by CI, not tried on a device) |
-| 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | Planned |
+| 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | **Done** for mapping retention, release history and size analysis (engines tested; screen and export hook compiled by CI, not tried on a device). Versioning already existed (auto version code, build history) and is unchanged |
 | 8 | CI file generation for Android Studio export | - | low | **Done**, off by default (generator tested and its YAML parsed with a YAML parser; the export wiring is compiled by CI, **not verified on a device**) |
 | 9 | Memory-aware compiler | build pipeline study | high | Planned |
 | 10 | View editor: undo/redo, multi-selection, smart snap and guides (pure geometry engine first) | - | high | Planned |
@@ -118,3 +118,17 @@ feature flag, and be added only with regression tests.
   includes the hidden `.github` folder in the exported zip. If the file is missing from the zip, that is the cause.
   Only the debug build is run; a signed release build needs secrets that the app cannot create for you.
   The Gradle and Java versions are constants that must follow the plugin version the export writes.
+
+### Step 7: Release Manager
+
+- Already in the app and left alone: APK and AAB export, signing, automatic version code, build history, R8 mapping production.
+- New: after a successful release export, `ReleaseArchive` keeps a record (version, type, time, size, SHA-256, path) and a copy
+  of the R8 mapping of **that build** in `.sketch_nws/releases/<project id>/`, so crashes of released versions can be
+  de-obfuscated later even after the next build overwrote `mapping.txt`. A mapping older than the build (for example when the
+  shrinker was off) is not attached.
+- `SizeAnalyzer` breaks an APK or AAB down into code, resources, assets and native libraries per architecture, lists the
+  largest files and reports architectures almost no phone uses, large assets and multi-dex.
+- The **Releases** screen (project drawer > Build & Security) lists releases with their size change against the previous
+  release of the same type, shows details and runs the size analysis. Can be switched off in App Settings.
+- Limitations: it only records exports made after this change; the size analysis reads the file at the path where it was exported,
+  so a moved or deleted file cannot be analysed; there is no in-app sharing of the mapping, its path is shown.

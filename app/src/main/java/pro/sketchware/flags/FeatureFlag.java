@@ -9,6 +9,8 @@ public enum FeatureFlag {
     BUILD_DOCTOR("ff-build-doctor", true),
     /** The project analysis screen: compatibility, security, dependencies and health score. */
     PROJECT_ANALYSIS("ff-project-analysis", true),
+    /** Keeps each exported release with its R8 mapping, and the Releases screen. */
+    RELEASE_MANAGER("ff-release-manager", true),
     /** Adds a GitHub Actions workflow to the project exported for Android Studio. */
     EXPORT_CI_WORKFLOW("ff-export-ci", false),
     /** With the workflow: also run lint. */
