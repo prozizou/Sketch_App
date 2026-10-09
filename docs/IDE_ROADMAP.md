@@ -46,10 +46,10 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 |---|---|---|---|---|
 | 1 | Findings model, report, health score, feature flags | - | low | **Done** |
 | 2 | Build Doctor (explains build logs), shown in the compile log | 1 | low | **Done** |
-| 3 | Android Compatibility Center (SDK, permissions, deprecated APIs, AndroidX, ABI, accessibility, RTL, dark mode, edge-to-edge) | 1 | low | Planned |
-| 4 | Security Scanner (secrets, permissions, cleartext, known-vulnerable libraries) | 1 | low | Planned |
-| 5 | Dependency Inspector (tree, duplicate classes, version conflicts) and checked exclusions | 1 | medium | Planned |
-| 6 | Project analysis screen and Health Score | 2-5 | low | Planned |
+| 3 | Android Compatibility Center (SDK, permissions, deprecated APIs, AndroidX, ABI, accessibility, RTL, dark mode, edge-to-edge) | 1 | low | **Done** (engine tested; screen in step 6) |
+| 4 | Security Scanner (secrets, permissions, cleartext, known-vulnerable libraries) | 1 | low | **Done** (engine tested; screen in step 6) |
+| 5 | Dependency Inspector (tree, duplicate classes, version conflicts) and checked exclusions | 1 | medium | **Partly done**: inspector and tree are shown in the screen; the exclusion check is tested but **not yet wired** into the Exclude built-in libraries screen |
+| 6 | Project analysis screen and Health Score | 2-5 | low | **Done** (screen compiled by CI, not tried on a device) |
 | 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | Planned |
 | 8 | CI file generation for Android Studio export | - | low | Planned |
 | 9 | Memory-aware compiler | build pipeline study | high | Planned |
@@ -76,3 +76,32 @@ feature flag, and be added only with regression tests.
 - Limitations: it matches known message patterns, so an unrecognised failure gives no finding and the raw log remains the
   reference. The patterns come from the messages of these tools as documented and observed; new tool versions may word
   them differently. Not yet tried on a device.
+
+### Steps 3-6: compatibility, security, dependencies and the Project health screen
+
+- `CompatibilityAnalyzer`: SDK levels (minimum above target, old target, minimum too low for AndroidX, edge-to-edge on
+  Android 15), permissions that changed in recent Android versions (storage, media, notifications, background location, SMS and
+  call log, query-all-packages, coarse location), deprecated or restricted APIs in the project's own Java/Kotlin files with
+  file and line, `PendingIntent` without a mutability flag (crashes when targeting API 31+), the old Support Library, 64-bit
+  native libraries, and for screens: images without a description, touch targets under 48 dp, text contrast (WCAG), text
+  under 12 sp, asymmetric left/right spacing (right-to-left), fixed light colours without dark-mode resources.
+- `SecurityScanner`: secrets by well-known formats (private keys, AWS, GitHub, Slack, Stripe, Telegram, Google API keys, JWT)
+  and hard-coded passwords; secrets are **never copied into the report** (hidden after four characters); `http://` addresses;
+  disabled TLS checks; world-accessible files; WebView bridges and file access; MD5/SHA-1 and weak ciphers; high-risk and many
+  permissions; a short built-in list of well-known vulnerable library versions.
+- `DependencyInspector`: dependency tree (cycle-safe), duplicate classes across libraries, version conflicts, Support Library mixed
+  with AndroidX, and the check of an exclusion (what would be missing, what becomes unused).
+- `ProjectFactsLoader` reads the open project into these models; `ProjectAnalysisActivity` shows the health score, the
+  three fixes to make first, findings by category, a detail dialog per finding and the dependency tree. Entry: project drawer >
+  Build & Security > Project health. Can be switched off in App Settings.
+- Limitations:
+  - The checks on screens only see properties stored in the project. Anything set through injected attributes or code
+    blocks is not seen, except `contentDescription`, which is looked for in the injected attributes.
+  - "Which built-in libraries are active" is derived from the Library Manager switches (AppCompat/Material, Firebase,
+    AdMob, Maps); libraries added only by components (Gson, Glide, OkHttp) are not in the tree.
+  - Duplicate-class detection needs the library files to be extracted, which happens at the first build.
+  - The vulnerable-library list is short and hand-written; a clean result is not a guarantee.
+  - The date-dependent Google Play requirement (target API) is a constant in `CompatibilityAnalyzer` that needs updating
+    when Google changes it.
+  - The exclusion check is not wired into the Exclude built-in libraries screen yet.
+  - The screens have been compiled by CI but not used on a device.
