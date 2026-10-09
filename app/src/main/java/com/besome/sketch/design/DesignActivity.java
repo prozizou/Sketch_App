@@ -1036,6 +1036,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         startActivity(intent);
     }
 
+    void toDataDesigner() {
+        Intent intent = new Intent(getApplicationContext(), pro.sketchware.designer.DataDesignerActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
+    }
+
     void toProjectAnalysis() {
         saveThen(() -> {
             Intent intent = new Intent(getApplicationContext(), ProjectAnalysisActivity.class);

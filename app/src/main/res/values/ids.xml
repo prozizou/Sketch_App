@@ -28,4 +28,5 @@
     <item name="item_release_manager" type="id" />
     <item name="item_collection_manager" type="id" />
     <item name="menu_logic_debug" type="id" />
+    <item name="item_data_designer" type="id" />
 </resources>

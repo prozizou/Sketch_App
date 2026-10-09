@@ -21,6 +21,8 @@ public enum FeatureFlag {
     LAYOUT_GUIDES("ff-layout-guides", false),
     /** Step through an event's blocks in the Logic editor, with the value of every variable. */
     BLOCK_DEBUGGER("ff-block-debugger", true),
+    /** Generates a REST client, a SQLite database or Firebase models into the project's Java files. */
+    DATA_DESIGNER("ff-data-designer", true),
     /** Adds a GitHub Actions workflow to the project exported for Android Studio. */
     EXPORT_CI_WORKFLOW("ff-export-ci", false),
     /** With the workflow: also run lint. */

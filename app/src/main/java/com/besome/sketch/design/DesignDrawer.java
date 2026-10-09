@@ -96,6 +96,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toReleaseManager();
         } else if (id == R.id.item_project_analysis) {
             designActivity.toProjectAnalysis();
+        } else if (id == R.id.item_data_designer) {
+            designActivity.toDataDesigner();
         } else if (id == R.id.item_git) {
             designActivity.toGit();
         } else if (id == R.id.item_snapshots) {
@@ -178,6 +180,9 @@ public class DesignDrawer extends LinearLayout {
         Section code = addSection(content, "Code");
         addRow(code, R.id.item_java_manager, R.drawable.ic_mtrl_java, R.string.text_title_menu_java, R.string.text_subtitle_menu_java);
         addRow(code, R.id.item_show_src, R.drawable.ic_mtrl_frame_source, R.string.design_drawer_menu_title_source_code, R.string.design_drawer_menu_description_source_code);
+        if (FeatureFlags.isEnabled(FeatureFlag.DATA_DESIGNER)) {
+            addRow(code, R.id.item_data_designer, R.drawable.ic_mtrl_code, R.string.design_drawer_menu_title_data_designer, R.string.design_drawer_menu_subtitle_data_designer);
+        }
         addRow(code, R.id.item_project_search, R.drawable.ic_mtrl_search, R.string.design_drawer_menu_title_project_search, R.string.design_drawer_menu_subtitle_project_search);
         addRow(code, R.id.item_xml_command_manager, R.drawable.ic_mtrl_code, R.string.design_drawer_menu_title_xml_command, R.string.design_drawer_menu_description_xml_command);
         addRow(code, R.id.item_used_custom_blocks, R.drawable.ic_mtrl_block, R.string.design_drawer_menu_customblocks, R.string.design_drawer_menu_customblocks_subtitle);
