@@ -96,7 +96,7 @@ public class ProjectSearchActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         generation.incrementAndGet();
         executor.shutdownNow();
         super.onDestroy();

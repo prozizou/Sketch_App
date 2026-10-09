@@ -863,7 +863,6 @@ ACTION_VIEW
     <string name="git_restore_confirm">The files go back to how they were in this version, as changes you can review and commit. A snapshot of the current project is taken first. Continue?</string>
     <string name="git_discard_confirm">Throw away every change since the last commit? A snapshot of the current project is taken first.</string>
     <string name="git_done_reopen">The project files changed. Open the project again to continue.</string>
-    <string name="git_failed">%1$s</string>
     <string name="design_drawer_menu_title_logcat_reader">Logcat Reader Manager</string>
     <string name="design_drawer_menu_subtitle_logcat_reader">Read logs from enabled projects</string>
     <string name="myprojects_list_menu_title_restore_projects">Restore Projects</string>

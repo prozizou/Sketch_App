@@ -287,7 +287,8 @@ public class ProjectSnapshots {
                 }
                 out.getParentFile().mkdirs();
                 try (InputStream in = zip.getInputStream(entry); OutputStream os = Files.newOutputStream(out.toPath())) {
-                    in.transferTo(os);
+                    byte[] buffer = new byte[16 * 1024];
+                    for (int read = in.read(buffer); read != -1; read = in.read(buffer)) os.write(buffer, 0, read);
                 }
             }
         }

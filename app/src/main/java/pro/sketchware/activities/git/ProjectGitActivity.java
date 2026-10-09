@@ -130,7 +130,7 @@ public class ProjectGitActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         executor.shutdown();
         super.onDestroy();
     }
