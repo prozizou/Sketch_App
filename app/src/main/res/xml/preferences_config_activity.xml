@@ -313,5 +313,25 @@
             app:key="ff-project-analysis"
             app:summary="Check a project for compatibility, security and dependency problems."
             app:title="Project analysis" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="ff-export-ci"
+            app:summary="Add a GitHub Actions file that builds the project when you push the Android Studio export to GitHub."
+            app:title="GitHub Actions in Android Studio export" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:dependency="ff-export-ci"
+            app:key="ff-export-ci-lint"
+            app:summary="Also run Android lint in that workflow."
+            app:title="Run lint on GitHub" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:dependency="ff-export-ci"
+            app:key="ff-export-ci-tests"
+            app:summary="Also run the project's unit tests in that workflow."
+            app:title="Run unit tests on GitHub" />
     </PreferenceCategory>
 </PreferenceScreen>

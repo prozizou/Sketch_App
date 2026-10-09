@@ -51,7 +51,7 @@ most twice its weight, so one noisy rule cannot empty the score; never below 0.
 | 5 | Dependency Inspector (tree, duplicate classes, version conflicts) and checked exclusions | 1 | medium | **Done** (engine tested; the screen and the exclusion check are compiled by CI, not tried on a device) |
 | 6 | Project analysis screen and Health Score | 2-5 | low | **Done** (screen compiled by CI, not tried on a device) |
 | 7 | Release Manager (versioning, mapping retention, size analysis) | - | medium | Planned |
-| 8 | CI file generation for Android Studio export | - | low | Planned |
+| 8 | CI file generation for Android Studio export | - | low | **Done**, off by default (generator tested and its YAML parsed with a YAML parser; the export wiring is compiled by CI, **not verified on a device**) |
 | 9 | Memory-aware compiler | build pipeline study | high | Planned |
 | 10 | View editor: undo/redo, multi-selection, smart snap and guides (pure geometry engine first) | - | high | Planned |
 | 11 | Canvas: orientation, tablet and foldable previews, safe-area overlays | 10 | medium | Planned |
@@ -107,3 +107,14 @@ feature flag, and be added only with regression tests.
     left unused) and asks to confirm; it does not block, because a local library may legitimately replace an excluded one.
     It sees a replacement only through the packages of the project's local libraries.
   - The screens have been compiled by CI but not used on a device.
+
+### Step 8: GitHub Actions in the Android Studio export
+
+- `CiWorkflowGenerator` writes `.github/workflows/android.yml`: JDK 17, Gradle 8.14.3 (installed by the workflow because the
+  export has no Gradle wrapper; the export's Android Gradle Plugin 8.12.0 needs Gradle 8.13+), `gradle assembleDebug`,
+  optional lint and unit tests, and the debug APK kept as an artifact.
+- Three switches in App Settings (all **off** by default): add the workflow to the export, run lint, run unit tests.
+- Limitations: the app's archiver (`KB`) is in a precompiled library that could not be read, so it is **not verified** that it
+  includes the hidden `.github` folder in the exported zip. If the file is missing from the zip, that is the cause.
+  Only the debug build is run; a signed release build needs secrets that the app cannot create for you.
+  The Gradle and Java versions are constants that must follow the plugin version the export writes.

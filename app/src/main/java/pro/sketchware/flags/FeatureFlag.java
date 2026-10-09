@@ -8,7 +8,13 @@ public enum FeatureFlag {
     /** Explains build failures in the compile log. */
     BUILD_DOCTOR("ff-build-doctor", true),
     /** The project analysis screen: compatibility, security, dependencies and health score. */
-    PROJECT_ANALYSIS("ff-project-analysis", true);
+    PROJECT_ANALYSIS("ff-project-analysis", true),
+    /** Adds a GitHub Actions workflow to the project exported for Android Studio. */
+    EXPORT_CI_WORKFLOW("ff-export-ci", false),
+    /** With the workflow: also run lint. */
+    EXPORT_CI_LINT("ff-export-ci-lint", false),
+    /** With the workflow: also run the unit tests. */
+    EXPORT_CI_TESTS("ff-export-ci-tests", false);
 
     private final String key;
     private final boolean enabledByDefault;
