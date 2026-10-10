@@ -51,6 +51,31 @@ public final class UpdatePolicy {
     }
 
     /**
+     * Whether an announced build should be offered. A higher versionCode always is. Dev builds keep the
+     * versionCode of the last release, so on the dev channel ({@code sameVersionAllowed}) a build with the same
+     * versionCode is offered too when it comes from another commit.
+     *
+     * @param candidateCommit the commit the announced build was made from, may be null or empty
+     * @param installedCommit the commit the running app was built from
+     */
+    public static boolean isOffered(long candidateVersionCode, @Nullable String candidateCommit,
+                                    long installedVersionCode, @Nullable String installedCommit,
+                                    boolean sameVersionAllowed) {
+        if (isNewer(candidateVersionCode, installedVersionCode)) {
+            return true;
+        }
+        return sameVersionAllowed && candidateVersionCode == installedVersionCode
+                && isOtherCommit(candidateCommit, installedCommit);
+    }
+
+    private static boolean isOtherCommit(@Nullable String candidate, @Nullable String installed) {
+        if (candidate == null || candidate.trim().isEmpty()) {
+            return false;
+        }
+        return installed == null || !candidate.trim().equalsIgnoreCase(installed.trim());
+    }
+
+    /**
      * SHA-256 of a signing certificate, as lowercase hex.
      */
     public static String signerDigest(byte[] certificate) {
@@ -70,13 +95,26 @@ public final class UpdatePolicy {
     public static String rejectionReason(String installedPackage, @Nullable String downloadedPackage,
                                          long installedVersionCode, long downloadedVersionCode,
                                          Set<String> installedSigners, Set<String> downloadedSigners) {
+        return rejectionReason(installedPackage, downloadedPackage, installedVersionCode, downloadedVersionCode,
+                installedSigners, downloadedSigners, false);
+    }
+
+    /**
+     * @param sameVersionAllowed true for a dev build, which may have the installed versionCode (never a lower one)
+     */
+    @Nullable
+    public static String rejectionReason(String installedPackage, @Nullable String downloadedPackage,
+                                         long installedVersionCode, long downloadedVersionCode,
+                                         Set<String> installedSigners, Set<String> downloadedSigners,
+                                         boolean sameVersionAllowed) {
         if (downloadedPackage == null) {
             return "the downloaded file is not a valid APK";
         }
         if (!installedPackage.equals(downloadedPackage)) {
             return "the APK belongs to another app (" + downloadedPackage + ")";
         }
-        if (!isNewer(downloadedVersionCode, installedVersionCode)) {
+        boolean sameVersion = sameVersionAllowed && downloadedVersionCode == installedVersionCode;
+        if (!sameVersion && !isNewer(downloadedVersionCode, installedVersionCode)) {
             return "the APK is not newer than the installed version";
         }
         if (installedSigners.isEmpty()) {

@@ -32,6 +32,10 @@ android {
     compileSdk = 37
 
     def gitCommitHash = "git rev-parse HEAD".execute().text.trim()
+    // -PabiOnly=arm64-v8a builds a smaller APK for one architecture (CI test builds of the dev channel).
+    // Releases leave it unset and stay universal.
+    def abiOnly = project.findProperty("abiOnly")?.toString()
+    def otherAapt2 = ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"].findAll { it != abiOnly }.collect { "aapt2-" + it }
     def shortCommitHash = "git rev-parse --short HEAD".execute().text.trim()
 
     defaultConfig {
@@ -44,6 +48,10 @@ android {
         versionName = "v7.2.0"
 
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash}\"")
+
+        if (abiOnly) {
+            ndk.abiFilters.add(abiOnly)
+        }
     }
 
     signingConfigs {
@@ -86,6 +94,10 @@ android {
 
     androidResources {
         additionalParameters.addAll("--stable-ids", "${rootDir}/public-stable-ids.txt")
+        if (abiOnly) {
+            // The app only extracts the aapt2 of the phone's own architecture.
+            ignoreAssetsPatterns.addAll(otherAapt2)
+        }
     }
 
     buildFeatures {
