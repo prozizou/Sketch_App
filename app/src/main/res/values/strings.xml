@@ -1116,13 +1116,10 @@ ACTION_VIEW
     <string name="whats_new_got_it">Got it</string>
     <string name="whats_new_menu">What\'s new</string>
     <string-array name="whats_new_entries">
-        <item>app_settings|App Settings in 8 categories|One page per category, a search for every setting, and a reset for each page.</item>
-        <item>project_health|Open from Project health|Each problem has an Open button that goes to the widget, the code line or the event concerned.</item>
-        <item>auto_fix|Auto-fix|Fixes in one tap what has a single safe answer: image descriptions, small touch targets, typed-in texts moved to strings.xml, deprecated APIs. A snapshot is taken first.</item>
-        <item>navigation_graph|Navigation graph|See which screen opens which, and screens that can\'t be reached.</item>
-        <item>data_designer|Data designer|Generate a REST client, a SQLite database or Firebase models into the project\'s Java files.</item>
-        <item>device_preview|Device preview|Preview a screen on tablets, foldables and in landscape, with safe areas.</item>
-        <item>block_debugger|Block debugger|Step through an event\'s blocks and see the value of every variable.</item>
+        <item>logic_search|Search a screen\'s logic|Find a variable, a value or any word of a block in the current screen, and open its event with the block highlighted.</item>
+        <item>none|Logic editor zoom|Zoom with two fingers only, and blocks stay editable after zooming.</item>
+        <item>none|Faster resource managers|The image, sound and font managers close at once when nothing was changed.</item>
+        <item>none|Fixes|Real dates in the file picker, the right icon for a new project, no more vectors shown in place of images, a dark event search bar, and Change icon now opens the icon editor.</item>
     </string-array>
     <string name="whats_new_open_in_project">Open in which project?</string>
     <string name="whats_new_no_project">Create a project first to try this.</string>

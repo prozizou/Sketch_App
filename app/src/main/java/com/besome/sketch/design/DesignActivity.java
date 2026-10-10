@@ -1131,6 +1131,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         String feature = getIntent().getStringExtra(EXTRA_OPEN_FEATURE);
         if (feature == null) return;
         getIntent().removeExtra(EXTRA_OPEN_FEATURE);
+        if ("logic_search".equals(feature)) {
+            toLogicSearch();
+            return;
+        }
         pro.sketchware.flags.FeatureFlag flag = switch (feature) {
             case "project_health", "navigation_graph" -> pro.sketchware.flags.FeatureFlag.PROJECT_ANALYSIS;
             case "auto_fix" -> pro.sketchware.flags.FeatureFlag.AUTO_FIX;

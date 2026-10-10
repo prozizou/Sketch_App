@@ -2,7 +2,7 @@ package pro.sketchware.control;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -48,7 +48,7 @@ public class WhatsNewCatalogTest {
         assertEquals(WhatsNewCatalog.Target.BLOCK_DEBUGGER, WhatsNewCatalog.Target.byKey("block_debugger"));
     }
 
-    /** Every entry shipped in strings.xml has a title, a description and a real place to open. */
+    /** Every entry shipped in strings.xml has a title, a description and a known target. */
     @Test
     public void shippedEntriesAllOpenSomething() throws Exception {
         File file = new File("src/main/res/values/strings.xml");
@@ -70,9 +70,11 @@ public class WhatsNewCatalogTest {
         assertFalse(raw.isEmpty());
         List<WhatsNewCatalog.Item> items = WhatsNewCatalog.parse(raw.toArray(new String[0]));
         assertEquals(raw.size(), items.size());
-        for (WhatsNewCatalog.Item item : items) {
-            assertNotEquals(item.title(), WhatsNewCatalog.Target.NONE, item.target());
-            assertFalse(item.title(), item.description().isEmpty());
+        for (int i = 0; i < raw.size(); i++) {
+            // A misspelt target would silently open nothing: every key must be a real one ("none" for news only).
+            String key = raw.get(i).substring(0, raw.get(i).indexOf('|'));
+            assertNotNull(key, WhatsNewCatalog.Target.byKey(key));
+            assertFalse(items.get(i).title(), items.get(i).description().isEmpty());
         }
     }
 }

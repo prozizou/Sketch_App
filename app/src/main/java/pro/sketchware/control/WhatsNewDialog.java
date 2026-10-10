@@ -110,6 +110,7 @@ public final class WhatsNewDialog {
             case DATA_DESIGNER -> R.drawable.ic_mtrl_database_edit;
             case DEVICE_PREVIEW -> R.drawable.ic_mtrl_devices;
             case BLOCK_DEBUGGER -> R.drawable.ic_mtrl_bug_report;
+            case LOGIC_SEARCH -> R.drawable.ic_mtrl_search;
             case NONE -> R.drawable.ic_mtrl_info;
         };
     }
