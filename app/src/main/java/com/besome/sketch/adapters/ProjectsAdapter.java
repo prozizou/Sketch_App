@@ -160,6 +160,9 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
                 if (!activity.isFinishing() && !activity.isDestroyed()) {
                     Glide.with(activity)
                             .load(iconFile)
+                            // Glide caches by path. A deleted project's id is reused by the next new project, so
+                            // the key also holds the file's date and size: a different icon is never served from cache.
+                            .signature(new com.bumptech.glide.signature.ObjectKey(iconFile.lastModified() + ":" + iconFile.length()))
                             .placeholder(R.drawable.default_icon)
                             .error(R.drawable.default_icon)
                             .into(holder.binding.imgIcon);
