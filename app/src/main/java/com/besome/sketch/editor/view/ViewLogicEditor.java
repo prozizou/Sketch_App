@@ -68,6 +68,9 @@ public class ViewLogicEditor extends LogicEditorScrollView {
                 return true;
             }
         });
+        // Zoom only with two fingers. "Quick scale" (double tap then drag with one finger) is on by default and
+        // turned quick successive swipes, made to scroll, into zooming.
+        pinchDetector.setQuickScaleEnabled(false);
     }
 
     public void setOnZoomChangedListener(OnZoomChangedListener listener) {
