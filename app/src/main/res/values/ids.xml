@@ -30,5 +30,6 @@
     <item name="menu_logic_debug" type="id" />
     <item name="item_data_designer" type="id" />
     <item name="item_phone_frame" type="id" />
+    <item name="item_logic_search" type="id" />
     <item name="item_device_preview" type="id" />
 </resources>

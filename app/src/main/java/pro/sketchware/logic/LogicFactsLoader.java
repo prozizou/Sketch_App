@@ -37,6 +37,11 @@ public final class LogicFactsLoader {
         return screens;
     }
 
+    /** The blocks, variables, lists and more blocks of one screen. */
+    public static LogicScreen loadScreen(String scId, ProjectFileBean file) {
+        return screen(scId, file);
+    }
+
     /** The blocks of one event, from the editor's own beans. */
     public static LogicEvent event(String key, List<BlockBean> beans) {
         List<LogicBlock> blocks = new ArrayList<>();

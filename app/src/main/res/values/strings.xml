@@ -914,6 +914,13 @@ ACTION_VIEW
     <string name="analysis_location_missing">Not found any more: %1$s. Run the analysis again.</string>
     <string name="design_drawer_menu_title_data_designer">Data designer</string>
     <string name="design_drawer_menu_subtitle_data_designer">Generate a REST client, a SQLite database or Firebase models</string>
+    <string name="design_drawer_menu_title_logic_search">Search in this screen\'s logic</string>
+    <string name="design_drawer_menu_subtitle_logic_search">Find variables, values and blocks, and open their event</string>
+    <string name="logic_search_hint">Search blocks of %1$s…</string>
+    <string name="logic_search_event">Event</string>
+    <string name="logic_search_intro">Type a variable, a value or any word of a block.</string>
+    <string name="logic_search_nothing">No block matches \u201c%1$s\u201d</string>
+    <string name="logic_search_no_screen">Open a screen with logic first.</string>
     <string name="design_drawer_menu_subtitle_phone_frame">Frame drawn around the View editor\'s preview</string>
     <string name="design_drawer_menu_title_device_preview">Device preview</string>
     <string name="design_drawer_menu_subtitle_device_preview">Preview the screen on tablets, foldables and in landscape</string>
