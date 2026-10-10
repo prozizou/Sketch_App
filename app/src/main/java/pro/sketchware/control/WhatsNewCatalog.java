@@ -20,6 +20,7 @@ public final class WhatsNewCatalog {
         DATA_DESIGNER("data_designer", true),
         DEVICE_PREVIEW("device_preview", true),
         BLOCK_DEBUGGER("block_debugger", true),
+        LOGIC_SEARCH("logic_search", true),
         /** Nothing to open: the entry only informs. */
         NONE("none", false);
 
