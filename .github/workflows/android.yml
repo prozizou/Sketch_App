@@ -99,6 +99,19 @@ jobs:
       - name: Build debug APK, run lint and unit tests
         run: gradle :app:assembleDebug :app:lintDebug :app:testDebugUnitTest --console=plain
 
+      - name: Check the file picker shows real dates
+        # app/build.gradle rewrites the picker library's "dd-mm-yyyy" (mm = minutes) to "dd-MM-yyyy".
+        run: |
+          apk=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+          dir="$RUNNER_TEMP/dex-check"
+          mkdir -p "$dir"
+          unzip -q -o "$apk" 'classes*.dex' -d "$dir"
+          if grep -aq 'dd-mm-yyyy' "$dir"/classes*.dex; then
+            echo "::error::The APK still formats dates with dd-mm-yyyy: the file picker date fix was not applied."
+            exit 1
+          fi
+          echo "No dd-mm-yyyy left in the dex files."
+
       - name: Upload reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v7

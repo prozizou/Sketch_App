@@ -13,7 +13,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RadioButton;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -29,7 +28,6 @@ import com.besome.sketch.adapters.ProjectsAdapter;
 import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.transition.MaterialFadeThrough;
 import pro.sketchware.utility.AnalyticsHelper;
@@ -50,7 +48,6 @@ import mod.hey.studios.project.backup.BackupRestoreManager;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
-import pro.sketchware.databinding.SortProjectDialogBinding;
 import pro.sketchware.utility.UI;
 
 public class ProjectsFragment extends DA {
@@ -168,7 +165,6 @@ public class ProjectsFragment extends DA {
             }
         });
 
-        binding.iconSort.setOnClickListener(v -> showProjectSortingDialog());
         setupSortChips();
         binding.specialAction.getRoot().setOnClickListener(v -> restoreProject());
 
@@ -272,52 +268,6 @@ public class ProjectsFragment extends DA {
                 }
             }
         });
-    }
-
-    private void showProjectSortingDialog() {
-        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(requireActivity());
-        dialog.setTitle(R.string.logic_sort_menu);
-
-        SortProjectDialogBinding dialogBinding = SortProjectDialogBinding.inflate(LayoutInflater.from(requireActivity()));
-        RadioButton sortByName = dialogBinding.sortByName;
-        RadioButton sortByID = dialogBinding.sortByID;
-        RadioButton sortOrderAsc = dialogBinding.sortOrderAsc;
-        RadioButton sortOrderDesc = dialogBinding.sortOrderDesc;
-
-        int storedValue = preference.a("sortBy", ProjectComparator.DEFAULT);
-        if ((storedValue & ProjectComparator.SORT_BY_NAME) == ProjectComparator.SORT_BY_NAME) {
-            sortByName.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_BY_ID) == ProjectComparator.SORT_BY_ID) {
-            sortByID.setChecked(true);
-        }
-        if ((storedValue & ProjectComparator.SORT_ORDER_ASCENDING) == ProjectComparator.SORT_ORDER_ASCENDING) {
-            sortOrderAsc.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_ORDER_DESCENDING) == ProjectComparator.SORT_ORDER_DESCENDING) {
-            sortOrderDesc.setChecked(true);
-        }
-
-        dialog.setView(dialogBinding.getRoot());
-        dialog.setPositiveButton("Save", (v, which) -> {
-            int sortValue = 0;
-            if (sortByName.isChecked()) {
-                sortValue |= ProjectComparator.SORT_BY_NAME;
-            }
-            if (sortByID.isChecked()) {
-                sortValue |= ProjectComparator.SORT_BY_ID;
-            }
-            if (sortOrderAsc.isChecked()) {
-                sortValue |= ProjectComparator.SORT_ORDER_ASCENDING;
-            }
-            if (sortOrderDesc.isChecked()) {
-                sortValue |= ProjectComparator.SORT_ORDER_DESCENDING;
-            }
-            preference.a("sortBy", sortValue, true);
-            v.dismiss();
-            syncSortChips();
-            refreshProjectsList();
-        });
-        dialog.setNegativeButton("Cancel", null);
-        dialog.show();
     }
 
     private static final int[] SORT_CHIP_VALUES = {
