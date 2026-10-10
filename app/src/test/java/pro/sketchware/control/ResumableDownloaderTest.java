@@ -6,18 +6,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.sun.net.httpserver.HttpServer;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -36,7 +39,8 @@ public class ResumableDownloaderTest {
 
     private final byte[] file = new byte[300_000];
     private String sha;
-    private HttpServer server;
+    private ServerSocket server;
+    private Thread serverThread;
     private String url;
 
     /** Requests that are cut after {@link #cutAfter} bytes, counted down. */
@@ -57,50 +61,78 @@ public class ResumableDownloaderTest {
         partial = new File(folder.getRoot(), "update.apk.part");
         partialSha = new File(folder.getRoot(), "update.apk.part.sha256");
 
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/app.apk", exchange -> {
-            String range = exchange.getRequestHeaders().getFirst("Range");
-            ranges.add(range == null ? "" : range);
-            if (failStatus != 0) {
-                exchange.sendResponseHeaders(failStatus, -1);
-                exchange.close();
+        server = new ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"));
+        serverThread = new Thread(() -> {
+            while (!server.isClosed()) {
+                try (Socket socket = server.accept()) {
+                    serve(socket);
+                } catch (IOException ignored) {
+                }
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+        url = "http://127.0.0.1:" + server.getLocalPort() + "/app.apk";
+    }
+
+    /**
+     * Answers one request, then closes the connection. Plain sockets rather than com.sun.net.httpserver, which
+     * Android unit tests don't have on their classpath.
+     */
+    private void serve(Socket socket) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1));
+        String range = null;
+        String line = in.readLine();
+        while ((line = in.readLine()) != null && !line.isEmpty()) {
+            int colon = line.indexOf(':');
+            if (colon > 0 && line.substring(0, colon).trim().equalsIgnoreCase("Range")) {
+                range = line.substring(colon + 1).trim();
+            }
+        }
+        ranges.add(range == null ? "" : range);
+        OutputStream out = socket.getOutputStream();
+        if (failStatus != 0) {
+            head(out, failStatus + " Error", 0, null);
+            return;
+        }
+        int from = 0;
+        if (range != null && !ignoreRange) {
+            from = Integer.parseInt(range.replace("bytes=", "").replace("-", ""));
+            if (from >= file.length) {
+                head(out, "416 Range Not Satisfiable", 0, "bytes */" + file.length);
                 return;
             }
-            int from = 0;
-            if (range != null && !ignoreRange) {
-                from = Integer.parseInt(range.replace("bytes=", "").replace("-", ""));
-                if (from >= file.length) {
-                    exchange.getResponseHeaders().set("Content-Range", "bytes */" + file.length);
-                    exchange.sendResponseHeaders(416, -1);
-                    exchange.close();
-                    return;
-                }
-                exchange.getResponseHeaders().set("Content-Range",
-                        "bytes " + from + "-" + (file.length - 1) + "/" + file.length);
-                exchange.sendResponseHeaders(206, file.length - from);
-            } else {
-                exchange.sendResponseHeaders(200, file.length);
-            }
-            OutputStream out = exchange.getResponseBody();
-            int end = file.length;
-            if (cutsLeft.getAndDecrement() > 0) {
-                end = Math.min(file.length, from + cutAfter);
-            }
-            try {
-                out.write(file, from, end - from);
-                out.flush();
-            } catch (IOException ignored) {
-            }
-            // Closing before Content-Length bytes were sent drops the connection mid-file.
-            exchange.close();
-        });
-        server.start();
-        url = "http://127.0.0.1:" + server.getAddress().getPort() + "/app.apk";
+            head(out, "206 Partial Content", file.length - from, "bytes " + from + "-" + (file.length - 1) + "/" + file.length);
+        } else {
+            head(out, "200 OK", file.length, null);
+        }
+        int end = file.length;
+        if (cutsLeft.getAndDecrement() > 0) {
+            end = Math.min(file.length, from + cutAfter);
+        }
+        try {
+            out.write(file, from, end - from);
+            out.flush();
+        } catch (IOException ignored) {
+        }
+        // Closing before Content-Length bytes were sent drops the connection mid-file.
+    }
+
+    private static void head(OutputStream out, String status, long length, String contentRange) throws IOException {
+        StringBuilder head = new StringBuilder("HTTP/1.1 ").append(status).append("\r\n")
+                .append("Content-Length: ").append(length).append("\r\n")
+                .append("Connection: close\r\n");
+        if (contentRange != null) {
+            head.append("Content-Range: ").append(contentRange).append("\r\n");
+        }
+        out.write(head.append("\r\n").toString().getBytes(StandardCharsets.ISO_8859_1));
+        out.flush();
     }
 
     @After
-    public void tearDown() {
-        server.stop(0);
+    public void tearDown() throws Exception {
+        server.close();
+        serverThread.join(2000);
     }
 
     private ResumableDownloader downloader(int maxRetries) {
