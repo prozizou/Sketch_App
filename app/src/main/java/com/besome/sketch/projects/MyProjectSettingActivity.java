@@ -109,6 +109,8 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
 
 
         binding.appIconLayout.setOnClickListener(this);
+        // "Change icon" reads like a button, so it opens the icon editor too, not only the picture.
+        binding.tvChangeIcon.setOnClickListener(this);
         binding.verCodeHolder.setOnClickListener(this);
         binding.verNameHolder.setOnClickListener(this);
         binding.imgThemeColorHelp.setOnClickListener(this);
@@ -232,7 +234,7 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
     @Override
     public void onClick(View v) {
         int id = v.getId();
-        if (id == R.id.app_icon_layout) {
+        if (id == R.id.app_icon_layout || id == R.id.tv_change_icon) {
             Intent intent = new Intent();
             intent.setClass(getApplicationContext(), IconCreatorActivity.class);
             intent.putExtra("sc_id", sc_id);
