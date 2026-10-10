@@ -2344,7 +2344,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         }
         if (actionMasked == MotionEvent.ACTION_MOVE) {
             if (!isDragged) {
-                if (Math.abs(posInitX - s - event.getX()) >= minDist || Math.abs(posInitY - t - event.getY()) >= minDist) {
+                // Screen coordinates on both sides: getX()/getY() are in the block's own, unscaled coordinates,
+                // so once the canvas is zoomed they no longer match the screen and any jitter cancelled the long press.
+                if (Math.abs(event.getRawX() - posInitX) >= minDist || Math.abs(event.getRawY() - posInitY) >= minDist) {
                     currentTouchedView = null;
                     handler.removeCallbacks(longPressed);
                 }
