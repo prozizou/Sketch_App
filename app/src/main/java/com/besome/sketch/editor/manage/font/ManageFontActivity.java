@@ -35,6 +35,10 @@ public class ManageFontActivity extends BaseAppCompatActivity {
             projectFontsFragment.setSelectingMode(false);
         } else if (collectionFontsFragment.isSelecting()) {
             collectionFontsFragment.resetSelection();
+        } else if (!projectFontsFragment.hasUnsavedChanges()) {
+            // Nothing changed: leave at once instead of rewriting the resource list and the project's data.
+            Np.g().d();
+            finish();
         } else {
             k();
             try {

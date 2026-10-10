@@ -44,6 +44,12 @@ public class ManageSoundActivity extends BaseAppCompatActivity implements ViewPa
             projectSounds.setSelecting(false);
         } else if (collectionSounds.isSelecting()) {
             collectionSounds.resetSelection();
+        } else if (!projectSounds.hasUnsavedChanges()) {
+            // Nothing changed: leave at once instead of rewriting the resource list and the project's data.
+            projectSounds.stopPlayback();
+            collectionSounds.stopPlayback();
+            Qp.g().d();
+            finish();
         } else {
             k();
             try {

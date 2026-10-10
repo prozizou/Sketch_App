@@ -63,6 +63,8 @@ public class pu extends qA {
     private FrManageImageListBinding binding;
     private String sc_id;
     private ArrayList<ProjectResourceBean> images;
+    /** The list as it was when the manager opened; null when unknown, which counts as changed. */
+    private pro.sketchware.editor.manage.ResourceListSnapshot loadedSnapshot;
     private MaterialCardView actionButtonContainer;
     private FloatingActionButton fab;
     private String projectImagesDirectory = "";
@@ -281,10 +283,12 @@ public class pu extends qA {
         super.onViewCreated(view, savedInstanceState);
         if (savedInstanceState == null) {
             initialize();
+            loadedSnapshot = pro.sketchware.editor.manage.ResourceListSnapshot.of(images);
         } else {
             sc_id = savedInstanceState.getString("sc_id");
             projectImagesDirectory = savedInstanceState.getString("dir_path");
             images = savedInstanceState.getParcelableArrayList("images");
+            loadedSnapshot = pro.sketchware.editor.manage.ResourceListSnapshot.fromList(savedInstanceState.getStringArrayList("loaded_snapshot"));
         }
         // mkdirs
         new oB().f(projectImagesDirectory);
@@ -361,7 +365,13 @@ public class pu extends qA {
         outState.putString("sc_id", sc_id);
         outState.putString("dir_path", projectImagesDirectory);
         outState.putParcelableArrayList("images", images);
+        if (loadedSnapshot != null) outState.putStringArrayList("loaded_snapshot", loadedSnapshot.toList());
         super.onSaveInstanceState(outState);
+    }
+
+    /** Whether anything was added, removed, renamed, rotated or moved since the manager opened. */
+    public boolean hasUnsavedChanges() {
+        return loadedSnapshot == null || loadedSnapshot.hasChanges(images);
     }
 
     private void showImageDetailsDialog(ProjectResourceBean projectResourceBean) {

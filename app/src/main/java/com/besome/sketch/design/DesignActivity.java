@@ -1043,6 +1043,19 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     /**
      * Opens {@link LogReaderActivity}.
      */
+    /** Searches the blocks and events of the screen being edited, see {@link pro.sketchware.logic.LogicSearchDialog}. */
+    void toLogicSearch() {
+        ProjectFileBean file = null;
+        for (ProjectFileBean activity : jC.b(sc_id).b()) {
+            if (activity.getJavaName().equals(currentJavaFileName)) file = activity;
+        }
+        if (file == null) {
+            SketchwareUtil.toast(getString(R.string.logic_search_no_screen));
+            return;
+        }
+        pro.sketchware.logic.LogicSearchDialog.show(this, sc_id, file);
+    }
+
     void toProjectSearch() {
         Intent intent = new Intent(getApplicationContext(), ProjectSearchActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);

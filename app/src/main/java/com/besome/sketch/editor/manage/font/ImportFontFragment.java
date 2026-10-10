@@ -40,6 +40,8 @@ public class ImportFontFragment extends qA {
     public String dirPath = "";
     public oB oB;
     public ArrayList<ProjectResourceBean> projectResourceBeans;
+    /** The list as it was when the manager opened; null when unknown, which counts as changed. */
+    private pro.sketchware.editor.manage.ResourceListSnapshot loadedSnapshot;
     private FrManageFontListBinding binding;
     private fontAdapter adapter;
     private ManageFontBinding actBinding;
@@ -196,10 +198,12 @@ public class ImportFontFragment extends qA {
             if (resourceBeans != null) {
                 projectResourceBeans.addAll(resourceBeans);
             }
+            loadedSnapshot = pro.sketchware.editor.manage.ResourceListSnapshot.of(projectResourceBeans);
         } else {
             sc_id = bundle.getString("sc_id");
             dirPath = bundle.getString("dir_path");
             projectResourceBeans = bundle.getParcelableArrayList("fonts");
+            loadedSnapshot = pro.sketchware.editor.manage.ResourceListSnapshot.fromList(bundle.getStringArrayList("loaded_snapshot"));
         }
 
         adapter.notifyDataSetChanged();
@@ -309,7 +313,13 @@ public class ImportFontFragment extends qA {
         bundle.putString("sc_id", sc_id);
         bundle.putString("dir_path", dirPath);
         bundle.putParcelableArrayList("fonts", projectResourceBeans);
+        if (loadedSnapshot != null) bundle.putStringArrayList("loaded_snapshot", loadedSnapshot.toList());
         super.onSaveInstanceState(bundle);
+    }
+
+    /** Whether anything was added, removed, renamed, rotated or moved since the manager opened. */
+    public boolean hasUnsavedChanges() {
+        return loadedSnapshot == null || loadedSnapshot.hasChanges(projectResourceBeans);
     }
 
     public class fontAdapter extends RecyclerView.Adapter<fontAdapter.ViewHolder> {
