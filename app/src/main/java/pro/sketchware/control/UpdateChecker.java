@@ -62,6 +62,11 @@ public class UpdateChecker {
 
     private static final String BASE_URL = "https://raw.githubusercontent.com/prozizou/Sketch_App/main/";
     private static final String MANIFEST_URL = BASE_URL + "update.json";
+    /**
+     * Written by CI after each build of main (an arm64 test APK published as a "dev-N" prerelease). It lives on its
+     * own branch so publishing it never adds a commit to main.
+     */
+    private static final String DEV_MANIFEST_URL = "https://raw.githubusercontent.com/prozizou/Sketch_App/dev-channel/update-dev.json";
 
     private static final String PREFS = "update_checker";
     private static final String KEY_MANDATORY_MANIFEST = "mandatory_manifest";
@@ -84,13 +89,13 @@ public class UpdateChecker {
             boolean shown;
             if (response == null) {
                 // Offline or GitHub unreachable: keep enforcing the last mandatory update we saw.
-                shown = handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false, true);
+                shown = handle(activity, prefs, prefs.getString(KEY_MANDATORY_MANIFEST, null), false, true, false);
                 if (!shown && manual) {
                     SketchwareUtil.toast("Couldn't reach the update server");
                     return;
                 }
             } else {
-                shown = handle(activity, prefs, response, true, true);
+                shown = handle(activity, prefs, response, true, true, false);
             }
             if (!shown) {
                 checkChannel(activity, prefs, manual);
@@ -105,7 +110,7 @@ public class UpdateChecker {
     private void checkChannel(AppCompatActivity activity, SharedPreferences prefs, boolean manual) {
         String channelUrl = switch (ConfigActivity.getStringSetting(ConfigActivity.SETTING_UPDATE_CHANNEL)) {
             case "beta" -> BASE_URL + "update-beta.json";
-            case "dev" -> BASE_URL + "update-dev.json";
+            case "dev" -> DEV_MANIFEST_URL;
             default -> null;
         };
         if (channelUrl == null) {
@@ -116,7 +121,9 @@ public class UpdateChecker {
             if (activity.isFinishing() || activity.isDestroyed()) {
                 return;
             }
-            boolean shown = response != null && handle(activity, prefs, response, false, false);
+            // Dev builds keep the last release's versionCode: one from another commit is still an update.
+            boolean sameVersionAllowed = "dev".equals(ConfigActivity.getStringSetting(ConfigActivity.SETTING_UPDATE_CHANNEL));
+            boolean shown = response != null && handle(activity, prefs, response, false, false, sameVersionAllowed);
             if (!shown && manual) {
                 SketchwareUtil.toast(response == null ? "Couldn't reach the update server" : "You're up to date");
             }
@@ -125,16 +132,19 @@ public class UpdateChecker {
 
     /**
      * @param allowMandatory false for channel manifests, whose updates are always optional.
+     * @param sameVersionAllowed true for the dev channel, see {@link UpdatePolicy#isOffered}.
      * @return true if an update dialog was shown.
      */
-    private boolean handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh, boolean allowMandatory) {
+    private boolean handle(AppCompatActivity activity, SharedPreferences prefs, String raw, boolean fresh,
+                           boolean allowMandatory, boolean sameVersionAllowed) {
         if (raw == null) {
             return false;
         }
         try {
             JSONObject manifest = new JSONObject(raw);
             int latest = manifest.optInt("versionCode", -1);
-            if (latest <= BuildConfig.VERSION_CODE) {
+            if (!UpdatePolicy.isOffered(latest, manifest.optString("commit", ""), BuildConfig.VERSION_CODE,
+                    BuildConfig.GIT_HASH, sameVersionAllowed)) {
                 if (fresh) prefs.edit().remove(KEY_MANDATORY_MANIFEST).apply();
                 return false;
             }
@@ -148,7 +158,7 @@ public class UpdateChecker {
             }
             showUpdateDialog(activity, mandatory, manifest.optString("versionName", ""),
                     manifest.optString("notes", ""), manifest.optString("url", ""),
-                    manifest.optString("apkUrl", ""), manifest.optString("sha256", ""));
+                    manifest.optString("apkUrl", ""), manifest.optString("sha256", ""), sameVersionAllowed);
             return true;
         } catch (Exception ignored) {
             // Malformed manifest: fail silently, never block the app on our own bug.
@@ -156,8 +166,8 @@ public class UpdateChecker {
         }
     }
 
-    private void showUpdateDialog(AppCompatActivity activity, boolean mandatory,
-                                  String versionName, String notes, String url, String apkUrl, String sha256) {
+    private void showUpdateDialog(AppCompatActivity activity, boolean mandatory, String versionName, String notes,
+                                  String url, String apkUrl, String sha256, boolean sameVersionAllowed) {
         StringBuilder message = new StringBuilder();
         if (!versionName.isEmpty()) {
             message.append("Version ").append(versionName).append('\n');
@@ -229,7 +239,7 @@ public class UpdateChecker {
             progress.setVisibility(View.VISIBLE);
             status.setVisibility(View.VISIBLE);
             status.setText("Starting download\u2026");
-            download(activity, apkUrl, sha256, apk, (percent, text) -> {
+            download(activity, apkUrl, sha256, apk, sameVersionAllowed, (percent, text) -> {
                 if (percent >= 0) {
                     progress.setIndeterminate(false);
                     progress.setProgressCompat(percent, true);
@@ -270,7 +280,7 @@ public class UpdateChecker {
     }
 
     private void download(AppCompatActivity activity, String apkUrl, String expectedSha256, File target,
-                          ProgressListener progressListener, DoneListener doneListener) {
+                          boolean sameVersionAllowed, ProgressListener progressListener, DoneListener doneListener) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             File partial = new File(target.getPath() + ".part");
@@ -310,7 +320,7 @@ public class UpdateChecker {
                         }
                     }
                 }
-                String rejection = verifyApk(activity, partial);
+                String rejection = verifyApk(activity, partial, sameVersionAllowed);
                 if (rejection != null) {
                     throw new SecurityException(rejection);
                 }
@@ -335,7 +345,7 @@ public class UpdateChecker {
     }
 
     /** @return null when the downloaded APK may be installed, otherwise the reason it was rejected. */
-    private String verifyApk(AppCompatActivity activity, File apk) {
+    private String verifyApk(AppCompatActivity activity, File apk, boolean sameVersionAllowed) {
         PackageManager pm = activity.getPackageManager();
         int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
@@ -348,7 +358,7 @@ public class UpdateChecker {
         try {
             PackageInfo installed = pm.getPackageInfo(activity.getPackageName(), flags);
             return UpdatePolicy.rejectionReason(activity.getPackageName(), downloaded.packageName,
-                    BuildConfig.VERSION_CODE, downloadedVersion, signers(installed), signers(downloaded));
+                    BuildConfig.VERSION_CODE, downloadedVersion, signers(installed), signers(downloaded), sameVersionAllowed);
         } catch (PackageManager.NameNotFoundException e) {
             return "cannot read the installed app signature";
         }

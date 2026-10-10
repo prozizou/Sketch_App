@@ -151,4 +151,38 @@ public class UpdatePolicyTest {
         // Two empty sets are "equal", which must not count as a match.
         assertNotNull(UpdatePolicy.rejectionReason(PKG, PKG, 151, 152, signers(), signers()));
     }
+
+    /* ---- dev channel: same versionCode, other commit ---- */
+
+    @Test
+    public void higherVersionIsAlwaysOffered() {
+        assertTrue(UpdatePolicy.isOffered(154, null, 153, "abc", false));
+        assertTrue(UpdatePolicy.isOffered(154, "abc", 153, "abc", true));
+    }
+
+    @Test
+    public void sameVersionFromAnotherCommitIsOfferedOnlyOnTheDevChannel() {
+        assertTrue(UpdatePolicy.isOffered(153, "b8fac27", 153, "26e443d", true));
+        assertFalse(UpdatePolicy.isOffered(153, "b8fac27", 153, "26e443d", false));
+    }
+
+    @Test
+    public void sameCommitOrUnknownCommitIsNotOffered() {
+        assertFalse(UpdatePolicy.isOffered(153, "B8FAC27", 153, "b8fac27", true));
+        assertFalse(UpdatePolicy.isOffered(153, "", 153, "b8fac27", true));
+        assertFalse(UpdatePolicy.isOffered(153, null, 153, "b8fac27", true));
+    }
+
+    @Test
+    public void lowerVersionIsNeverOffered() {
+        assertFalse(UpdatePolicy.isOffered(152, "other", 153, "b8fac27", true));
+    }
+
+    @Test
+    public void devBuildWithTheInstalledVersionMayBeInstalled() {
+        assertNull(UpdatePolicy.rejectionReason(PKG, PKG, 153, 153, signers(CERT_A), signers(CERT_A), true));
+        assertNotNull(UpdatePolicy.rejectionReason(PKG, PKG, 153, 153, signers(CERT_A), signers(CERT_A), false));
+        assertNotNull(UpdatePolicy.rejectionReason(PKG, PKG, 153, 152, signers(CERT_A), signers(CERT_A), true));
+        assertNotNull(UpdatePolicy.rejectionReason(PKG, PKG, 153, 153, signers(CERT_A), signers(CERT_B), true));
+    }
 }

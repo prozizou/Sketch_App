@@ -196,11 +196,26 @@ jobs:
           grep -q "Signing should work" "$RUNNER_TEMP/signing-check.txt"
 
       - name: Build Release APK
+        # Test build for arm64 phones only (about 13 MB smaller). Published releases (release.yml) stay universal.
         env:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: gradle assembleRelease
+        run: gradle assembleRelease -PabiOnly=arm64-v8a
+
+      - name: Check the APK only has arm64 code
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          files=$(unzip -Z1 "$apk")
+          if echo "$files" | grep -Eq '^lib/(x86|x86_64|armeabi-v7a)/|^assets/aapt/aapt2-(x86|x86_64|armeabi-v7a)$'; then
+            echo "::error::The arm64 test APK still contains code for other architectures."
+            exit 1
+          fi
+          if ! echo "$files" | grep -q '^assets/aapt/aapt2-arm64-v8a$'; then
+            echo "::error::The arm64 test APK lost assets/aapt/aapt2-arm64-v8a: builds would fail on the phone."
+            exit 1
+          fi
+          echo "arm64 only, $(stat -c %s "$apk") bytes."
 
       - name: Check the pinned resource ID
         # Precompiled classes refer to string/root_spec_common_when by its number (see public-stable-ids.txt).
@@ -248,6 +263,103 @@ jobs:
         with:
           name: apk-release-${{ steps.set_sha.outputs.short_sha }}
           path: app/build/outputs/apk/release/app-release-${{ steps.set_sha.outputs.short_sha }}.apk
+
+  publishDev:
+    # Each build of main becomes a "dev-N" prerelease announced in update-dev.json on the dev-channel branch, so a
+    # phone on the dev update channel (App Settings > Updates) installs it in one tap. Releases are immutable, hence
+    # one prerelease per build; only the newest few are kept.
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    name: Publish dev build
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: dev-channel
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHORT_SHA: ${{ needs.build.outputs.short_sha }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download the APK
+        uses: actions/download-artifact@v8
+        with:
+          name: apk-release-${{ needs.build.outputs.short_sha }}
+          path: ./dist
+
+      - name: Publish the prerelease
+        id: publish
+        run: |
+          code=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle)
+          name=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle)
+          tag="dev-${GITHUB_RUN_NUMBER}"
+          # A re-run keeps the run number; release tags can't be reused.
+          [ "${GITHUB_RUN_ATTEMPT:-1}" -gt 1 ] && tag="${tag}-${GITHUB_RUN_ATTEMPT}"
+          apk="dist/NewWorldSketchware-dev-arm64.apk"
+          mv "dist/app-release-${SHORT_SHA}.apk" "$apk"
+          sha=$(sha256sum "$apk" | awk '{print $1}')
+          message=$(git log -1 --pretty=format:'%s')
+          printf 'Test build of main at %s (arm64 phones only), not a release.\n\n%s\n\nSHA-256: `%s`\n' "$SHORT_SHA" "$message" "$sha" > "$RUNNER_TEMP/notes.md"
+          gh release create "$tag" "$apk" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "NWS dev build $SHORT_SHA" --notes-file "$RUNNER_TEMP/notes.md"
+          {
+            echo "code=$code"
+            echo "name=$name"
+            echo "tag=$tag"
+            echo "sha=$sha"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Announce it in update-dev.json on the dev-channel branch
+        env:
+          CODE: ${{ steps.publish.outputs.code }}
+          NAME: ${{ steps.publish.outputs.name }}
+          TAG: ${{ steps.publish.outputs.tag }}
+          SHA: ${{ steps.publish.outputs.sha }}
+        run: |
+          message=$(git log -1 --pretty=format:'%s')
+          workdir="$RUNNER_TEMP/dev-channel"
+          mkdir -p "$workdir"
+          cd "$workdir"
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth 1 origin dev-channel; then
+            git checkout -q -B dev-channel FETCH_HEAD
+          else
+            git checkout -q --orphan dev-channel
+          fi
+          MESSAGE="$message" python3 - <<'PY'
+          import json, os
+          repo = os.environ["GITHUB_REPOSITORY"]
+          tag = os.environ["TAG"]
+          manifest = {
+              "versionCode": int(os.environ["CODE"]),
+              "versionName": f'{os.environ["NAME"]}-dev ({os.environ["SHORT_SHA"]})',
+              # The app offers a build with its own versionCode when this commit differs from its own.
+              "commit": os.environ["GITHUB_SHA"],
+              "mandatory": False,
+              "url": f"https://github.com/{repo}/releases/tag/{tag}",
+              "apkUrl": f"https://github.com/{repo}/releases/download/{tag}/NewWorldSketchware-dev-arm64.apk",
+              "sha256": os.environ["SHA"],
+              "notes": "Dev build (arm64): " + os.environ["MESSAGE"],
+          }
+          with open("update-dev.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+          PY
+          git add update-dev.json
+          git commit -q -m "dev: announce $TAG ($SHORT_SHA)"
+          git push -q origin HEAD:dev-channel
+
+      - name: Keep only the newest dev builds
+        continue-on-error: true
+        run: |
+          gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease) | .tagName' \
+            | grep -E '^dev-[0-9]+(-[0-9]+)?$' | sort -t- -k2 -n -r | tail -n +4 \
+            | while read -r old; do gh release delete "$old" --yes --cleanup-tag || true; done
 
   aggregateAndSend:
     if: ${{ github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/heads/wip/') }}
