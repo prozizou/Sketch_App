@@ -347,13 +347,13 @@ public class ProjectBuilder {
                 }
             }
 
-            if (!classpathPart.equals(yq.compiledClassesPath)) {
+            if (!classpathPart.equals(yq.compiledClassesPath) && isReadable(classpathPart)) {
                 classpath.append(classpathPart).append(':');
             }
         }
 
         // remove trailing delimiter
-        classpath.deleteCharAt(classpath.length() - 1);
+        if (classpath.length() > 0) classpath.deleteCharAt(classpath.length() - 1);
 
         return classpath.toString();
     }
@@ -600,7 +600,8 @@ public class ProjectBuilder {
             }
 
             for (String jarPath : mll.getJarLocalLibrary().split(":")) {
-                if (!jarPath.trim().isEmpty()) {
+                // A local library without classes.jar (resources only, or deleted files) has nothing to add here.
+                if (isReadable(jarPath)) {
                     apkBuilder.addResourcesFromJar(new File(jarPath));
                 }
             }
@@ -690,7 +691,10 @@ public class ProjectBuilder {
 
                 if (localLibraryDexPath instanceof String) {
                     if (!proguard.libIsProguardFMEnabled((String) localLibraryName)) {
-                        dexes.add(new File((String) localLibraryDexPath));
+                        // A library without code (resources only) has no classes.dex to merge.
+                        if (isReadable((String) localLibraryDexPath)) {
+                            dexes.add(new File((String) localLibraryDexPath));
+                        }
                         /* Add library's extra DEX files */
                         File localLibraryDirectory = new File((String) localLibraryDexPath).getParentFile();
 
@@ -866,6 +870,42 @@ public class ProjectBuilder {
         return sb.toString();
     }
 
+    /**
+     * The JARs of local libraries shrunk with ProGuard full mode. A library whose classes.jar is missing (it only has
+     * resources, or its files were deleted) is left out: ProGuard and R8 stop the whole build on a file they can't read.
+     */
+    private List<String> fullModeLibraryJars() {
+        List<String> jars = new ArrayList<>();
+        for (HashMap<String, Object> library : mll.list) {
+            Object name = library.get("name");
+            Object jarPath = library.get("jarPath");
+            if (name != null && jarPath instanceof String jar && proguard.libIsProguardFMEnabled(name.toString())) {
+                if (isReadable(jar)) {
+                    jars.add(jar);
+                } else {
+                    LogUtil.w(TAG, "Local library " + name + " has no " + jar + ", left out of shrinking");
+                }
+            }
+        }
+        return jars;
+    }
+
+    private static List<String> existingFiles(List<String> paths) {
+        List<String> existing = new ArrayList<>();
+        for (String path : paths) {
+            if (isReadable(path)) {
+                existing.add(path);
+            } else {
+                LogUtil.w(TAG, "Left out missing file " + path);
+            }
+        }
+        return existing;
+    }
+
+    private static boolean isReadable(String path) {
+        return path != null && !path.trim().isEmpty() && new File(path).exists();
+    }
+
     public void runR8() throws IOException {
         long savedTimeMillis = System.currentTimeMillis();
 
@@ -881,16 +921,10 @@ public class ProjectBuilder {
                 config.add(f.getAbsolutePath());
             }
         }
-        config.addAll(mll.getPgRules());
+        config.addAll(existingFiles(mll.getPgRules()));
         ArrayList<String> jars = new ArrayList<>();
         jars.add(yq.compiledClassesPath + ".jar");
-
-        for (HashMap<String, Object> hashMap : mll.list) {
-            String obj = hashMap.get("name").toString();
-            if (hashMap.containsKey("jarPath") && proguard.libIsProguardFMEnabled(obj)) {
-                jars.add(hashMap.get("jarPath").toString());
-            }
-        }
+        jars.addAll(fullModeLibraryJars());
         try {
             JarBuilder.INSTANCE.generateJar(new File(yq.compiledClassesPath));
             new R8Compiler(rules, config.toArray(new String[0]), getProguardClasspath().split(":"), jars.toArray(new String[0]), settings.getMinSdkVersion(), yq).compile();
@@ -925,7 +959,7 @@ public class ProjectBuilder {
         proguardAddRjavaRules(args);
 
         /* Include local libraries' ProGuard rules */
-        for (String rule : mll.getPgRules()) {
+        for (String rule : existingFiles(mll.getPgRules())) {
             args.add("-include");
             args.add(rule);
         }
@@ -934,12 +968,9 @@ public class ProjectBuilder {
         args.add("-injars");
         args.add(yq.compiledClassesPath);
 
-        for (HashMap<String, Object> hashMap : mll.list) {
-            String obj = hashMap.get("name").toString();
-            if (hashMap.containsKey("jarPath") && proguard.libIsProguardFMEnabled(obj)) {
-                args.add("-injars");
-                args.add(hashMap.get("jarPath").toString());
-            }
+        for (String jar : fullModeLibraryJars()) {
+            args.add("-injars");
+            args.add(jar);
         }
         args.add("-libraryjars");
         args.add(getProguardClasspath());

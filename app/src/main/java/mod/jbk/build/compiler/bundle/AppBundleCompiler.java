@@ -207,6 +207,8 @@ public class AppBundleCompiler {
             }
 
             for (var jar : jars) {
+                // A local library without classes.jar (resources only, or deleted files) has nothing to add here.
+                if (!jar.isFile()) continue;
                 try (var jarStream = new FileInputStream(jar);
                      var jarArchiveStream = new ZipInputStream(jarStream)) {
                     var jarArchiveEntry = jarArchiveStream.getNextEntry();
