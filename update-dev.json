@@ -1,10 +1,10 @@
 {
-  "versionCode": 154,
-  "versionName": "v7.2.1-dev (018d0b1)",
-  "commit": "018d0b18daf76d6cf43b9a911c49e9184b1c8f06",
+  "versionCode": 155,
+  "versionName": "v7.2.2-dev (a55b8f7)",
+  "commit": "a55b8f7ad71dc3ba2ae494afcc86770ec2b5a325",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-186",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-186/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "9453e38361560ae04c2aa683646d58ffd182340cf57d0fc3e042d19da95843d0",
-  "notes": "Dev build (arm64): Merge pull request #38 from prozizou/ccr-6acc4a3d-t9e4j4"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-193",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-193/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "3216c930e810c64db2c6d4f51b221d42489e0ab42b3e96c3cf98138e1b38ca9c",
+  "notes": "Dev build (arm64): Merge pull request #40 from prozizou/ccr-6acc4a3d-t9e4j4"
 }
