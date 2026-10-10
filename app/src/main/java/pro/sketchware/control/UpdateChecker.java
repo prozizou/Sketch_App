@@ -24,10 +24,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.MessageDigest;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,8 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.BuildConfig;
@@ -57,6 +52,9 @@ import pro.sketchware.utility.SketchwareUtil;
  * matching SHA-256 (when the manifest has one), same package name, a higher versionCode than the
  * installed build, and the same signing certificate as the installed app. The last mandatory manifest
  * is cached, so the update prompt keeps showing while the device is offline.
+ *
+ * An interrupted download is not lost: the bytes received are kept and the next attempt asks the server
+ * for the rest (see {@link ResumableDownloader}).
  */
 public class UpdateChecker {
 
@@ -208,6 +206,10 @@ public class UpdateChecker {
         AlertDialog dialog = builder.create();
         dialog.setCanceledOnTouchOutside(!mandatory);
         dialog.show();
+        if (!apkUrl.isEmpty() && hasResumableDownload(activity, sha256)) {
+            // An earlier download of this update was interrupted: the button continues it.
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Continue download");
+        }
 
         // The positive button never dismisses the dialog: for a mandatory update the app stays
         // blocked until the newer build (with a higher versionCode) is installed.
@@ -256,7 +258,7 @@ public class UpdateChecker {
                     install(activity, apk);
                 } else {
                     button.setText("Retry");
-                    progress.setVisibility(View.GONE);
+                    progress.setIndeterminate(false);
                     status.setText("Download failed: " + error);
                 }
             });
@@ -279,49 +281,36 @@ public class UpdateChecker {
         return dir;
     }
 
+    /**
+     * Downloads the APK into {@code target}. The bytes received are kept in {@code target.part}: when the
+     * connection drops, the download is retried on its own a few times, and every attempt (including the user's
+     * "Retry") continues where the previous one stopped instead of starting over.
+     */
     private void download(AppCompatActivity activity, String apkUrl, String expectedSha256, File target,
                           boolean sameVersionAllowed, ProgressListener progressListener, DoneListener doneListener) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
-            File partial = new File(target.getPath() + ".part");
+            File partial = partialFile(target);
+            File partialSha = partialShaFile(target);
             String error = null;
+            // No https -> http (or http -> https) redirects: a downgrade would defeat the https-only rule.
+            OkHttpClient client = new OkHttpClient.Builder().followSslRedirects(false).build();
             try {
-                Request request = new Request.Builder().url(apkUrl).build();
-                // No https -> http (or http -> https) redirects: a downgrade would defeat the https-only rule.
-                OkHttpClient client = new OkHttpClient.Builder().followSslRedirects(false).build();
-                try (Response response = client.newCall(request).execute()) {
-                    if (!response.isSuccessful() || response.body() == null) {
-                        throw new IllegalStateException("HTTP " + response.code());
-                    }
-                    long total = response.body().contentLength();
-                    try (InputStream in = response.body().byteStream();
-                         OutputStream out = new FileOutputStream(partial)) {
-                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                        byte[] buffer = new byte[16 * 1024];
-                        long done = 0;
-                        int lastPercent = -2;
-                        int read;
-                        while ((read = in.read(buffer)) != -1) {
-                            out.write(buffer, 0, read);
-                            digest.update(buffer, 0, read);
-                            done += read;
-                            int percent = total > 0 ? (int) (done * 100 / total) : -1;
-                            if (percent != lastPercent) {
-                                lastPercent = percent;
-                                String text = total > 0
-                                        ? String.format(Locale.US, "Downloading\u2026 %d%%  (%.1f / %.1f MB)", percent, done / 1048576f, total / 1048576f)
-                                        : String.format(Locale.US, "Downloading\u2026 %.1f MB", done / 1048576f);
+                new ResumableDownloader(client).download(apkUrl, expectedSha256, partial, partialSha,
+                        new ResumableDownloader.Listener() {
+                            @Override
+                            public void onProgress(int percent, String text) {
                                 activity.runOnUiThread(() -> progressListener.onProgress(percent, text));
                             }
-                        }
-                        out.flush();
-                        if (!UpdatePolicy.checksumMatches(digest.digest(), expectedSha256)) {
-                            throw new SecurityException("checksum mismatch, the file is corrupted or was tampered with");
-                        }
-                    }
-                }
+
+                            @Override
+                            public boolean isCancelled() {
+                                return activity.isFinishing() || activity.isDestroyed();
+                            }
+                        });
                 String rejection = verifyApk(activity, partial, sameVersionAllowed);
                 if (rejection != null) {
+                    ResumableDownloader.deletePartial(partial, partialSha);
                     throw new SecurityException(rejection);
                 }
                 if (target.exists() && !target.delete()) {
@@ -330,9 +319,14 @@ public class UpdateChecker {
                 if (!partial.renameTo(target)) {
                     throw new IllegalStateException("Cannot save the downloaded file");
                 }
-            } catch (Exception e) {
                 //noinspection ResultOfMethodCallIgnored
-                partial.delete();
+                partialSha.delete();
+            } catch (IOException e) {
+                // The kept bytes stay: "Retry" continues from there.
+                error = (e.getMessage() != null ? e.getMessage() : "connection lost")
+                        + (partial.length() > 0 ? String.format(Locale.US,
+                        ". Tap Retry to continue from %.1f MB.", partial.length() / 1048576f) : "");
+            } catch (Exception e) {
                 error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 if (e instanceof SecurityException) {
                     error = "update rejected: " + error;
@@ -342,6 +336,20 @@ public class UpdateChecker {
             activity.runOnUiThread(() -> doneListener.onDone(result));
             executor.shutdown();
         });
+    }
+
+    private static File partialFile(File target) {
+        return new File(target.getPath() + ".part");
+    }
+
+    private static File partialShaFile(File target) {
+        return new File(target.getPath() + ".part.sha256");
+    }
+
+    /** @return whether an earlier download of this APK left bytes to continue from. */
+    private boolean hasResumableDownload(AppCompatActivity activity, String sha256) {
+        File target = new File(updatesDir(activity), "update.apk");
+        return ResumableDownloader.resumableBytes(partialFile(target), partialShaFile(target), sha256) > 0;
     }
 
     /** @return null when the downloaded APK may be installed, otherwise the reason it was rejected. */
