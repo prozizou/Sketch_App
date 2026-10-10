@@ -496,6 +496,8 @@ public class pu extends qA {
                 svgUtils.initImageLoader();
             }
 
+            // The cell may still be loading the image it showed before it was reused, with Glide or with Coil.
+            pro.sketchware.utility.ImageLoads.reset(holder.binding.img);
             if (image.resFullName.endsWith(".svg")) {
                 svgUtils.loadImage(holder.binding.img, image.isNew ? image.resFullName : String.join(File.separator, projectImagesDirectory, image.resFullName));
             } else if (image.resFullName.endsWith(".xml")) {
@@ -519,6 +521,9 @@ public class pu extends qA {
                             @Override
                             public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
                                 messageDigest.update(ID_BYTES);
+                                // A rotated or flipped image must not reuse the cached picture of the plain one.
+                                messageDigest.update((image.rotate + ":" + image.flipHorizontal + ":" + image.flipVertical)
+                                        .getBytes(StandardCharsets.UTF_8));
                             }
                         })
                         .centerCrop()
