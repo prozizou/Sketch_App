@@ -63,6 +63,10 @@ public class ManageImageActivity extends BaseAppCompatActivity implements ViewPa
         } else if (collectionImagesFragment.isSelecting()) {
             collectionImagesFragment.unselectAll();
             binding.layoutBtnImport.setVisibility(View.GONE);
+        } else if (!projectImagesFragment.hasUnsavedChanges()) {
+            // Nothing changed: leave at once instead of rewriting the resource list and the project's data.
+            Op.g().d();
+            finish();
         } else {
             k();
             new Handler().postDelayed(() -> new SaveImagesAsyncTask(this).execute(), 500L);

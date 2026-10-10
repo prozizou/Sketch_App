@@ -40,6 +40,8 @@ import pro.sketchware.utility.SketchwareUtil;
 public class ow extends qA {
 
     public ArrayList<ProjectResourceBean> sounds;
+    /** The list as it was when the manager opened; null when unknown, which counts as changed. */
+    private pro.sketchware.editor.manage.ResourceListSnapshot loadedSnapshot;
     public boolean isSelecting = false;
     private String sc_id;
     private Adapter adapter;
@@ -91,10 +93,12 @@ public class ow extends qA {
                     sounds.add(projectResourceBean.clone());
                 }
             }
+            loadedSnapshot = pro.sketchware.editor.manage.ResourceListSnapshot.of(sounds);
         } else {
             sc_id = savedInstanceState.getString("sc_id");
             dirPath = savedInstanceState.getString("dir_path");
             sounds = savedInstanceState.getParcelableArrayList("sounds");
+            loadedSnapshot = pro.sketchware.editor.manage.ResourceListSnapshot.fromList(savedInstanceState.getStringArrayList("loaded_snapshot"));
         }
         adapter.notifyDataSetChanged();
         updateNoSoundsTextVisibility();
@@ -186,7 +190,13 @@ public class ow extends qA {
         outState.putString("sc_id", sc_id);
         outState.putString("dir_path", dirPath);
         outState.putParcelableArrayList("sounds", sounds);
+        if (loadedSnapshot != null) outState.putStringArrayList("loaded_snapshot", loadedSnapshot.toList());
         super.onSaveInstanceState(outState);
+    }
+
+    /** Whether anything was added, removed, renamed, rotated or moved since the manager opened. */
+    public boolean hasUnsavedChanges() {
+        return loadedSnapshot == null || loadedSnapshot.hasChanges(sounds);
     }
 
     public void stopPlayback() {
