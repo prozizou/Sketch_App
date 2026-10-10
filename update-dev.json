@@ -1,0 +1,10 @@
+{
+  "versionCode": 153,
+  "versionName": "v7.2.0-dev (8414350)",
+  "commit": "8414350a4a560f723b371e572b179dddf2054c30",
+  "mandatory": false,
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-163",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-163/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "460107621875eff77308006b1f9b80e4ebfcfdce27a30199131940d92ba21eb6",
+  "notes": "Dev build (arm64): Merge pull request #29 from prozizou/ccr-6acc4a3d-t9e4j4"
+}
