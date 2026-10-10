@@ -71,6 +71,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_change_icon"
+                        android:foreground="?attr/selectableItemBackground"
                         android:paddingHorizontal="12dp"
                         android:paddingVertical="6dp"
                         android:text="@string/np_change_icon"
