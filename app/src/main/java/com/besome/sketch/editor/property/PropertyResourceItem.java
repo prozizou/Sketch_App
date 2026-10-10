@@ -115,6 +115,8 @@ public class PropertyResourceItem extends RelativeLayout implements View.OnClick
                 return;
             } else {
                 File file = new File(jC.d(a).f(str));
+                // The preview may still be loading the previously chosen image, with Glide or with Coil.
+                pro.sketchware.utility.ImageLoads.reset(g);
                 if (file.exists()) {
                     Context context = getContext();
                     fromFile = FileProvider.getUriForFile(context, getContext().getPackageName() + ".provider", file);
