@@ -223,3 +223,41 @@ gradle.taskGraph.whenReady { graph ->
 configurations.matching { it.name.startsWith('test') || it.name.contains('UnitTest') }.configureEach {
     exclude group: 'org.conscrypt', module: 'conscrypt-android'
 }
+
+// The file picker library (com.github.PranavPurwar:filepicker) formats file dates with "dd-mm-yyyy", where "mm"
+// means minutes, so the picker showed dates like 09-49-2026. Until the library is fixed, its classes are rewritten
+// at build time to use "dd-MM-yyyy" (day-month-year). Nothing else is touched; if the library fixes it, this does
+// nothing.
+abstract class FilePickerDateFormatFix implements com.android.build.api.instrumentation.AsmClassVisitorFactory<com.android.build.api.instrumentation.InstrumentationParameters.None> {
+    @Override
+    org.objectweb.asm.ClassVisitor createClassVisitor(com.android.build.api.instrumentation.ClassContext classContext,
+                                                      org.objectweb.asm.ClassVisitor next) {
+        return new org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM9, next) {
+            @Override
+            org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                                                        String[] exceptions) {
+                def method = super.visitMethod(access, name, descriptor, signature, exceptions)
+                return new org.objectweb.asm.MethodVisitor(org.objectweb.asm.Opcodes.ASM9, method) {
+                    @Override
+                    void visitLdcInsn(Object value) {
+                        super.visitLdcInsn("dd-mm-yyyy" == value ? "dd-MM-yyyy" : value)
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    boolean isInstrumentable(com.android.build.api.instrumentation.ClassData classData) {
+        return classData.className.startsWith("dev.pranav.filepicker.")
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.instrumentation.transformClassesWith(FilePickerDateFormatFix,
+                com.android.build.api.instrumentation.InstrumentationScope.ALL) {}
+        variant.instrumentation.setAsmFramesComputationMode(
+                com.android.build.api.instrumentation.FramesComputationMode.COPY_FRAMES)
+    }
+}
