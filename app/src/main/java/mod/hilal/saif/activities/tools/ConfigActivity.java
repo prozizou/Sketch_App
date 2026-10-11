@@ -2,8 +2,10 @@ package mod.hilal.saif.activities.tools;
 
 import static pro.sketchware.utility.GsonUtils.getGson;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -646,6 +648,9 @@ public class ConfigActivity extends BaseAppCompatActivity implements PreferenceF
                 startActivity(intent);
             });
 
+            bindLegacySystemSetting("P12I0", true);
+            bindLegacySystemSetting("P12I2", false);
+
             ListPreference interval = find(SETTING_AUTO_SAVE_INTERVAL);
             Preference mode = find(SETTING_AUTO_SAVE_MODE);
             if (interval == null || mode == null) {
@@ -656,6 +661,30 @@ public class ConfigActivity extends BaseAppCompatActivity implements PreferenceF
                 mode.setEnabled(!"0".equals(newValue));
                 return true;
             });
+        }
+
+        /**
+         * Vibration and save-on-exit came from the old "System Settings" screen. The editors still read them from the
+         * "P12" preferences, so their switches here read and write there instead of this screen's settings file.
+         */
+        private void bindLegacySystemSetting(String key, boolean defaultValue) {
+            SwitchPreferenceCompat preference = find(key);
+            if (preference == null) {
+                return;
+            }
+            SharedPreferences p12 = requireContext().getSharedPreferences("P12", Context.MODE_PRIVATE);
+            preference.setPreferenceDataStore(new PreferenceDataStore() {
+                @Override
+                public boolean getBoolean(String k, boolean defValue) {
+                    return p12.getBoolean(k, defValue);
+                }
+
+                @Override
+                public void putBoolean(String k, boolean value) {
+                    p12.edit().putBoolean(k, value).apply();
+                }
+            });
+            preference.setChecked(p12.getBoolean(key, defaultValue));
         }
 
         /* ------------------------------------------------------------ Projects */

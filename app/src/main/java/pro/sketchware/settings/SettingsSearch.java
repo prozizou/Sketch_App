@@ -67,6 +67,8 @@ public final class SettingsSearch {
         KEYWORDS.put("use-asd-highlighter", "syntax color colour coloration");
         KEYWORDS.put("auto-save-interval", "autosave save timer enregistrement automatique");
         KEYWORDS.put("auto-save-mode", "autosave snapshot enregistrement");
+        KEYWORDS.put("P12I2", "system exit quit close save enregistrer quitter fermer");
+        KEYWORDS.put("P12I0", "system vibrate vibration haptic drag vibrer");
         KEYWORDS.put("ff-device-preview", "tablet foldable landscape orientation safe area tablette pliable apercu");
         KEYWORDS.put("ff-block-debugger", "debug step breakpoint variables debogueur pas a pas");
         KEYWORDS.put("use-new-version-control", "version name code");
