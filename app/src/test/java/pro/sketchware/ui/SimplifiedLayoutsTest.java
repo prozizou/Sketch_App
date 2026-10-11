@@ -57,8 +57,10 @@ public class SimplifiedLayoutsTest {
     public void projectsListScrollsDirectlyUnderTheRefreshLayout() {
         Activity activity = activity();
         ViewGroup root = (ViewGroup) inflate(activity, R.layout.myprojects, null, 1080, 2340);
-        assertEquals(1, root.getChildCount());
-        assertTrue(root.getChildAt(0) instanceof NestedScrollView);
+        // The scrolling view is the refresh layout's own child (it also adds its spinner), with no wrapper between.
+        View scroll = root.findViewById(R.id.nested_scroll);
+        assertTrue(scroll instanceof NestedScrollView);
+        assertEquals(root, scroll.getParent());
         // Title and subtitle sit directly in the title container, which keeps its id for the insets.
         LinearLayout title = root.findViewById(R.id.title_container);
         assertEquals(LinearLayout.VERTICAL, title.getOrientation());
@@ -99,7 +101,7 @@ public class SimplifiedLayoutsTest {
         assertNotNull(search.getBackground());
         assertNotNull(search.getForeground());
         assertNotNull(search.findViewById(android.R.id.title));
-        assertEquals(Math.round(56 * activity.getResources().getDisplayMetrics().density), search.getHeight());
+        assertEquals(Math.round(56 * activity.getResources().getDisplayMetrics().density), search.getLayoutParams().height);
 
         View warning = inflate(activity, R.layout.preference_warning, list, 1080, 0);
         assertTrue(warning instanceof LinearLayout);

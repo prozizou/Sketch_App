@@ -31,7 +31,7 @@ import pro.sketchware.R;
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = 35, qualifiers = "w320dp-h640dp-xxhdpi", application = android.app.Application.class)
 public class LogicEditorControlsOverlapTest {
-    private View inflate(int width, int height, String fitLabel) {
+    private View inflate(int width, int height, String fitLabel) throws Exception {
         RuntimeEnvironment.setQualifiers("+notnight");
         ThemeHarness.prepareApplication();
         Context app = ApplicationProvider.getApplicationContext();
@@ -57,23 +57,23 @@ public class LogicEditorControlsOverlapTest {
     }
 
     @Test
-    public void barFitsBesideTheDrawerOnASmallPhone() {
+    public void barFitsBesideTheDrawerOnASmallPhone() throws Exception {
         // 320 dp wide at xxhdpi.
         assertBarBesideDrawer(inflate(960, 1920, null));
     }
 
     @Test
-    public void longTranslationDoesNotPushTheBarUnderTheDrawer() {
+    public void longTranslationDoesNotPushTheBarUnderTheDrawer() throws Exception {
         assertBarBesideDrawer(inflate(960, 1920, "Ajuster tous les blocs à l'écran maintenant"));
     }
 
     @Test
-    public void barFitsOnALargeScreenToo() {
+    public void barFitsOnALargeScreenToo() throws Exception {
         assertBarBesideDrawer(inflate(2560, 1600, null));
     }
 
     @Test
-    public void openDrawerIsDrawnAboveTheBar() {
+    public void openDrawerIsDrawnAboveTheBar() throws Exception {
         View root = inflate(960, 1920, null);
         View bar = root.findViewById(R.id.canvas_controls);
         View drawer = root.findViewById(R.id.right_drawer);
