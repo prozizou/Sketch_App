@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- android:windowLightNavigationBar exists from API 27. -->
+    <style name="Theme.SketchwarePro.Starting.Platform" parent="Theme.SplashScreen">
+        <item name="android:windowLightNavigationBar">@bool/is_light_theme</item>
+    </style>
+</resources>

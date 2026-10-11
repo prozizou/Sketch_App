@@ -157,7 +157,8 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
 
     private void showReport() {
         binding.score.setText(String.valueOf(report.score()));
-        binding.summary.setText(getString(R.string.analysis_summary, report.count(Severity.ERROR), report.count(Severity.WARNING), report.count(Severity.INFO)));
+        binding.summary.setText(getString(R.string.analysis_summary, quantity(R.plurals.analysis_errors_count, report.count(Severity.ERROR)),
+                quantity(R.plurals.analysis_warnings_count, report.count(Severity.WARNING)), quantity(R.plurals.analysis_notes_count, report.count(Severity.INFO))));
 
         List<Finding> priority = report.priorityFixes(3);
         if (priority.isEmpty()) {
@@ -271,7 +272,7 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
         int needYou = pro.sketchware.analysis.fix.AutoFix.notFixable(report.findings()).size();
         if (plan.isEmpty()) {
             new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix)
-                    .setMessage(getString(R.string.analysis_autofix_nothing, needYou))
+                    .setMessage(quantity(R.plurals.analysis_autofix_nothing, needYou))
                     .setPositiveButton(android.R.string.ok, null).show();
             return;
         }
@@ -280,7 +281,7 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
         content.setOrientation(android.widget.LinearLayout.VERTICAL);
         content.setPadding(pad, pad / 2, pad, 0);
         TextView intro = new TextView(this);
-        intro.setText(getString(R.string.analysis_autofix_intro, needYou));
+        intro.setText(quantity(R.plurals.analysis_autofix_intro, needYou));
         content.addView(intro);
         java.util.Map<pro.sketchware.analysis.fix.AutoFix.Rule, android.widget.CheckBox> boxes = new java.util.EnumMap<>(pro.sketchware.analysis.fix.AutoFix.Rule.class);
         for (pro.sketchware.analysis.fix.AutoFix.Rule rule : pro.sketchware.analysis.fix.AutoFix.Rule.values()) {
@@ -311,6 +312,11 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
                 .setNegativeButton(android.R.string.cancel, null).show();
     }
 
+    /** @return the plural resource for {@code count}, formatted with it. */
+    private String quantity(int pluralsId, int count) {
+        return getResources().getQuantityString(pluralsId, count, count);
+    }
+
     private int autoFixLabel(pro.sketchware.analysis.fix.AutoFix.Rule rule) {
         return switch (rule) {
             case CONTENT_DESCRIPTION -> R.string.analysis_autofix_content_description;
@@ -334,11 +340,11 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             text.append(change.describe()).append('\n');
         }
         for (pro.sketchware.analysis.fix.AutoFix.FileEdit edit : plan.fileEdits()) {
-            text.append(getString(R.string.analysis_autofix_file_edit, edit.shownName(), edit.changes(), getString(autoFixLabel(edit.rule()), edit.changes()))).append('\n');
+            text.append(getResources().getQuantityString(R.plurals.analysis_autofix_file_edit, edit.changes(), edit.shownName(), edit.changes(), getString(autoFixLabel(edit.rule()), edit.changes()))).append('\n');
         }
         for (pro.sketchware.analysis.fix.AutoFix.BlockRemoval removal : plan.blockRemovals()) {
-            text.append(getString(R.string.analysis_autofix_remove_blocks, removal.javaName().replace(".java", ""),
-                    removal.eventKey(), removal.blockIds().size())).append('\n');
+            text.append(getResources().getQuantityString(R.plurals.analysis_autofix_remove_blocks, removal.blockIds().size(),
+                    removal.javaName().replace(".java", ""), removal.eventKey(), removal.blockIds().size())).append('\n');
         }
         TextView view = new TextView(this);
         view.setTypeface(Typeface.MONOSPACE);
@@ -363,8 +369,8 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
                         projectChanged = true;
                         setResult(RESULT_OK, new Intent().putExtra(EXTRA_PROJECT_CHANGED, true));
                         new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_autofix)
-                                .setMessage(getString(R.string.analysis_autofix_done, result.applied(), needYou)
-                                        + (result.missing() > 0 ? "\n\n" + getString(R.string.analysis_autofix_missing, result.missing()) : "")
+                                .setMessage(getString(R.string.analysis_autofix_done, quantity(R.plurals.analysis_autofix_done_changes, result.applied()), quantity(R.plurals.analysis_autofix_done_remaining, needYou))
+                                        + (result.missing() > 0 ? "\n\n" + quantity(R.plurals.analysis_autofix_missing, result.missing()) : "")
                                         + (result.stringsProblem() != null ? "\n\n" + getString(R.string.analysis_autofix_strings_problem, result.stringsProblem()) : ""))
                                 .setPositiveButton(android.R.string.ok, null).show();
                         analyse();

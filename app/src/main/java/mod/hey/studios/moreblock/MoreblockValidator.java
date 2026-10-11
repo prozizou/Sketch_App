@@ -45,7 +45,7 @@ public class MoreblockValidator extends MB {
                 b.setError(null);
                 d = true;
             } else if (registeredVariables.contains(name)) {
-                b.setError(a.getString(R.string.common_message_name_unavailable, 0));
+                b.setError(a.getString(R.string.common_message_name_unavailable));
                 d = false;
             } else {
                 boolean z = false;

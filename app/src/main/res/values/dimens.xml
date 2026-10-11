@@ -54,4 +54,6 @@
     <dimen name="recycler_view_item_spacing">6dp</dimen>
     
     <dimen name="dialog_action_size">100dp</dimen>
+    <!-- Above the floating canvas controls (3dp), so the open drawer covers them instead of the reverse. -->
+    <dimen name="logic_drawer_elevation">6dp</dimen>
 </resources>

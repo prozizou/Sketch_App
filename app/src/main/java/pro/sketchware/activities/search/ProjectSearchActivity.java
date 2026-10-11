@@ -135,12 +135,15 @@ public class ProjectSearchActivity extends BaseAppCompatActivity {
                 binding.progress.setVisibility(View.INVISIBLE);
                 adapter.submit(result.matches());
                 if (result.matches().isEmpty()) {
-                    showMessage(getString(R.string.project_search_no_results, result.filesSearched()));
+                    showMessage(getResources().getQuantityString(R.plurals.project_search_no_results, result.filesSearched(), result.filesSearched()));
                 } else {
-                    long files = result.matches().stream().map(Match::file).distinct().count();
-                    String summary = getString(R.string.project_search_summary, result.matches().size(), files);
+                    int results = result.matches().size();
+                    int files = (int) result.matches().stream().map(Match::file).distinct().count();
+                    String summary = getString(R.string.project_search_summary,
+                            getResources().getQuantityString(R.plurals.project_search_results, results, results),
+                            getResources().getQuantityString(R.plurals.project_search_files, files, files));
                     if (result.truncated()) {
-                        summary += " · " + getString(R.string.project_search_summary_truncated, ProjectSearch.MAX_RESULTS);
+                        summary += " · " + getResources().getQuantityString(R.plurals.project_search_summary_truncated, ProjectSearch.MAX_RESULTS, ProjectSearch.MAX_RESULTS);
                     }
                     binding.summary.setText(summary);
                 }

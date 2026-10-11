@@ -480,6 +480,8 @@ public final class ProjectGit implements AutoCloseable {
     }
 
     private void requireRemote() throws GitProblem {
+        // Push and pull carry the user's token: never let a Git configuration turn certificate checks off.
+        VerifiedHttpConnectionFactory.install();
         if (remoteUrl() == null) throw new GitProblem("Set the remote address first.");
     }
 

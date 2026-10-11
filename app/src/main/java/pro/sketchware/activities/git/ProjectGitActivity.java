@@ -204,7 +204,7 @@ public class ProjectGitActivity extends BaseAppCompatActivity {
         binding.remote.setText(state.remote() == null ? getString(R.string.git_no_remote) : state.remote());
         binding.changesSummary.setText(state.changes().isEmpty()
                 ? getString(R.string.git_no_changes)
-                : getString(R.string.git_changes_count, state.changes().size()));
+                : getResources().getQuantityString(R.plurals.git_changes_count, state.changes().size(), state.changes().size()));
         adapter.submit(state.history());
         binding.emptyHistory.setVisibility(state.history().isEmpty() ? View.VISIBLE : View.GONE);
     }

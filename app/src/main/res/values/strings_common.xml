@@ -24,7 +24,10 @@
     <string name="common_word_goback">Go Back</string>
     <string name="common_word_image">Image</string>
     <string name="common_word_import">Import</string>
-    <string name="common_word_import_count">Import %s Item(s)</string>
+    <plurals name="common_word_import_count">
+        <item quantity="one">Import %d Item</item>
+        <item quantity="other">Import %d Items</item>
+    </plurals>
     <string name="common_word_moreblock">Moreblock</string>
     <string name="common_word_next">NEXT</string>
     <string name="common_word_no">No</string>
@@ -144,9 +147,6 @@
     <string name="common_word_kotlin_activity">Kotlin Activity</string>
     <string name="common_word_rewarded_ad">Rewarded Ad</string>
     <string name="common_word_new_color">New color</string>
-    <string name="common_word_build_settings">Build Settings</string>
-    <string name="common_word_dexer">Dexer</string>
-    <string name="common_word_java_version">Java version</string>
     <string name="common_word_oncreate">onCreate</string>
     <string name="common_word_custom_value">Custom value</string>
     <string name="common_word_dp">dp</string>

@@ -88,7 +88,6 @@
     <color name="view_property_spinner_filter">#ff000000</color>
 
     <color name="splash_bg_color">@color/md_theme_light_background</color>
-    <color name="splash_content_color">@color/md_theme_light_on_background</color>
 
     <color name="event_accent">#ffc94135</color>
     <color name="event_on_accent">#ffffffff</color>

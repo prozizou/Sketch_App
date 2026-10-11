@@ -88,7 +88,10 @@ public class LogicEditorRenderTest {
 
     private static void save(View root, String name) throws Exception {
         Bitmap bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888);
-        root.draw(new Canvas(bitmap));
+        Canvas canvas = new Canvas(bitmap);
+        // The window background the theme paints behind the layout on a device.
+        canvas.drawColor(ThemeHarness.themeColor(root.getContext(), android.R.attr.colorBackground));
+        root.draw(canvas);
         //noinspection ResultOfMethodCallIgnored
         ThemeHarness.OUTPUT_DIR.mkdirs();
         try (FileOutputStream out = new FileOutputStream(new File(ThemeHarness.OUTPUT_DIR, name + ".png"))) {

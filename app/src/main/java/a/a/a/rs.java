@@ -83,7 +83,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
             String newSpec = data.getStringExtra("block_spec");
             if (oldName != null && newName != null && newSpec != null) {
                 int uses = MoreblockEditor.apply(jC.a(sc_id), currentActivity.getJavaName(), oldName, newName, newSpec);
-                bB.a(requireContext(), getString(R.string.logic_more_block_message_edited, uses), 0).show();
+                bB.a(requireContext(), getResources().getQuantityString(R.plurals.logic_more_block_message_edited, uses, uses), 0).show();
             }
         }
         refreshEvents();

@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.MediaStore;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.CheckBox;
@@ -198,8 +197,8 @@ public class AddImageCollectionActivity extends BaseDialogActivity implements Vi
 
     private void pickImage() {
         try {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            intent.setType("image/*");
+            // setType() would clear a data URI given to the constructor: the picker only ever received the type.
+            Intent intent = new Intent(Intent.ACTION_PICK).setType("image/*");
             startActivityForResult(Intent.createChooser(intent, getString(R.string.common_word_choose)), 215);
         } catch (ActivityNotFoundException unused) {
             bB.b(this, getString(R.string.common_error_activity_not_found), bB.TOAST_NORMAL).show();
