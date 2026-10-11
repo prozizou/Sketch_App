@@ -50,6 +50,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.appcompat.widget.Toolbar;
+import androidx.appcompat.widget.TooltipCompat;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -2172,11 +2173,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         J = binding.layoutPalette;
         K = binding.areaPalette;
         openBlocksMenuButton = binding.fabTogglePalette;
-        openBlocksMenuButton.setOnClickListener(v -> e(!X));
-        binding.fabBlocksCollection.setOnClickListener(v -> {
+        // The blocks button opens the blocks collection: every bottom tab already opens the palette.
+        openBlocksMenuButton.setOnClickListener(v -> {
             e(false);
             g(!ia);
         });
+        TooltipCompat.setTooltipText(openBlocksMenuButton, getString(R.string.common_word_blocks_collection));
         logicTopMenu = binding.topMenu;
         O = binding.rightDrawer;
         setupBottomNavAndCanvasControls();
@@ -2197,7 +2199,14 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             showPaletteCategory(item.getItemId());
             return true;
         });
-        binding.bottomNav.setOnItemReselectedListener(item -> showPaletteCategory(item.getItemId()));
+        // Tapping the tab of the open palette again closes it.
+        binding.bottomNav.setOnItemReselectedListener(item -> {
+            if (X) {
+                e(false);
+            } else {
+                showPaletteCategory(item.getItemId());
+            }
+        });
         View favoriteTab = binding.bottomNav.findViewById(R.id.nav_favorite);
         if (favoriteTab != null) {
             favoriteTab.setOnLongClickListener(v -> {
