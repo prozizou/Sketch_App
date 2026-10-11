@@ -1185,10 +1185,11 @@ ACTION_VIEW
     <string name="whats_new_got_it">Got it</string>
     <string name="whats_new_menu">What\'s new</string>
     <string-array name="whats_new_entries">
-        <item>none|Edit a MoreBlock|Change a MoreBlock\'s name and parameters from its Edit button: every use of it in the screen is updated, keeping the values of unchanged parameters.</item>
-        <item>none|A roomier Logic editor|My Variables, Blocks and your favorite palette as tabs, the block search behind an icon, the blocks collection next to the palette button, and Duplicate can be tapped again for more copies.</item>
-        <item>none|Updates in the background|Keep working while an update downloads; a notification shows its progress and installs it when it is ready.</item>
-        <item>none|Fixes|No more crash when undoing in the View editor, no leftovers when switching property tabs, smooth browsing of many custom palettes, and System Settings now live in App settings.</item>
+        <item>none|Pick colors on a wheel|Every color picker opens a color wheel: drag the ball, set brightness and opacity, or type a hex code. Palettes still offers colors.xml and Material 3 colors.</item>
+        <item>none|A new Build Settings screen|Simple and Advanced tabs, Debug / Release profiles, D8 or Dx and the Java version, with a check that explains problems before you build.</item>
+        <item>none|Easier block editing|Copies made with Duplicate land on free space and copying stays on until you close it; the blocks button opens the collection, tapping the open tab closes the palette, and a MoreBlock\'s Edit shows its code.</item>
+        <item>none|Colors in the code editors|Insert or change a color from the code editors with the color picker.</item>
+        <item>none|Safer and steadier|Git push and pull always check the server\'s certificate, apps using RequestNetwork no longer trust any server, the View editor zooms with two fingers only, libraries are looked up in several places, and update downloads survive a dropped connection.</item>
     </string-array>
     <string name="whats_new_open_in_project">Open in which project?</string>
     <string name="whats_new_no_project">Create a project first to try this.</string>
