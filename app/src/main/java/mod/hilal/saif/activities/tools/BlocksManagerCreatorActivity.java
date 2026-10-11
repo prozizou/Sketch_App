@@ -371,6 +371,11 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity implemen
             autoFit = true;
             refreshPreview();
         });
+        // The block is fitted to the width the card really has: again whenever that width changes (rotation, first
+        // layout), never in a loop of its own.
+        binding.previewScroll.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right - left != oldRight - oldLeft && binding != null) applyZoom();
+        });
     }
 
     private void buildPresets() {
@@ -611,7 +616,6 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity implemen
         holderParams.height = Math.max(Math.round(72 * getResources().getDisplayMetrics().density),
                 Math.round(height * zoom) + holder.getPaddingTop() + holder.getPaddingBottom());
         holder.setLayoutParams(holderParams);
-        if (scroll != null && available <= 0) scroll.post(this::applyZoom);
     }
 
     // ---- templates
