@@ -595,7 +595,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
 
     /** Two fingers zoom the preview smoothly; one finger still drags widgets as before. */
     private void setupPinchZoom(Context context) {
-        pinchDetector = new android.view.ScaleGestureDetector(context,
+        pinchDetector = TwoFingerPinch.create(context,
                 new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
                     public boolean onScale(android.view.ScaleGestureDetector detector) {
