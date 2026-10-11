@@ -19,6 +19,7 @@ import pro.sketchware.R;
 public class CollapsibleEventLayout extends CollapsibleLayout<CollapsibleButton> {
     private CollapsibleButton delete;
     private CollapsibleButton addToCollection;
+    private CollapsibleButton edit;
 
     public CollapsibleEventLayout(Context context) {
         super(context);
@@ -40,7 +41,10 @@ public class CollapsibleEventLayout extends CollapsibleLayout<CollapsibleButton>
 
         addToCollection = CollapsibleButton.create(context, 2, R.drawable.ic_mtrl_bookmark, R.string.logic_list_menu_add_to_collection);
         addToCollection.setVisibility(GONE);
-        return List.of(reset, delete, addToCollection);
+
+        edit = CollapsibleButton.create(context, 3, R.drawable.ic_mtrl_edit, R.string.logic_list_menu_edit);
+        edit.setVisibility(GONE);
+        return List.of(edit, reset, delete, addToCollection);
     }
 
     @Override
@@ -72,5 +76,13 @@ public class CollapsibleEventLayout extends CollapsibleLayout<CollapsibleButton>
 
     public void showAddToCollection() {
         addToCollection.setVisibility(VISIBLE);
+    }
+
+    public void hideEdit() {
+        edit.setVisibility(GONE);
+    }
+
+    public void showEdit() {
+        edit.setVisibility(VISIBLE);
     }
 }
