@@ -14,6 +14,7 @@
         android:layout_marginTop="8dp"
         android:background="@drawable/palette_handle_bg" />
 
+    <!-- Hidden until the search icon is tapped, to leave the space to the blocks. -->
     <EditText
         android:id="@+id/search_header"
         android:layout_width="match_parent"
@@ -30,17 +31,41 @@
         android:maxLines="1"
         android:paddingHorizontal="12dp"
         android:singleLine="true"
-        android:textSize="13sp" />
+        android:textSize="13sp"
+        android:visibility="gone" />
 
-    <com.besome.sketch.editor.logic.PaletteSelector
-        android:id="@+id/palette_selector"
+    <LinearLayout
+        android:id="@+id/palette_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:clipToPadding="false"
-        android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="6dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+        android:layout_marginTop="2dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Opens the search field above; becomes a close button while it is open. -->
+        <ImageView
+            android:id="@+id/search_toggle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/search_header"
+            android:padding="9dp"
+            android:src="@drawable/ic_search_palette"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <com.besome.sketch.editor.logic.PaletteSelector
+            android:id="@+id/palette_selector"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:paddingStart="2dp"
+            android:paddingEnd="8dp"
+            android:paddingVertical="6dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+    </LinearLayout>
 
     <com.besome.sketch.lib.ui.CustomScrollView
         android:id="@+id/scroll"
