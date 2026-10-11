@@ -117,6 +117,7 @@ public class BuildSettingsActivity extends BaseAppCompatActivity {
         if (selected != null) selected.select();
         showTab(tab);
 
+        markCardTitlesAsHeadings(binding.getRoot());
         setUpListeners();
         setUpAdvancedRows();
         bind();
@@ -137,6 +138,17 @@ public class BuildSettingsActivity extends BaseAppCompatActivity {
         super.onSaveInstanceState(outState);
         outState.putSerializable("config", toMap(config));
         outState.putInt("tab", binding.tabs.getSelectedTabPosition());
+    }
+
+    /** Card titles are headings for screen readers, so they can jump from card to card. */
+    private void markCardTitlesAsHeadings(View view) {
+        if ("heading".equals(view.getTag())) {
+            androidx.core.view.ViewCompat.setAccessibilityHeading(view, true);
+        } else if (view instanceof android.view.ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                markCardTitlesAsHeadings(group.getChildAt(i));
+            }
+        }
     }
 
     private void showTab(int position) {
