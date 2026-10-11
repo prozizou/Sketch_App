@@ -134,9 +134,9 @@ import pro.sketchware.activities.snapshots.AutoSnapshots;
 import pro.sketchware.analysis.ProjectAnalysisActivity;
 import pro.sketchware.releases.ReleaseManagerActivity;
 import pro.sketchware.activities.snapshots.ProjectSnapshotsActivity;
+import pro.sketchware.build.settings.BuildSettingsActivity;
 import pro.sketchware.databinding.DesignBinding;
 import pro.sketchware.databinding.FileSelectorPopupSelectJavaBinding;
-import pro.sketchware.dialogs.BuildSettingsBottomSheet;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.ThemeUtils;
@@ -582,8 +582,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         bottomPopupMenu = new PopupMenu(this, btnOptions);
         bottomMenu = bottomPopupMenu.getMenu();
         bottomMenu.add(Menu.NONE, 1, Menu.NONE, "Build Settings").setOnMenuItemClickListener(item -> {
-            BuildSettingsBottomSheet sheet = BuildSettingsBottomSheet.newInstance(sc_id);
-            sheet.show(getSupportFragmentManager(), BuildSettingsBottomSheet.TAG);
+            startActivity(BuildSettingsActivity.intent(this, sc_id));
             return true;
         });
         bottomMenu.add(Menu.NONE, 2, Menu.NONE, "Clean temporary files").setVisible(false).setOnMenuItemClickListener(item -> {
