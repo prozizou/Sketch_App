@@ -4,9 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
-
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -22,14 +19,18 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.KeyStore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 /**
  * A server with a self-signed certificate stands in for someone intercepting the connection. Even when the
@@ -39,7 +40,7 @@ public class VerifiedHttpConnectionFactoryTest {
     @Rule
     public TemporaryFolder temp = new TemporaryFolder();
     private final AtomicInteger requests = new AtomicInteger();
-    private HttpsServer server;
+    private SSLServerSocket server;
     private HttpConnectionFactory previousFactory;
 
     @Before
@@ -62,19 +63,38 @@ public class VerifiedHttpConnectionFactoryTest {
         SSLContext context = SSLContext.getInstance("TLS");
         context.init(keys.getKeyManagers(), null, null);
 
-        server = HttpsServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
-        server.setHttpsConfigurator(new HttpsConfigurator(context));
-        server.createContext("/", exchange -> {
-            requests.incrementAndGet();
-            exchange.sendResponseHeaders(404, -1);
-            exchange.close();
-        });
-        server.start();
+        server = (SSLServerSocket) context.getServerSocketFactory().createServerSocket(0, 50, InetAddress.getLoopbackAddress());
+        Thread thread = new Thread(this::serve, "test-https-server");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /** Answers 404 to every request that gets past the TLS handshake, counting them. */
+    private void serve() {
+        while (!server.isClosed()) {
+            try (SSLSocket socket = (SSLSocket) server.accept()) {
+                socket.setSoTimeout(5000);
+                try {
+                    socket.startHandshake();
+                    InputStream in = socket.getInputStream();
+                    if (in.read() < 0) continue;
+                    requests.incrementAndGet();
+                    OutputStream out = socket.getOutputStream();
+                    out.write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                            .getBytes(StandardCharsets.US_ASCII));
+                    out.flush();
+                } catch (java.io.IOException handshakeOrReadFailed) {
+                    // The client refused the certificate
+                }
+            } catch (java.io.IOException closed) {
+                return;
+            }
+        }
     }
 
     @After
-    public void stopServer() {
-        server.stop(0);
+    public void stopServer() throws Exception {
+        server.close();
         HttpTransport.setConnectionFactory(previousFactory);
     }
 
@@ -85,7 +105,7 @@ public class VerifiedHttpConnectionFactoryTest {
         try (ProjectGit git = ProjectGit.init(gitDir, workTree)) {
             Files.writeString(new File(workTree, "file").toPath(), "content");
             git.commitAll("first", "Ada", "ada@example.com");
-            git.setRemoteUrl("https://127.0.0.1:" + server.getAddress().getPort() + "/project.git");
+            git.setRemoteUrl("https://127.0.0.1:" + server.getLocalPort() + "/project.git");
         }
         try (var repository = new FileRepositoryBuilder().setGitDir(gitDir).setMustExist(true).build()) {
             StoredConfig config = repository.getConfig();
