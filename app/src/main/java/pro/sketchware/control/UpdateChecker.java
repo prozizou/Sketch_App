@@ -1,5 +1,6 @@
 package pro.sketchware.control;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -24,15 +25,9 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import okhttp3.OkHttpClient;
 
 import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.BuildConfig;
@@ -199,6 +194,9 @@ public class UpdateChecker {
                 .setView(content)
                 .setCancelable(!mandatory)
                 .setPositiveButton("Update now", null);
+        if (!apkUrl.isEmpty()) {
+            builder.setNeutralButton("In background", null);
+        }
         if (!mandatory) {
             builder.setNegativeButton("Later", null);
         }
@@ -214,6 +212,47 @@ public class UpdateChecker {
         // The positive button never dismisses the dialog: for a mandatory update the app stays
         // blocked until the newer build (with a higher versionCode) is installed.
         android.widget.Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+
+        // Starts (or re-attaches to) the service download and mirrors its progress in this dialog.
+        Runnable startDownload = () -> {
+            File apk = UpdateDownloadService.updateFile(activity);
+            button.setEnabled(false);
+            progress.setIndeterminate(UpdateDownloadService.lastPercent() < 0);
+            if (UpdateDownloadService.lastPercent() >= 0) {
+                progress.setProgressCompat(UpdateDownloadService.lastPercent(), false);
+            }
+            progress.setVisibility(View.VISIBLE);
+            status.setVisibility(View.VISIBLE);
+            status.setText(UpdateDownloadService.lastText());
+            UpdateDownloadService.setListener(new UpdateDownloadService.Listener() {
+                @Override
+                public void onProgress(int percent, String text) {
+                    if (percent >= 0) {
+                        progress.setIndeterminate(false);
+                        progress.setProgressCompat(percent, true);
+                    }
+                    status.setText(text);
+                }
+
+                @Override
+                public void onDone(String error) {
+                    UpdateDownloadService.setListener(null);
+                    button.setEnabled(true);
+                    progress.setIndeterminate(false);
+                    if (error == null) {
+                        button.setTag(Boolean.TRUE);
+                        button.setText("Install");
+                        progress.setProgressCompat(100, true);
+                        status.setText("Download complete");
+                        install(activity, apk);
+                    } else {
+                        button.setText("Retry");
+                        status.setText("Download failed: " + error);
+                    }
+                }
+            });
+            UpdateDownloadService.start(activity, apkUrl, sha256, sameVersionAllowed);
+        };
         button.setOnClickListener(v -> {
             if (apkUrl.isEmpty()) {
                 openUrl(activity, url);
@@ -231,129 +270,48 @@ public class UpdateChecker {
                 openUrl(activity, url);
                 return;
             }
-            File apk = new File(updatesDir(activity), "update.apk");
+            File apk = UpdateDownloadService.updateFile(activity);
             if (apk.isFile() && button.getTag() == Boolean.TRUE) {
                 install(activity, apk);
                 return;
             }
-            button.setEnabled(false);
-            progress.setIndeterminate(true);
-            progress.setVisibility(View.VISIBLE);
-            status.setVisibility(View.VISIBLE);
-            status.setText("Starting download\u2026");
-            download(activity, apkUrl, sha256, apk, sameVersionAllowed, (percent, text) -> {
-                if (percent >= 0) {
-                    progress.setIndeterminate(false);
-                    progress.setProgressCompat(percent, true);
+            startDownload.run();
+        });
+
+        android.widget.Button background = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+        if (background != null) {
+            background.setOnClickListener(v -> {
+                if (!UpdateDownloadService.isRunning()) {
+                    if (!UpdatePolicy.isSecureUrl(apkUrl) || !UpdatePolicy.isValidSha256(sha256)) {
+                        // Can't be installed in-app: the positive button explains why and opens the page.
+                        button.performClick();
+                        return;
+                    }
+                    startDownload.run();
                 }
-                status.setText(text);
-            }, error -> {
-                button.setEnabled(true);
-                if (error == null) {
-                    button.setTag(Boolean.TRUE);
-                    button.setText("Install");
-                    progress.setIndeterminate(false);
-                    progress.setProgressCompat(100, true);
-                    status.setText("Download complete");
-                    install(activity, apk);
-                } else {
-                    button.setText("Retry");
-                    progress.setIndeterminate(false);
-                    status.setText("Download failed: " + error);
-                }
+                // The download carries on in the service, with a notification; the user can keep working.
+                UpdateDownloadService.setListener(null);
+                dialog.dismiss();
+                SketchwareUtil.toast("Downloading the update in the background");
             });
-        });
-    }
+        }
+        dialog.setOnDismissListener(d -> UpdateDownloadService.setListener(null));
 
-    private interface ProgressListener {
-        void onProgress(int percent, String text);
-    }
-
-    private interface DoneListener {
-        /** @param error null on success */
-        void onDone(String error);
-    }
-
-    private File updatesDir(AppCompatActivity activity) {
-        File dir = new File(activity.getExternalFilesDir(null), "updates");
-        //noinspection ResultOfMethodCallIgnored
-        dir.mkdirs();
-        return dir;
-    }
-
-    /**
-     * Downloads the APK into {@code target}. The bytes received are kept in {@code target.part}: when the
-     * connection drops, the download is retried on its own a few times, and every attempt (including the user's
-     * "Retry") continues where the previous one stopped instead of starting over.
-     */
-    private void download(AppCompatActivity activity, String apkUrl, String expectedSha256, File target,
-                          boolean sameVersionAllowed, ProgressListener progressListener, DoneListener doneListener) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            File partial = partialFile(target);
-            File partialSha = partialShaFile(target);
-            String error = null;
-            // No https -> http (or http -> https) redirects: a downgrade would defeat the https-only rule.
-            OkHttpClient client = new OkHttpClient.Builder().followSslRedirects(false).build();
-            try {
-                new ResumableDownloader(client).download(apkUrl, expectedSha256, partial, partialSha,
-                        new ResumableDownloader.Listener() {
-                            @Override
-                            public void onProgress(int percent, String text) {
-                                activity.runOnUiThread(() -> progressListener.onProgress(percent, text));
-                            }
-
-                            @Override
-                            public boolean isCancelled() {
-                                return activity.isFinishing() || activity.isDestroyed();
-                            }
-                        });
-                String rejection = verifyApk(activity, partial, sameVersionAllowed);
-                if (rejection != null) {
-                    ResumableDownloader.deletePartial(partial, partialSha);
-                    throw new SecurityException(rejection);
-                }
-                if (target.exists() && !target.delete()) {
-                    throw new IllegalStateException("Cannot replace previous download");
-                }
-                if (!partial.renameTo(target)) {
-                    throw new IllegalStateException("Cannot save the downloaded file");
-                }
-                //noinspection ResultOfMethodCallIgnored
-                partialSha.delete();
-            } catch (IOException e) {
-                // The kept bytes stay: "Retry" continues from there.
-                error = (e.getMessage() != null ? e.getMessage() : "connection lost")
-                        + (partial.length() > 0 ? String.format(Locale.US,
-                        ". Tap Retry to continue from %.1f MB.", partial.length() / 1048576f) : "");
-            } catch (Exception e) {
-                error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                if (e instanceof SecurityException) {
-                    error = "update rejected: " + error;
-                }
-            }
-            String result = error;
-            activity.runOnUiThread(() -> doneListener.onDone(result));
-            executor.shutdown();
-        });
-    }
-
-    private static File partialFile(File target) {
-        return new File(target.getPath() + ".part");
-    }
-
-    private static File partialShaFile(File target) {
-        return new File(target.getPath() + ".part.sha256");
+        if (UpdateDownloadService.isRunning()) {
+            // Reopened while a background download is still going: follow it again.
+            startDownload.run();
+        }
     }
 
     /** @return whether an earlier download of this APK left bytes to continue from. */
     private boolean hasResumableDownload(AppCompatActivity activity, String sha256) {
-        File target = new File(updatesDir(activity), "update.apk");
-        return ResumableDownloader.resumableBytes(partialFile(target), partialShaFile(target), sha256) > 0;
+        File target = UpdateDownloadService.updateFile(activity);
+        return ResumableDownloader.resumableBytes(UpdateDownloadService.partialFile(target),
+                UpdateDownloadService.partialShaFile(target), sha256) > 0;
     }
 
     /** @return null when the downloaded APK may be installed, otherwise the reason it was rejected. */
-    private String verifyApk(AppCompatActivity activity, File apk, boolean sameVersionAllowed) {
+    static String verifyApk(Context activity, File apk, boolean sameVersionAllowed) {
         PackageManager pm = activity.getPackageManager();
         int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
