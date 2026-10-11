@@ -160,11 +160,12 @@
     </style>
     <!-- Build settings screen -->
     <style name="BuildSettingsCardTitle">
+        <!-- Found by BuildSettingsActivity to mark the titles as accessibility headings. -->
+        <item name="android:tag">heading</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textAppearance">?attr/textAppearanceTitleMedium</item>
         <item name="android:textColor">?attr/colorPrimary</item>
-        <item name="android:accessibilityHeading">true</item>
     </style>
 
     <style name="BuildSettingsCardBody">
