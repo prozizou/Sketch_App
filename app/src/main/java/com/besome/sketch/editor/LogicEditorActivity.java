@@ -102,6 +102,7 @@ import a.a.a.Ts;
 import a.a.a.Us;
 import a.a.a.Vs;
 import a.a.a.ZB;
+import a.a.a.bB;
 import a.a.a.bC;
 import a.a.a.eC;
 import a.a.a.jC;
@@ -291,7 +292,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         }
     }
 
-    /** Brings the block with that id into view if the canvas allows it, and makes it blink a few times. */
+    /**
+     * Scrolls the canvas to the block with that id (zooming in if it is too small to read) and then makes it blink,
+     * so a block found by the project analysis or the logic search is easy to spot even when it was off screen.
+     */
     private void flashBlock(String blockId) {
         View block;
         try {
@@ -299,12 +303,19 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         } catch (NumberFormatException e) {
             return;
         }
-        if (block == null) return;
-        block.requestRectangleOnScreen(new android.graphics.Rect(0, 0, block.getWidth(), block.getHeight()), false);
-        android.animation.ObjectAnimator blink = android.animation.ObjectAnimator.ofFloat(block, View.ALPHA, 1f, 0.2f, 1f);
-        blink.setDuration(500);
-        blink.setRepeatCount(2);
-        blink.start();
+        if (block == null) {
+            bB.b(this, getString(R.string.logic_editor_message_highlight_block_missing), Toast.LENGTH_LONG).show();
+            return;
+        }
+        Runnable blink = () -> {
+            ObjectAnimator animator = ObjectAnimator.ofFloat(block, View.ALPHA, 1f, 0.15f, 1f);
+            animator.setDuration(450);
+            animator.setRepeatCount(3);
+            animator.start();
+        };
+        if (!viewLogicEditor.revealBlock(block, 0.75f, blink)) {
+            blink.run();
+        }
     }
 
     private void redo() {
