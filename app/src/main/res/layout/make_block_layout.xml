@@ -29,6 +29,25 @@
         </LinearLayout>
     </HorizontalScrollView>
 
+    <!-- The Java the MoreBlock generates, kept up to date while it is edited. -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/palette_search_bg"
+        android:scrollbars="none">
+
+        <TextView
+            android:id="@+id/code_preview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:padding="10dp"
+            android:textIsSelectable="true"
+            android:textSize="12sp" />
+    </HorizontalScrollView>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"

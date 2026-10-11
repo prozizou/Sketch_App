@@ -104,6 +104,7 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
         LinearLayout makeBlock = findViewById(R.id.makeblock_view);
         makeBlock.addView(this.makeBlock);
         if (editName != null && editSpec != null) {
+            this.makeBlock.setEditedMoreBlock(editName, editSpec, getIntent().getIntExtra("edit_uses", 0));
             this.makeBlock.loadMoreBlock(editName, editSpec);
         }
     }
