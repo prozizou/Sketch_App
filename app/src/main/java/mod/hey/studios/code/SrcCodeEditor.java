@@ -63,6 +63,7 @@ import mod.jbk.code.completion.SketchJavaLanguage;
 import mod.jbk.code.diagnostics.LiveDiagnostics;
 import pro.sketchware.R;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
+import pro.sketchware.code.CodeColorPicker;
 import pro.sketchware.databinding.CodeEditorHsBinding;
 import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.FileUtil;
@@ -423,6 +424,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Undo").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_undo)).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Redo").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_redo)).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Save").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_save)).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Insert color").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_palette)).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
             if (isFileInLayoutFolder() && getIntent().hasExtra("sc_id")) {
                 toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Layout Preview");
             }
@@ -451,6 +453,11 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
 
                     case "Save":
                         save();
+                        break;
+
+                    case "Insert color":
+                        CodeColorPicker.show(this, binding.editor, title.endsWith(".java") || title.endsWith(".kt"),
+                                getIntent().getStringExtra("sc_id"));
                         break;
 
                     case "Pretty print":

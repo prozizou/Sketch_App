@@ -26,6 +26,7 @@ import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
+import pro.sketchware.code.CodeColorPicker;
 import pro.sketchware.databinding.ViewCodeEditorBinding;
 import pro.sketchware.managers.inject.InjectRootLayoutManager;
 import pro.sketchware.tools.ViewBeanParser;
@@ -146,6 +147,9 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
                 && projectLibrary.isEnabled()) {
             menu.add(Menu.NONE, 3, Menu.NONE, "Edit AppCompat");
         }
+        menu.add(Menu.NONE, 6, Menu.NONE, "Insert color")
+                .setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_palette))
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         menu.add(Menu.NONE, 4, Menu.NONE, "Reload color schemes");
         menu.add(Menu.NONE, 5, Menu.NONE, "Layout Preview");
         return true;
@@ -176,6 +180,10 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
             }
             case 5 -> {
                 toLayoutPreview();
+                return true;
+            }
+            case 6 -> {
+                CodeColorPicker.show(this, editor, false, sc_id);
                 return true;
             }
             default -> {
