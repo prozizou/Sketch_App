@@ -1236,7 +1236,7 @@ ACTION_VIEW
     <string name="build_settings_android_jar">Custom android.jar</string>
     <string name="build_settings_android_jar_help">Empty: the built-in android.jar.</string>
     <string name="build_settings_classpath">Extra classpath</string>
-    <string name="build_settings_classpath_help">Jars or class folders, separated by ':'.</string>
+    <string name="build_settings_classpath_help">Jars or class folders, separated by \':\'.</string>
     <string name="build_settings_pick_file">Pick a file</string>
     <string name="build_settings_http_legacy">Include http-legacy-28.dex (Apache HTTP)</string>
     <string name="build_settings_output">Output &amp; tools</string>
@@ -1248,7 +1248,7 @@ ACTION_VIEW
     <string name="build_settings_restore_confirm">Put the build settings back to what an untouched project uses (Dx, Java 7, built-in android.jar, no extra classpath)? Nothing is saved until you tap Save.</string>
     <string name="build_settings_compat">Compatibility Check</string>
     <string name="build_settings_compat_ok">No problem found: these settings can build this project.</string>
-    <string name="build_settings_errors_title">These settings can't build</string>
+    <string name="build_settings_errors_title">These settings can\'t build</string>
     <string name="build_settings_saved">Build settings saved</string>
     <string name="build_settings_saved_warnings">Build settings saved, with %1$d warning(s)</string>
     <string name="build_settings_discard">Discard your changes?</string>
