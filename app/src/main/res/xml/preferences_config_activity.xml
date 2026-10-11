@@ -70,6 +70,14 @@
                 app:key="auto-save-mode"
                 app:title="Auto-save method"
                 app:useSimpleSummaryProvider="true" />
+
+            <!-- Was in the separate "System Settings" screen; still stored in the P12 preferences. -->
+            <SwitchPreferenceCompat
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                app:key="P12I2"
+                app:summary="@string/system_settings_description_automatically_save"
+                app:title="@string/system_settings_title_automatically_save" />
         </PreferenceCategory>
 
         <PreferenceCategory
@@ -90,6 +98,14 @@
                 app:key="ff-block-debugger"
                 app:summary="Step through an event's blocks in the Logic editor and see the value of every variable."
                 app:title="Block debugger" />
+
+            <!-- Was in the separate "System Settings" screen; still stored in the P12 preferences. -->
+            <SwitchPreferenceCompat
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="P12I0"
+                app:summary="@string/system_settings_description_setting_vibration"
+                app:title="@string/system_settings_title_setting_vibration" />
         </PreferenceCategory>
     </PreferenceScreen>
 
