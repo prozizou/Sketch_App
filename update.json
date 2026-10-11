@@ -1,9 +1,9 @@
 {
-  "versionCode": 155,
-  "versionName": "v7.2.2",
+  "versionCode": 156,
+  "versionName": "v7.2.3",
   "mandatory": true,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/v7.2.2",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/v7.2.2/NewWorldSketchware.apk",
-  "sha256": "0ba06a368537130688555d4e484bfea065238d0f62dd9b2f087016e776506a60",
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/v7.2.3",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/v7.2.3/NewWorldSketchware.apk",
+  "sha256": "563d5b5670dd4939d058ab81ddb2b1c27b578c6b3c0419cc1de68c0cd1ca0c89",
   "notes": "A new version of NWS is available. Please update to continue."
 }
