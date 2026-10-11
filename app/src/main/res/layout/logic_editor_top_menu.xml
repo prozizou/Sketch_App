@@ -144,4 +144,17 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Shown while copies of a block are being made: ends that mode. -->
+    <ImageButton
+        android:id="@+id/btn_close_copies"
+        android:layout_width="40dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/logic_copies_close"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_mtrl_close"
+        android:visibility="gone"
+        app:tint="?attr/colorOnSurfaceVariant" />
+
 </LinearLayout>
