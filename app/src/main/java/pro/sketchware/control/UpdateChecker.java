@@ -235,7 +235,14 @@ public class UpdateChecker {
                 }
 
                 @Override
+                public boolean isWatching() {
+                    return dialog.isShowing() && activity.getLifecycle().getCurrentState()
+                            .isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED);
+                }
+
+                @Override
                 public void onDone(String error) {
+                    boolean watching = isWatching();
                     UpdateDownloadService.setListener(null);
                     button.setEnabled(true);
                     progress.setIndeterminate(false);
@@ -244,7 +251,8 @@ public class UpdateChecker {
                         button.setText("Install");
                         progress.setProgressCompat(100, true);
                         status.setText("Download complete");
-                        install(activity, apk);
+                        // In the background the installer can't open: the notification offers it instead.
+                        if (watching) install(activity, apk);
                     } else {
                         button.setText("Retry");
                         status.setText("Download failed: " + error);

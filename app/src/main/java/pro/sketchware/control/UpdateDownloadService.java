@@ -8,9 +8,11 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -45,7 +47,19 @@ public class UpdateDownloadService extends Service {
 
         /** @param error null on success; the verified APK is then at {@link #updateFile} */
         void onDone(@Nullable String error);
+
+        /**
+         * @return whether the user is looking at it now. When not (the app went to the background with the dialog
+         * open), the result is also shown as a notification, or it would go unnoticed.
+         */
+        default boolean isWatching() {
+            return true;
+        }
     }
+
+    /** A dropped connection is waited out this many times, a little apart, before the download gives up. */
+    private static final int NETWORK_WAIT_ROUNDS = 20;
+    private static final long NETWORK_WAIT_MILLIS = 15_000;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static volatile boolean running;
@@ -107,6 +121,11 @@ public class UpdateDownloadService extends Service {
         context.startForegroundService(intent);
     }
 
+    @Nullable
+    private Thread worker;
+    @Nullable
+    private Intent startIntent;
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_CANCEL.equals(intent.getAction())) {
@@ -120,11 +139,21 @@ public class UpdateDownloadService extends Service {
         }
         createChannel();
         startForeground(PROGRESS_ID, progressNotification(-1, lastText));
+        if (worker != null && worker.isAlive()) {
+            return START_REDELIVER_INTENT;
+        }
+        // Also set here: after the system restarted the service in a new process, start() was never called.
+        running = true;
+        cancelled = false;
+        startIntent = new Intent(intent);
         String apkUrl = intent.getStringExtra(EXTRA_APK_URL);
         String sha256 = intent.getStringExtra(EXTRA_SHA256);
         boolean sameVersionAllowed = intent.getBooleanExtra(EXTRA_SAME_VERSION, false);
-        new Thread(() -> run(apkUrl, sha256, sameVersionAllowed), "update-download").start();
-        return START_NOT_STICKY;
+        worker = new Thread(() -> run(apkUrl, sha256, sameVersionAllowed), "update-download");
+        worker.start();
+        // If the system kills the app mid-download (memory, battery savers), it restarts the service with the same
+        // request, and the download continues from the bytes already saved.
+        return START_REDELIVER_INTENT;
     }
 
     private void run(String apkUrl, String sha256, boolean sameVersionAllowed) {
@@ -134,31 +163,16 @@ public class UpdateDownloadService extends Service {
         String error = null;
         // No https -> http (or http -> https) redirects: a downgrade would defeat the https-only rule.
         OkHttpClient client = new OkHttpClient.Builder().followSslRedirects(false).build();
+        // Keep the CPU and Wi-Fi awake with the screen off, or the download stalls and gives up.
+        PowerManager.WakeLock wakeLock = getSystemService(PowerManager.class)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "NWS:update-download");
+        WifiManager wifiManager = getApplicationContext().getSystemService(WifiManager.class);
+        WifiManager.WifiLock wifiLock = wifiManager == null ? null
+                : wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "NWS:update-download");
+        wakeLock.acquire(60 * 60 * 1000L);
+        if (wifiLock != null) wifiLock.acquire();
         try {
-            new ResumableDownloader(client).download(apkUrl, sha256, partial, partialSha,
-                    new ResumableDownloader.Listener() {
-                        private long lastNotified;
-
-                        @Override
-                        public void onProgress(int percent, String text) {
-                            lastPercent = percent;
-                            lastText = text;
-                            MAIN.post(() -> {
-                                if (listener != null) listener.onProgress(percent, text);
-                            });
-                            long now = System.currentTimeMillis();
-                            if (now - lastNotified > 700) {
-                                lastNotified = now;
-                                getSystemService(NotificationManager.class)
-                                        .notify(PROGRESS_ID, progressNotification(percent, text));
-                            }
-                        }
-
-                        @Override
-                        public boolean isCancelled() {
-                            return cancelled;
-                        }
-                    });
+            downloadWaitingOutNetworkLoss(client, apkUrl, sha256, partial, partialSha);
             if (cancelled) {
                 throw new IOException("download cancelled");
             }
@@ -176,15 +190,18 @@ public class UpdateDownloadService extends Service {
             //noinspection ResultOfMethodCallIgnored
             partialSha.delete();
         } catch (IOException e) {
-            // The kept bytes stay: "Retry" continues from there.
+            // The kept bytes stay: "Continue" continues from there.
             error = (e.getMessage() != null ? e.getMessage() : "connection lost")
                     + (partial.length() > 0 ? String.format(Locale.US,
-                    ". Tap Retry to continue from %.1f MB.", partial.length() / 1048576f) : "");
+                    ". Tap Continue to resume from %.1f MB.", partial.length() / 1048576f) : "");
         } catch (Exception e) {
             error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             if (e instanceof SecurityException) {
                 error = "update rejected: " + error;
             }
+        } finally {
+            if (wifiLock != null && wifiLock.isHeld()) wifiLock.release();
+            if (wakeLock.isHeld()) wakeLock.release();
         }
         String result = error;
         running = false;
@@ -192,13 +209,59 @@ public class UpdateDownloadService extends Service {
             Listener current = listener;
             if (current != null) {
                 current.onDone(result);
-            } else {
-                // Nobody is watching: tell the user through a notification.
+            }
+            if (current == null || !current.isWatching()) {
+                // Nobody is looking at the dialog: tell the user through a notification.
                 showResultNotification(result);
             }
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
         });
+    }
+
+    /**
+     * Downloads, and when the connection drops for longer than the downloader's own quick retries (a phone going
+     * to sleep, a network switch), waits for it to come back and continues from the bytes already saved.
+     */
+    private void downloadWaitingOutNetworkLoss(OkHttpClient client, String apkUrl, String sha256, File partial,
+                                               File partialSha) throws Exception {
+        ResumableDownloader.Listener progress = new ResumableDownloader.Listener() {
+            private long lastNotified;
+
+            @Override
+            public void onProgress(int percent, String text) {
+                lastPercent = percent;
+                lastText = text;
+                MAIN.post(() -> {
+                    if (listener != null) listener.onProgress(percent, text);
+                });
+                long now = System.currentTimeMillis();
+                if (now - lastNotified > 700) {
+                    lastNotified = now;
+                    // Posting again also brings the notification back if it was swiped away.
+                    getSystemService(NotificationManager.class)
+                            .notify(PROGRESS_ID, progressNotification(percent, text));
+                }
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return cancelled;
+            }
+        };
+        for (int round = 0; ; round++) {
+            try {
+                new ResumableDownloader(client).download(apkUrl, sha256, partial, partialSha, progress);
+                return;
+            } catch (IOException e) {
+                if (cancelled || round >= NETWORK_WAIT_ROUNDS) {
+                    throw e;
+                }
+                progress.onProgress(-1, String.format(Locale.US,
+                        "Waiting for the connection (%.1f MB kept)…", partial.length() / 1048576f));
+                Thread.sleep(NETWORK_WAIT_MILLIS);
+            }
+        }
     }
 
     private void showResultNotification(@Nullable String error) {
@@ -223,6 +286,12 @@ public class UpdateDownloadService extends Service {
             builder.setContentTitle("Update download failed")
                     .setContentText(error)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(error));
+            if (startIntent != null && !error.startsWith("update rejected")) {
+                // Continues from the bytes already saved, without opening the app.
+                builder.addAction(R.drawable.ic_mtrl_download, "Continue",
+                        PendingIntent.getForegroundService(this, 2, new Intent(startIntent),
+                                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+            }
             Intent open = getPackageManager().getLaunchIntentForPackage(getPackageName());
             if (open != null) {
                 builder.setContentIntent(PendingIntent.getActivity(this, 0, open,
