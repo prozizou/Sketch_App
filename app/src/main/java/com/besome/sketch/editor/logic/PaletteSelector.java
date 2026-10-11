@@ -14,7 +14,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -68,7 +67,13 @@ public class PaletteSelector extends RecyclerView {
             0, 1, 2, 3, 4, 5, 6, 7, -1, 8
     };
 
+    /** Id of the Variable palette, the only one shown in "My Variables" and the one left out of "Blocks". */
+    public static final int VARIABLES_PALETTE = 0;
+
     private String searchValue = "";
+    private boolean variablesOnly;
+    /** Last palette picked in "Blocks", shown again when coming back to it. */
+    private int lastBlocksPalette = Integer.MIN_VALUE;
     private PaletteSelectorAdapter paletteAdapter;
     private List<paletteSelectorRecord> allPalettes;
 
@@ -78,7 +83,10 @@ public class PaletteSelector extends RecyclerView {
     }
 
     private void initialize(Vs onBlockCategorySelectListener) {
-        paletteAdapter = new PaletteSelectorAdapter(this, onBlockCategorySelectListener);
+        paletteAdapter = new PaletteSelectorAdapter(this, (id, color) -> {
+            if (!variablesOnly) lastBlocksPalette = id;
+            onBlockCategorySelectListener.a(id, color);
+        });
         setAdapter(paletteAdapter);
 
         Executors.newSingleThreadExecutor().execute(() ->
@@ -88,33 +96,61 @@ public class PaletteSelector extends RecyclerView {
 
     private void initializePalettes() {
         allPalettes = new ArrayList<>();
-
-        for (int i = 0; i < MainCategoriesNames.length; i++) {
-            allPalettes.add(new paletteSelectorRecord(MainCategoriesIds[i], MainCategoriesNames[i], MainCategoriesColors[i]));
+        for (paletteSelectorRecord palette : buildPalettes()) {
+            if ((palette.index() == VARIABLES_PALETTE) == variablesOnly && matchesSearch(palette.text())) {
+                allPalettes.add(palette);
+            }
         }
-
-        new mod.agus.jcoderz.editor.manage.block.palette.PaletteSelector()
-                .getPaletteSelector()
-                .forEach(this::addDynamicPalette);
 
         paletteAdapter.setPalettes(allPalettes);
 
         if (paletteAdapter.getItemCount() > 0) {
-            paletteAdapter.selectPosition(0);
+            if (!variablesOnly && allPalettes.stream().anyMatch(p -> p.index() == lastBlocksPalette)) {
+                paletteAdapter.selectPaletteById(lastBlocksPalette);
+            } else {
+                paletteAdapter.selectPosition(0);
+            }
+        }
+    }
+
+    /** @return every palette, system ones first and then the user's own, ignoring the search and the mode. */
+    private List<paletteSelectorRecord> buildPalettes() {
+        List<paletteSelectorRecord> palettes = new ArrayList<>();
+        for (int i = 0; i < MainCategoriesNames.length; i++) {
+            palettes.add(new paletteSelectorRecord(MainCategoriesIds[i], MainCategoriesNames[i], MainCategoriesColors[i]));
+        }
+        new mod.agus.jcoderz.editor.manage.block.palette.PaletteSelector()
+                .getPaletteSelector()
+                .forEach(paletteMap -> {
+                    String text = Objects.requireNonNull(paletteMap.get("text")).toString();
+                    int index = Integer.parseInt(Objects.requireNonNull(paletteMap.get("index")).toString());
+                    int color = Integer.parseInt(Objects.requireNonNull(paletteMap.get("color")).toString());
+                    palettes.add(new paletteSelectorRecord(index, text, color));
+                });
+        return palettes;
+    }
+
+    /** @return the palettes of "Blocks" (all but the Variable one), e.g. to let the user pick a favorite. */
+    public List<paletteSelectorRecord> getBlockPalettes() {
+        List<paletteSelectorRecord> palettes = buildPalettes();
+        palettes.removeIf(p -> p.index() == VARIABLES_PALETTE);
+        return palettes;
+    }
+
+    /**
+     * "My Variables" shows only the Variable palette; "Blocks" shows every other palette (system and the user's own).
+     */
+    public void setVariablesOnly(boolean variablesOnly) {
+        if (this.variablesOnly == variablesOnly) return;
+        this.variablesOnly = variablesOnly;
+        if (allPalettes != null) {
+            initializePalettes();
         }
     }
 
     public void performClickPalette(int tag) {
+        if (!variablesOnly) lastBlocksPalette = tag;
         paletteAdapter.selectPaletteById(tag);
-    }
-
-    private void addDynamicPalette(HashMap<String, Object> paletteMap) {
-        String text = Objects.requireNonNull(paletteMap.get("text")).toString();
-        if (matchesSearch(text)) {
-            int index = Integer.parseInt(Objects.requireNonNull(paletteMap.get("index")).toString());
-            int color = Integer.parseInt(Objects.requireNonNull(paletteMap.get("color")).toString());
-            allPalettes.add(new paletteSelectorRecord(index, text, color));
-        }
     }
 
     public boolean matchesSearch(String title) {

@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -82,6 +83,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -184,6 +186,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private ViewLogicEditor viewLogicEditor;
     private ViewDummy dummy;
     private PaletteSelector paletteSelector;
+    private PaletteBlockBinding paletteBlockBinding;
     private final ActivityResultLauncher<Intent> openResourcesEditor = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             paletteSelector.performClickPalette(-1);
@@ -2148,7 +2151,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         String eventText = getIntent().getStringExtra("event_text");
         toolbar.setTitle(id.equals("_fab") ? "fab" : ReturnMoreblockManager.getMbName(id));
         toolbar.setSubtitle(eventText);
-        PaletteBlockBinding paletteBlockBinding = PaletteBlockBinding.bind(binding.paletteBlock);
+        paletteBlockBinding = PaletteBlockBinding.bind(binding.paletteBlock);
         paletteSelector = paletteBlockBinding.paletteSelector;
         paletteSelector.setOnBlockCategorySelectListener(this);
         m = binding.paletteBlock;
@@ -2171,11 +2174,21 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     private void setupBottomNavAndCanvasControls() {
+        // Start on "Blocks", the tab used most; set before the listeners so it doesn't open the palette.
+        binding.bottomNav.setSelectedItemId(R.id.nav_blocks);
+        updateFavoriteTabTitle();
         binding.bottomNav.setOnItemSelectedListener(item -> {
             showPaletteCategory(item.getItemId());
             return true;
         });
         binding.bottomNav.setOnItemReselectedListener(item -> showPaletteCategory(item.getItemId()));
+        View favoriteTab = binding.bottomNav.findViewById(R.id.nav_favorite);
+        if (favoriteTab != null) {
+            favoriteTab.setOnLongClickListener(v -> {
+                showFavoritePalettePicker();
+                return true;
+            });
+        }
         viewLogicEditor.setOnZoomChangedListener(zoom -> binding.tvZoom.setText(Math.round(zoom * 100) + "%"));
         binding.btnCanvasFit.setOnClickListener(v -> viewLogicEditor.fitToContent());
         float density = wB.a(this, 1.0f);
@@ -2195,11 +2208,62 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             setViewMode(LogicViewMode.SPLIT);
         }
         e(true);
-        if (navItemId == R.id.nav_variables) {
-            paletteSelector.performClickPalette(0);
-        } else if (navItemId == R.id.nav_components) {
-            paletteSelector.performClickPalette(7);
+        boolean variables = navItemId == R.id.nav_variables;
+        // "My Variables" is the Variable palette alone: no category chips and no category search.
+        paletteSelector.setVariablesOnly(variables);
+        paletteBlockBinding.paletteSelector.setVisibility(variables ? View.GONE : View.VISIBLE);
+        paletteBlockBinding.searchHeader.setVisibility(variables ? View.GONE : View.VISIBLE);
+        if (variables) {
+            paletteSelector.performClickPalette(PaletteSelector.VARIABLES_PALETTE);
+        } else if (navItemId == R.id.nav_favorite) {
+            SharedPreferences prefs = getSharedPreferences("logic_editor_ui", MODE_PRIVATE);
+            if (!prefs.getBoolean(KEY_FAVORITE_HINT_SHOWN, false)) {
+                prefs.edit().putBoolean(KEY_FAVORITE_HINT_SHOWN, true).apply();
+                bB.a(this, getString(R.string.logic_nav_favorite_hint), Toast.LENGTH_LONG).show();
+            }
+            paletteSelector.performClickPalette(prefs.getInt(KEY_FAVORITE_PALETTE, DEFAULT_FAVORITE_PALETTE));
         }
+    }
+
+    private static final String KEY_FAVORITE_PALETTE = "favorite_palette";
+    private static final String KEY_FAVORITE_PALETTE_NAME = "favorite_palette_name";
+    private static final String KEY_FAVORITE_HINT_SHOWN = "favorite_palette_hint_shown";
+    /** Component functions, what the third tab opened before it could be chosen. */
+    private static final int DEFAULT_FAVORITE_PALETTE = 7;
+
+    /** The third tab is named after the favorite palette ("Components" until the user picks another). */
+    private void updateFavoriteTabTitle() {
+        String name = getSharedPreferences("logic_editor_ui", MODE_PRIVATE)
+                .getString(KEY_FAVORITE_PALETTE_NAME, getString(R.string.logic_nav_components));
+        binding.bottomNav.getMenu().findItem(R.id.nav_favorite).setTitle(name);
+    }
+
+    private void showFavoritePalettePicker() {
+        List<PaletteSelector.paletteSelectorRecord> palettes = paletteSelector.getBlockPalettes();
+        SharedPreferences prefs = getSharedPreferences("logic_editor_ui", MODE_PRIVATE);
+        int current = prefs.getInt(KEY_FAVORITE_PALETTE, DEFAULT_FAVORITE_PALETTE);
+        String[] names = new String[palettes.size()];
+        int checked = -1;
+        for (int i = 0; i < palettes.size(); i++) {
+            names[i] = palettes.get(i).text();
+            if (palettes.get(i).index() == current) checked = i;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.logic_nav_favorite_choose)
+                .setSingleChoiceItems(names, checked, (dialog, which) -> {
+                    PaletteSelector.paletteSelectorRecord palette = palettes.get(which);
+                    prefs.edit()
+                            .putInt(KEY_FAVORITE_PALETTE, palette.index())
+                            .putString(KEY_FAVORITE_PALETTE_NAME, palette.text())
+                            .putBoolean(KEY_FAVORITE_HINT_SHOWN, true)
+                            .apply();
+                    updateFavoriteTabTitle();
+                    dialog.dismiss();
+                    binding.bottomNav.setSelectedItemId(R.id.nav_favorite);
+                    showPaletteCategory(R.id.nav_favorite);
+                })
+                .setNegativeButton(R.string.common_word_cancel, null)
+                .show();
     }
 
     /** Simulates the blocks of the open event step by step, starting from the values the screen starts with. */

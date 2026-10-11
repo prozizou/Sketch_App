@@ -1080,6 +1080,8 @@ ACTION_VIEW
     <string name="logic_nav_blocks">Blocks</string>
     <string name="logic_nav_variables">My Variables</string>
     <string name="logic_nav_components">Components</string>
+    <string name="logic_nav_favorite_choose">Favorite palette</string>
+    <string name="logic_nav_favorite_hint">Long-press this tab to choose your favorite palette</string>
     <string name="logic_canvas_fit">Fit</string>
     <string name="logic_code_show">Code</string>
     <string name="logic_code_hide">Blocks</string>
