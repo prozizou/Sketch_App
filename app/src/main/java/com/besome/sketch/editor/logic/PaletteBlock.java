@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.besome.sketch.beans.BlockBean;
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
@@ -100,11 +101,14 @@ public class PaletteBlock extends LinearLayout {
         textView.setTextSize(10.0F);
         textView.setTypeface(null, Typeface.BOLD);
         textView.setGravity(Gravity.CENTER);
-        textView.setPadding((int) (f * 8.0F), 0, (int) (f * 8.0F), 0);
+        textView.setPadding((int) (f * 12.0F), 0, (int) (f * 12.0F), 0);
+        textView.setMaxLines(1);
 
         var cardView = new MaterialCardView(context);
-        var params = getLayoutParams(30.0F);
-        params.setMargins(0, 0, (int) (f * 4), (int) (f * 6));
+        // Buttons sit side by side and stretch to fill their row; a long row wraps onto the next one.
+        var params = new FlexboxLayout.LayoutParams(LayoutParams.WRAP_CONTENT, (int) (f * 30.0F));
+        params.setFlexGrow(1f);
+        params.setMargins(0, 0, (int) (f * 4), (int) (f * 4));
         cardView.setLayoutParams(params);
         cardView.setCardBackgroundColor(getColor(context, isDarkThemeEnabled(context) ? R.attr.colorSurfaceContainerHigh : R.attr.colorSurfaceContainerHighest));
         cardView.addView(textView);
@@ -121,7 +125,8 @@ public class PaletteBlock extends LinearLayout {
     public void a(String title, int color) {
         var cardView = new MaterialCardView(context);
         var params = getLayoutParams(18.0F);
-        params.topMargin = (int) (f * 16.0F);
+        // No gap above the first section: the action buttons and the padding already separate it.
+        params.topMargin = binding.blockBuilder.getChildCount() == 0 ? 0 : (int) (f * 16.0F);
         cardView.setLayoutParams(params);
         cardView.setCardBackgroundColor(color);
         cardView.setRadius(f * 8f);

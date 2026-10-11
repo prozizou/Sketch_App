@@ -45,6 +45,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.view.ViewCompat;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -2110,6 +2111,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         setContentView(binding.getRoot());
         // Keep the toolbar, canvas and bottom bar clear of the status bar, navigation bar and cutouts.
         UI.addSystemWindowInsetToPadding(binding.getRoot(), true, true, true, true);
+        // The root padding already clears the navigation bar: stop the bottom bar from adding the same space again.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNav, (v, insets) -> insets);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             binding.editor.setForceDarkAllowed(false);
             binding.editor.getBlockPane().setForceDarkAllowed(false);
