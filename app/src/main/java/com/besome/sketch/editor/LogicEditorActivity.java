@@ -2042,6 +2042,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     @Override
     public void onBackPressed() {
+        if (repeatDuplicateSource != null) {
+            stopRepeatDuplicate();
+            return;
+        }
         if (viewMode != LogicViewMode.BLOCKS) {
             setViewMode(LogicViewMode.BLOCKS);
             return;
@@ -2194,6 +2198,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 return true;
             });
         }
+        viewLogicEditor.setOnCanvasTouchDownListener(this::stopRepeatDuplicate);
         viewLogicEditor.setOnZoomChangedListener(zoom -> binding.tvZoom.setText(Math.round(zoom * 100) + "%"));
         binding.btnCanvasFit.setOnClickListener(v -> viewLogicEditor.fitToContent());
         float density = wB.a(this, 1.0f);
@@ -2427,6 +2432,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             return true;
         }
         if (actionMasked == MotionEvent.ACTION_DOWN) {
+            stopRepeatDuplicate();
             if (v instanceof Rs paletteBlock && paletteBlock.getBlockType() != 0) {
                 setCanvasZoom(1f);
             }
@@ -2628,44 +2634,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                     // commenting it to fix it too
                     // rs10.p().k();
                 }
-                ArrayList<BlockBean> arrayList2 = new ArrayList<>();
-                for (Rs rs : rs10.getAllChildren()) {
-                    BlockBean clone2 = rs.getBean().clone();
-                    int id;
-                    try {
-                        id = Integer.parseInt(clone2.id);
-                    } catch (NumberFormatException e) {
-                        id = -1;
-                    }
-                    if (id != -1) {
-                        clone2.id = String.valueOf(id + 99000000);
-                        if (clone2.nextBlock > 0) {
-                            clone2.nextBlock = clone2.nextBlock + 99000000;
-                        }
-                        if (clone2.subStack1 > 0) {
-                            clone2.subStack1 = clone2.subStack1 + 99000000;
-                        }
-                        if (clone2.subStack2 > 0) {
-                            clone2.subStack2 = clone2.subStack2 + 99000000;
-                        }
-                        for (int i = 0; i < clone2.parameters.size(); i++) {
-                            String parameter = clone2.parameters.get(i);
-                            if (parameter != null && !parameter.isEmpty() && parameter.charAt(0) == '@') {
-                                clone2.parameters.set(i, "@" + (Integer.parseInt(parameter.substring(1)) + 99000000));
-                            }
-                        }
-                        arrayList2.add(clone2);
-                    }
-                }
-                int[] nLocationOnScreen = new int[2];
-                viewLogicEditor.getLocationOnScreen(nLocationOnScreen);
-                int width = nLocationOnScreen[0] + (viewLogicEditor.getWidth() / 2);
-                int a2 = nLocationOnScreen[1] + ((int) wB.a(this, 4.0f));
-                ArrayList<BlockBean> a3 = a(arrayList2, width, a2, true);
-                int[] oLocationOnScreen = new int[2];
-                o.getLocationOnScreen(oLocationOnScreen);
-                bC.d(scId).a(s(), a3, width - oLocationOnScreen[0], a2 - oLocationOnScreen[1], null, null);
-                C();
+                duplicateBlock(rs10, 0);
+                startRepeatDuplicate(rs10);
             } else if (v instanceof Rs rs13) {
                 dummy.a(this.v);
                 if (rs13.getBlockType() == 1) {
@@ -2750,7 +2720,11 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 o.c();
             }
             dummy.setAllow(false);
-            h(false);
+            // After a drop on Duplicate the menu stays, so Duplicate can be tapped for more copies.
+            h(repeatDuplicateSource != null);
+            if (repeatDuplicateSource != null) {
+                logicTopMenu.setRepeatDuplicate(logicTopMenuRepeatListener(), repeatDuplicateCount);
+            }
             isDragged = false;
             return true;
         } else if (actionMasked == MotionEvent.ACTION_CANCEL) {
@@ -2829,6 +2803,89 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 o.d();
             }
         }
+    }
+
+    /** Copies {@code source} and the blocks attached to it near the top of the canvas, as one undoable step. */
+    private void duplicateBlock(Rs source, int offset) {
+        ArrayList<BlockBean> arrayList2 = new ArrayList<>();
+        for (Rs rs : source.getAllChildren()) {
+            BlockBean clone2 = rs.getBean().clone();
+            int id;
+            try {
+                id = Integer.parseInt(clone2.id);
+            } catch (NumberFormatException e) {
+                id = -1;
+            }
+            if (id != -1) {
+                clone2.id = String.valueOf(id + 99000000);
+                if (clone2.nextBlock > 0) {
+                    clone2.nextBlock = clone2.nextBlock + 99000000;
+                }
+                if (clone2.subStack1 > 0) {
+                    clone2.subStack1 = clone2.subStack1 + 99000000;
+                }
+                if (clone2.subStack2 > 0) {
+                    clone2.subStack2 = clone2.subStack2 + 99000000;
+                }
+                for (int i = 0; i < clone2.parameters.size(); i++) {
+                    String parameter = clone2.parameters.get(i);
+                    if (parameter != null && !parameter.isEmpty() && parameter.charAt(0) == '@') {
+                        clone2.parameters.set(i, "@" + (Integer.parseInt(parameter.substring(1)) + 99000000));
+                    }
+                }
+                arrayList2.add(clone2);
+            }
+        }
+        int[] nLocationOnScreen = new int[2];
+        viewLogicEditor.getLocationOnScreen(nLocationOnScreen);
+        int width = nLocationOnScreen[0] + (viewLogicEditor.getWidth() / 2);
+        // Below the top menu, which now stays open for more copies; each further copy lands a bit lower so a
+        // stack of copies stays readable.
+        int[] menuLocationOnScreen = new int[2];
+        logicTopMenu.getLocationOnScreen(menuLocationOnScreen);
+        int top = Math.max(nLocationOnScreen[1], menuLocationOnScreen[1] + logicTopMenu.getHeight());
+        int a2 = top + ((int) wB.a(this, 4.0f + 24.0f * (offset % 8)));
+        ArrayList<BlockBean> a3 = a(arrayList2, width, a2, true);
+        int[] oLocationOnScreen = new int[2];
+        o.getLocationOnScreen(oLocationOnScreen);
+        bC.d(scId).a(s(), a3, width - oLocationOnScreen[0], a2 - oLocationOnScreen[1], null, null);
+        C();
+    }
+
+    /** Block dropped on Duplicate: while set, each tap on Duplicate makes another copy of it. */
+    private Rs repeatDuplicateSource;
+    private int repeatDuplicateCount;
+
+    private void startRepeatDuplicate(Rs source) {
+        repeatDuplicateSource = source;
+        repeatDuplicateCount = 1;
+        source.animate().alpha(0.6f).setDuration(150).start();
+        // The menu itself is kept and Duplicate armed at the end of the drop, see onTouch.
+    }
+
+    /** Tapping the armed Duplicate makes one more copy of the source block. */
+    private View.OnClickListener logicTopMenuRepeatListener() {
+        return v -> {
+            if (repeatDuplicateSource == null || repeatDuplicateSource.getParent() == null) {
+                stopRepeatDuplicate();
+                return;
+            }
+            duplicateBlock(repeatDuplicateSource, repeatDuplicateCount);
+            repeatDuplicateCount++;
+            logicTopMenu.setRepeatDuplicate(logicTopMenuRepeatListener(), repeatDuplicateCount);
+        };
+    }
+
+    /** Leaves the repeat-duplicate mode: the menu goes away and the source block looks normal again. */
+    private void stopRepeatDuplicate() {
+        if (repeatDuplicateSource == null) {
+            return;
+        }
+        repeatDuplicateSource.animate().alpha(1f).setDuration(150).start();
+        repeatDuplicateSource = null;
+        repeatDuplicateCount = 0;
+        logicTopMenu.setRepeatDuplicate(null, 0);
+        h(false);
     }
 
     public final String s() {
