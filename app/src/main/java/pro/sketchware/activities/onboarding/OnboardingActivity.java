@@ -14,6 +14,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -67,6 +68,12 @@ public class OnboardingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         setContentView(R.layout.activity_onboarding);
 
         View root = findViewById(R.id.onboarding_root);
@@ -110,9 +117,8 @@ public class OnboardingActivity extends AppCompatActivity {
         refreshAccessButton();
     }
 
-    @Override
-    @SuppressWarnings("deprecation")
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (pager.getCurrentItem() > 0) {
             pager.setCurrentItem(pager.getCurrentItem() - 1, true);
         } else {

@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.ColorStateList;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -30,6 +29,7 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -486,8 +486,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 .show();
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (drawer.isDrawerOpen(GravityCompat.END)) {
             drawer.closeDrawer(GravityCompat.END);
         } else if (viewTabAdapter.viewEditor.isFocusPreview()) {
@@ -534,6 +534,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         binding = DesignBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         if (!isStoragePermissionGranted()) {
@@ -552,7 +558,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         Toolbar toolbar = binding.toolbar;
         toolbar.setSubtitle(sc_id);
         setSupportActionBar(toolbar);
-        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
         drawer = binding.drawerLayout;
         drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
@@ -675,11 +681,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         binding.tabLayout.setupWithViewPager(viewPager);
 
         IntentFilter filter = new IntentFilter(BuildTask.ACTION_CANCEL_BUILD);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(buildCancelReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(buildCancelReceiver, filter);
-        }
+        // Only this app's own notification may cancel a build (on every Android version, not only 13+).
+        ContextCompat.registerReceiver(this, buildCancelReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
     }
 
@@ -1708,8 +1711,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             DesignActivity activity = getActivity();
             if (activity == null) return null;
 
-            Intent cancelIntent = new Intent(BuildTask.ACTION_CANCEL_BUILD);
-            return PendingIntent.getBroadcast(activity, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            Intent cancelIntent = new Intent(BuildTask.ACTION_CANCEL_BUILD).setPackage(activity.getPackageName());
+            return PendingIntent.getBroadcast(activity, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         }
 
         private void createNotificationChannelIfNeeded() {

@@ -8,7 +8,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.LayoutInflater;
@@ -16,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
@@ -69,11 +69,8 @@ public class LogReaderActivity extends BaseAppCompatActivity {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("com.sketch_nws.ACTION_NEW_DEBUG_LOG");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(logger, intentFilter, Context.RECEIVER_EXPORTED);
-        } else {
-            registerReceiver(logger, intentFilter);
-        }
+        // Exported on purpose: the logs come from the apps built and run by the user, which are other packages.
+        ContextCompat.registerReceiver(this, logger, intentFilter, ContextCompat.RECEIVER_EXPORTED);
 
         binding.topAppBar.setNavigationOnClickListener(Helper.getBackPressedClickListener(this));
         binding.topAppBar.setOnMenuItemClickListener(item -> {

@@ -570,9 +570,8 @@ public class ConfigActivity extends BaseAppCompatActivity implements PreferenceF
                     scroller.smoothScrollTo(0, Math.max(0, target));
                 }
                 item.postDelayed(() -> {
-                    if (item.getBackground() != null) {
-                        item.getBackground().setHotspot(item.getWidth() / 2f, item.getHeight() / 2f);
-                    }
+                    // Background and foreground ripples alike start from the middle of the row.
+                    item.drawableHotspotChanged(item.getWidth() / 2f, item.getHeight() / 2f);
                     item.setPressed(true);
                     item.postDelayed(() -> item.setPressed(false), 700);
                 }, 350);

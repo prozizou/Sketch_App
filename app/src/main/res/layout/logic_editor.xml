@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
     android:orientation="vertical">
 
 <RelativeLayout
@@ -104,10 +103,13 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Never wider than the space beside the right drawer, so longer translations or a larger font can't push it
+         under the drawer; it is placed at runtime by FloatingBarDragger. -->
     <LinearLayout
         android:id="@+id/canvas_controls"
         android:layout_width="wrap_content"
         android:layout_height="32dp"
+        android:layout_toStartOf="@+id/right_drawer"
         android:background="@drawable/canvas_control_bg"
         android:elevation="3dp"
         android:gravity="center_vertical"
@@ -128,6 +130,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="center"
+            android:maxLines="1"
             android:minWidth="40dp"
             android:text="100%"
             android:textColor="?attr/colorOnSurface"
@@ -139,7 +142,9 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:background="?attr/selectableItemBackground"
+            android:ellipsize="end"
             android:gravity="center"
+            android:maxLines="1"
             android:minWidth="40dp"
             android:paddingHorizontal="10dp"
             android:text="@string/logic_canvas_fit"
@@ -154,6 +159,7 @@
         android:layout_height="match_parent"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
+        android:elevation="@dimen/logic_drawer_elevation"
         android:translationX="200dp" />
 
     <LinearLayout

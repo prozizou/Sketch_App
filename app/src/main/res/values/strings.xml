@@ -425,7 +425,10 @@ Please try again after removing the blocks with this variable"</string>
     <string name="logic_editor_message_highlight_block_missing">The block to show is no longer in this event</string>
     <string name="logic_editor_more_block_actionbar_title_edit_more_block">Edit More Block</string>
     <string name="logic_editor_more_block_message_type_locked">This More Block is used in the logic: its return type can\'t change. Its name and parameters can.</string>
-    <string name="logic_more_block_message_edited">More Block updated (%d uses changed)</string>
+    <plurals name="logic_more_block_message_edited">
+        <item quantity="one">More Block updated (%d use changed)</item>
+        <item quantity="other">More Block updated (%d uses changed)</item>
+    </plurals>
     <string name="logic_editor_more_block_button_add">ADD</string>
     <string name="logic_editor_more_block_dialog_description_goback">Your current work will be lost</string>
     <string name="logic_editor_more_block_dialog_message_confirm_goback">Are you sure?</string>
@@ -815,9 +818,24 @@ ACTION_VIEW
     <string name="project_search_regex">Regex</string>
     <string name="project_search_invalid_regex">Invalid regular expression</string>
     <string name="project_search_idle">Type to search the Java, resource and asset files of this project</string>
-    <string name="project_search_no_results">No results in %1$d files</string>
-    <string name="project_search_summary">%1$d results in %2$d files</string>
-    <string name="project_search_summary_truncated">First %1$d results shown, refine your search</string>
+    <plurals name="project_search_no_results">
+        <item quantity="one">No results in %1$d file</item>
+        <item quantity="other">No results in %1$d files</item>
+    </plurals>
+    <!-- %1$s: project_search_results, %2$s: project_search_files -->
+    <string name="project_search_summary">%1$s in %2$s</string>
+    <plurals name="project_search_results">
+        <item quantity="one">%d result</item>
+        <item quantity="other">%d results</item>
+    </plurals>
+    <plurals name="project_search_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <plurals name="project_search_summary_truncated">
+        <item quantity="one">First %1$d result shown, refine your search</item>
+        <item quantity="other">First %1$d results shown, refine your search</item>
+    </plurals>
     <string name="design_drawer_menu_title_snapshots">Snapshots</string>
     <string name="design_drawer_menu_subtitle_snapshots">Go back to an earlier state of the project</string>
     <string name="snapshots_title">Snapshots</string>
@@ -845,7 +863,10 @@ ACTION_VIEW
     <string name="git_pull">Pull</string>
     <string name="git_changes">Changes</string>
     <string name="git_no_changes">No changes since the last commit</string>
-    <string name="git_changes_count">%1$d changes</string>
+    <plurals name="git_changes_count">
+        <item quantity="one">%1$d change</item>
+        <item quantity="other">%1$d changes</item>
+    </plurals>
     <string name="git_no_remote">No remote address</string>
     <string name="git_no_commits">No commits yet. Make the first one with Commit.</string>
     <string name="git_commit_message_hint">What did you change?</string>
@@ -878,7 +899,20 @@ ACTION_VIEW
     <string name="design_drawer_menu_subtitle_analysis">Compatibility, security and dependency checks</string>
     <string name="analysis_title">Project health</string>
     <string name="analysis_score_label">Health score</string>
-    <string name="analysis_summary">%1$d errors · %2$d warnings · %3$d notes</string>
+    <!-- %1$s, %2$s, %3$s: analysis_errors_count, analysis_warnings_count, analysis_notes_count -->
+    <string name="analysis_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="analysis_errors_count">
+        <item quantity="one">%d error</item>
+        <item quantity="other">%d errors</item>
+    </plurals>
+    <plurals name="analysis_warnings_count">
+        <item quantity="one">%d warning</item>
+        <item quantity="other">%d warnings</item>
+    </plurals>
+    <plurals name="analysis_notes_count">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
     <string name="analysis_fix_first">Fix first:</string>
     <string name="analysis_nothing_found">Nothing found. The checks that ran are listed in the documentation.</string>
     <string name="analysis_filter_all">All</string>
@@ -893,8 +927,14 @@ ACTION_VIEW
     <string name="analysis_menu_navigation">Navigation graph</string>
     <string name="analysis_open">Open</string>
     <string name="analysis_autofix">Auto-fix</string>
-    <string name="analysis_autofix_intro">These problems have one safe answer and can be fixed now. A snapshot of the project is taken first, so you can undo everything from the Snapshots screen. %1$d other problems need your decision and are left alone.</string>
-    <string name="analysis_autofix_nothing">Nothing can be fixed automatically. %1$d problems need your decision: open them from the list to fix them.</string>
+    <plurals name="analysis_autofix_intro">
+        <item quantity="one">These problems have one safe answer and can be fixed now. A snapshot of the project is taken first, so you can undo everything from the Snapshots screen. %1$d other problem needs your decision and is left alone.</item>
+        <item quantity="other">These problems have one safe answer and can be fixed now. A snapshot of the project is taken first, so you can undo everything from the Snapshots screen. %1$d other problems need your decision and are left alone.</item>
+    </plurals>
+    <plurals name="analysis_autofix_nothing">
+        <item quantity="one">Nothing can be fixed automatically. %1$d problem needs your decision: open it from the list to fix it.</item>
+        <item quantity="other">Nothing can be fixed automatically. %1$d problems need your decision: open them from the list to fix them.</item>
+    </plurals>
     <string name="analysis_autofix_content_description">Describe images for screen readers (%1$d) — check the wording</string>
     <string name="analysis_autofix_touch_target">Make tappable widgets at least 48 dp (%1$d)</string>
     <string name="analysis_autofix_small_text">Raise text below 12 sp to 12 sp (%1$d)</string>
@@ -906,13 +946,31 @@ ACTION_VIEW
     <string name="analysis_autofix_handler_looper">Give new Handler() the main looper in your Java files (%1$d)</string>
     <string name="analysis_autofix_pending_intent">Add FLAG_IMMUTABLE to PendingIntents in your Java files (%1$d)</string>
     <string name="analysis_autofix_support_library">Replace android.support imports with AndroidX (%1$d)</string>
-    <string name="analysis_autofix_file_edit">%1$s: %2$d changes — %3$s</string>
+    <plurals name="analysis_autofix_file_edit">
+        <item quantity="one">%1$s: %2$d change — %3$s</item>
+        <item quantity="other">%1$s: %2$d changes — %3$s</item>
+    </plurals>
     <string name="analysis_autofix_unconnected_blocks">Delete blocks that are not connected to their event (%1$d)</string>
     <string name="analysis_autofix_details">See every change</string>
     <string name="analysis_autofix_apply">Fix</string>
-    <string name="analysis_autofix_remove_blocks">%1$s / %2$s: delete %3$d loose blocks</string>
-    <string name="analysis_autofix_done">%1$d changes made. The editor saves the project when you go back to it; to undo, restore the snapshot taken just before (Snapshots screen). %2$d problems still need your decision.</string>
-    <string name="analysis_autofix_missing">%1$d changes were skipped because their widget or event no longer exists.</string>
+    <plurals name="analysis_autofix_remove_blocks">
+        <item quantity="one">%1$s / %2$s: delete %3$d loose block</item>
+        <item quantity="other">%1$s / %2$s: delete %3$d loose blocks</item>
+    </plurals>
+    <!-- %1$s: analysis_autofix_done_changes, %2$s: analysis_autofix_done_remaining -->
+    <string name="analysis_autofix_done">%1$s The editor saves the project when you go back to it; to undo, restore the snapshot taken just before (Snapshots screen). %2$s</string>
+    <plurals name="analysis_autofix_done_changes">
+        <item quantity="one">%d change made.</item>
+        <item quantity="other">%d changes made.</item>
+    </plurals>
+    <plurals name="analysis_autofix_done_remaining">
+        <item quantity="one">%d problem still needs your decision.</item>
+        <item quantity="other">%d problems still need your decision.</item>
+    </plurals>
+    <plurals name="analysis_autofix_missing">
+        <item quantity="one">%1$d change was skipped because its widget or event no longer exists.</item>
+        <item quantity="other">%1$d changes were skipped because their widget or event no longer exists.</item>
+    </plurals>
     <string name="analysis_autofix_failed">Nothing was changed: %1$s</string>
     <string name="analysis_open_where">Open which one?</string>
     <string name="analysis_locations">Where (tap to open)</string>
@@ -1092,8 +1150,6 @@ ACTION_VIEW
     <string name="logic_code_error">The code can\'t be shown yet: a block is probably incomplete.</string>
     <string name="logic_canvas_controls_move">Move zoom controls</string>
     <string name="logic_saved">Saved</string>
-    <string name="logic_zoom_in">Zoom in</string>
-    <string name="logic_zoom_out">Zoom out</string>
     <plurals name="logic_blocks_count">
         <item quantity="one">%d block</item>
         <item quantity="other">%d blocks</item>
@@ -1139,8 +1195,6 @@ ACTION_VIEW
     <string name="src_restore_title">Restore the generated version?</string>
     <string name="src_restore_message">Your hand-edited %1$s will be deleted and the generated version will be used again.</string>
     <string name="src_restore_action">Restore generated</string>
-    <string name="view_toggle_widgets">Widgets</string>
-    <string name="view_focus_preview">Focus preview</string>
     <string name="view_widget_new_compact">Widget</string>
     <string name="view_palette_resize">Resize widget panel</string>
     <string name="property_search_hint">Search properties</string>
@@ -1243,14 +1297,20 @@ ACTION_VIEW
     <string name="build_settings_shrinking">Code shrinking (ProGuard / R8): %1$s</string>
     <string name="build_settings_export">Export signed APK or AAB</string>
     <string name="build_settings_history">Build history</string>
-    <string name="build_settings_memory">Build memory: %1$s, %2$d compiler threads (from this device; App settings › Advanced)</string>
+    <plurals name="build_settings_memory">
+        <item quantity="one">Build memory: %1$s, %2$d compiler thread (from this device; App settings › Advanced)</item>
+        <item quantity="other">Build memory: %1$s, %2$d compiler threads (from this device; App settings › Advanced)</item>
+    </plurals>
     <string name="build_settings_restore_defaults">Restore default settings</string>
     <string name="build_settings_restore_confirm">Put the build settings back to what an untouched project uses (Dx, Java 7, built-in android.jar, no extra classpath)? Nothing is saved until you tap Save.</string>
     <string name="build_settings_compat">Compatibility Check</string>
     <string name="build_settings_compat_ok">No problem found: these settings can build this project.</string>
     <string name="build_settings_errors_title">These settings can\'t build</string>
     <string name="build_settings_saved">Build settings saved</string>
-    <string name="build_settings_saved_warnings">Build settings saved, with %1$d warning(s)</string>
+    <plurals name="build_settings_saved_warnings">
+        <item quantity="one">Build settings saved, with %1$d warning</item>
+        <item quantity="other">Build settings saved, with %1$d warnings</item>
+    </plurals>
     <string name="build_settings_discard">Discard your changes?</string>
     <string name="build_settings_discard_button">Discard</string>
 </resources>

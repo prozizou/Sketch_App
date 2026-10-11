@@ -322,9 +322,9 @@ public class BuildSettingsActivity extends BaseAppCompatActivity {
             SketchwareUtil.toastError("The build settings could not be written");
             return;
         }
-        long warnings = issues.size();
+        int warnings = issues.size();
         SketchwareUtil.toast(warnings == 0 ? getString(R.string.build_settings_saved)
-                : getString(R.string.build_settings_saved_warnings, warnings));
+                : getResources().getQuantityString(R.plurals.build_settings_saved_warnings, warnings, warnings));
         finish();
     }
 
@@ -355,7 +355,7 @@ public class BuildSettingsActivity extends BaseAppCompatActivity {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("sc_id", scId)));
         binding.rowHistory.setOnClickListener(v -> AppSettingsDialogs.showBuildHistory(this));
         MemoryProfile.Profile memory = BuildMemory.profile();
-        binding.rowMemory.setText(getString(R.string.build_settings_memory,
+        binding.rowMemory.setText(getResources().getQuantityString(R.plurals.build_settings_memory, memory.compilerThreads(),
                 memory.tier().name().toLowerCase(java.util.Locale.ROOT), memory.compilerThreads()));
     }
 

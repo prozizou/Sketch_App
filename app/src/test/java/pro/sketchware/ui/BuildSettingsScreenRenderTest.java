@@ -48,7 +48,8 @@ public class BuildSettingsScreenRenderTest {
     private static void save(View root, String name) throws Exception {
         Bitmap bitmap = Bitmap.createBitmap(root.getWidth(), root.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
-        canvas.drawColor(0xFF111318);
+        // The window background the theme paints behind the layout on a device.
+        canvas.drawColor(ThemeHarness.themeColor(root.getContext(), android.R.attr.colorBackground));
         root.draw(canvas);
         //noinspection ResultOfMethodCallIgnored
         ThemeHarness.OUTPUT_DIR.mkdirs();

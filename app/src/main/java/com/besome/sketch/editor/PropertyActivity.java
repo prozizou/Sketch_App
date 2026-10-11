@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.ViewCompat;
@@ -151,8 +152,8 @@ public class PropertyActivity extends BaseAppCompatActivity implements Kw {
 
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         propertyItems.updateBeanFromUI(viewBean);
         o();
     }
@@ -160,6 +161,12 @@ public class PropertyActivity extends BaseAppCompatActivity implements Kw {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         binding = PropertyBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -179,7 +186,7 @@ public class PropertyActivity extends BaseAppCompatActivity implements Kw {
         getSupportActionBar().setTitle(Helper.getResString(R.string.edit_view_properties_title));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
-        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
         propertyGroups.add(1);
         propertyGroups.add(2);

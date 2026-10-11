@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -56,8 +57,8 @@ public class ManageImageActivity extends BaseAppCompatActivity implements ViewPa
         return projectImagesFragment;
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (projectImagesFragment.isSelecting) {
             projectImagesFragment.a(false);
         } else if (collectionImagesFragment.isSelecting()) {
@@ -76,6 +77,12 @@ public class ManageImageActivity extends BaseAppCompatActivity implements ViewPa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         binding = ManageImageBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -87,7 +94,7 @@ public class ManageImageActivity extends BaseAppCompatActivity implements ViewPa
         binding.topAppBar.setTitle(R.string.design_actionbar_title_manager_image);
         binding.topAppBar.setNavigationOnClickListener(v -> {
             if (!mB.a()) {
-                onBackPressed();
+                getOnBackPressedDispatcher().onBackPressed();
             }
         });
         if (savedInstanceState == null) {

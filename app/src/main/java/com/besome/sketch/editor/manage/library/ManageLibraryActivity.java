@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.view.View;
 import android.widget.LinearLayout;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.ViewCompat;
@@ -271,8 +272,8 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         }
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         k();
         try {
             new Handler().postDelayed(() -> new SaveLibraryTask(this).execute(), 500L);
@@ -329,6 +330,12 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         if (!super.isStoragePermissionGranted()) {
             finish();
         }
@@ -345,7 +352,7 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         getSupportActionBar().setTitle(Helper.getResString(R.string.design_actionbar_title_library));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
-        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         libraryItemLayout = findViewById(R.id.contents);
 
         android.widget.EditText searchLibraries = findViewById(R.id.search_libraries);

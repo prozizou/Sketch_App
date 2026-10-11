@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -29,8 +30,8 @@ public class ManageFontActivity extends BaseAppCompatActivity {
     public ManageFontBinding binding;
     private String sc_id;
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (projectFontsFragment.isSelecting) {
             projectFontsFragment.setSelectingMode(false);
         } else if (collectionFontsFragment.isSelecting()) {
@@ -53,6 +54,12 @@ public class ManageFontActivity extends BaseAppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
 
         binding = ManageFontBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -63,7 +70,7 @@ public class ManageFontActivity extends BaseAppCompatActivity {
 
         binding.toolbar.setNavigationOnClickListener(v -> {
             if (!mB.a()) {
-                onBackPressed();
+                getOnBackPressedDispatcher().onBackPressed();
             }
         });
 

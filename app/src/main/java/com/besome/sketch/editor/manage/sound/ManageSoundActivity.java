@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.ViewGroup;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -38,8 +39,8 @@ public class ManageSoundActivity extends BaseAppCompatActivity implements ViewPa
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (projectSounds.isSelecting) {
             projectSounds.setSelecting(false);
         } else if (collectionSounds.isSelecting()) {
@@ -65,6 +66,12 @@ public class ManageSoundActivity extends BaseAppCompatActivity implements ViewPa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         if (!super.isStoragePermissionGranted()) {
             finish();
         }
@@ -74,7 +81,7 @@ public class ManageSoundActivity extends BaseAppCompatActivity implements ViewPa
 
         binding.toolbar.setNavigationOnClickListener(v -> {
             if (!mB.a()) {
-                onBackPressed();
+                getOnBackPressedDispatcher().onBackPressed();
             }
         });
         sc_id = savedInstanceState == null ? getIntent().getStringExtra("sc_id") : savedInstanceState.getString("sc_id");

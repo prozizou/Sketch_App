@@ -20,6 +20,7 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.Toolbar;
@@ -65,6 +66,12 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         setContentView(R.layout.activity_blocks_manager_details);
 
         background = findViewById(R.id.background);
@@ -81,7 +88,7 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        toolbar.setNavigationOnClickListener(view -> onBackPressed());
+        toolbar.setNavigationOnClickListener(view -> getOnBackPressedDispatcher().onBackPressed());
         background.addView(toolbar, 0);
 
         fab_button.setOnClickListener(v -> {
@@ -142,8 +149,8 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (mode.equals("editor")) {
             mode = "normal";
             Parcelable savedState = block_list.onSaveInstanceState();

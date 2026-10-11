@@ -23,14 +23,24 @@ public class SketchApplication extends Application {
     @Override
     public void onCreate() {
         mApplicationContext = getApplicationContext();
+        Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
-                CrashRecovery.record(getApplicationContext(), Log.getStackTraceString(throwable));
-                Intent intent = new Intent(getApplicationContext(), CollectErrorActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                intent.putExtra("error", Log.getStackTraceString(throwable));
-                startActivity(intent);
+                try {
+                    CrashRecovery.record(getApplicationContext(), Log.getStackTraceString(throwable));
+                    Intent intent = new Intent(getApplicationContext(), CollectErrorActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    intent.putExtra("error", Log.getStackTraceString(throwable));
+                    startActivity(intent);
+                } catch (Throwable recoveryFailed) {
+                    // The error screen couldn't be shown: let the previous handler (Crashlytics, then the system)
+                    // deal with the crash instead of dying silently.
+                    if (previous != null) {
+                        previous.uncaughtException(thread, throwable);
+                        return;
+                    }
+                }
                 Process.killProcess(Process.myPid());
                 System.exit(1);
             }

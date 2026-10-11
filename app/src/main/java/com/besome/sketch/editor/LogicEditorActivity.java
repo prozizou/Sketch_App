@@ -44,6 +44,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -2040,8 +2041,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         }
     }
 
-    @Override
-    public void onBackPressed() {
+    /** Back press handling, registered with the back dispatcher in {@link #onCreate}. */
+    private void handleBackPressed() {
         if (repeatDuplicateSource != null) {
             stopRepeatDuplicate();
             return;
@@ -2114,6 +2115,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         binding = LogicEditorBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         // Keep the toolbar, canvas and bottom bar clear of the status bar, navigation bar and cutouts.
@@ -2146,7 +2153,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> {
             if (!mB.a()) {
-                onBackPressed();
+                getOnBackPressedDispatcher().onBackPressed();
             }
         });
         G = new DB(this, "P12").a("P12I0", true);

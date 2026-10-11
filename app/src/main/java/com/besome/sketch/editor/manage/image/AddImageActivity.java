@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.MediaStore;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.CheckBox;
@@ -239,8 +238,8 @@ public class AddImageActivity extends BaseDialogActivity implements View.OnClick
 
     private void pickImages(boolean allowMultiple) {
         try {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            intent.setType("image/*");
+            // setType() would clear a data URI given to the constructor: the picker only ever received the type.
+            Intent intent = new Intent(Intent.ACTION_PICK).setType("image/*");
             if (allowMultiple) {
                 intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
             }
