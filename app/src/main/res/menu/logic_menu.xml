@@ -23,13 +23,6 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/menu_block_helper"
-        android:icon="@drawable/ic_mtrl_bookmark"
-        android:orderInCategory="100"
-        android:title="@string/common_word_blocks_collection"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/menu_logic_save"
         android:icon="@drawable/ic_mtrl_save"
         android:orderInCategory="100"

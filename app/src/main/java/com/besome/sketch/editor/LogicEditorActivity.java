@@ -1804,9 +1804,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             K.setLayoutParams(new LinearLayout.LayoutParams((int) wB.a(this, 320.0f), ViewGroup.LayoutParams.MATCH_PARENT));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER | Gravity.BOTTOM;
-            int dimension = (int) getResources().getDimension(R.dimen.action_button_margin);
-            params.setMargins(dimension, dimension, dimension, dimension);
-            openBlocksMenuButton.setLayoutParams(params);
+            // The buttons keep their own margins; the row only places them.
+            binding.fabRow.setOrientation(LinearLayout.VERTICAL);
+            binding.fabRow.setLayoutParams(params);
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
@@ -1816,9 +1816,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             K.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) wB.a(this, 280.0f)));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER | Gravity.RIGHT;
-            int dimension2 = (int) getResources().getDimension(R.dimen.action_button_margin);
-            params.setMargins(dimension2, dimension2, dimension2, dimension2);
-            openBlocksMenuButton.setLayoutParams(params);
+            binding.fabRow.setOrientation(LinearLayout.HORIZONTAL);
+            binding.fabRow.setLayoutParams(params);
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -2163,6 +2162,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         K = binding.areaPalette;
         openBlocksMenuButton = binding.fabTogglePalette;
         openBlocksMenuButton.setOnClickListener(v -> e(!X));
+        binding.fabBlocksCollection.setOnClickListener(v -> {
+            e(false);
+            g(!ia);
+        });
         logicTopMenu = binding.topMenu;
         O = binding.rightDrawer;
         setupBottomNavAndCanvasControls();
@@ -2332,10 +2335,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     public boolean onOptionsItemSelected(@NonNull MenuItem menuItem) {
         int itemId = menuItem.getItemId();
 
-        if (itemId == R.id.menu_block_helper) {
-            e(false);
-            g(!ia);
-        } else if (itemId == R.id.menu_logic_redo) {
+        if (itemId == R.id.menu_logic_redo) {
             redo();
         } else if (itemId == R.id.menu_logic_undo) {
             undo();
