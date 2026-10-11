@@ -270,6 +270,7 @@ public class BlockEditorScreenTest {
         AlertDialog dialog = (AlertDialog) ShadowDialog.getLatestDialog();
         assertTrue(dialog.isShowing());
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        idle(); // dialog buttons answer through a handler
         assertTrue(second.isFinishing());
     }
 
