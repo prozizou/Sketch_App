@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import a.a.a.Lx;
 import a.a.a.Rs;
 import a.a.a.ZB;
 import a.a.a.bB;
@@ -142,6 +143,7 @@ public class MoreBlockBuilderView extends LinearLayout {
         });
         block = new Rs(activity, 0, "", " ", "definedFunc");
         binding.blockArea.addView(block);
+        updateCodePreview();
     }
 
     private void updateBlockPreview(ViewGroup blockArea, ViewGroup removeArea, Rs rs, String blockName, ArrayList<Pair<String, String>> variables) {
@@ -179,6 +181,7 @@ public class MoreBlockBuilderView extends LinearLayout {
         rs.setSpec(spec);
         BlockUtil.loadPreviewBlockVariables(blockArea, rs, spec);
         rs.k();
+        updateCodePreview();
         removeArea.removeAllViews();
 
         for (int i = 0; i < rs.ka.size(); ++i) {
@@ -309,6 +312,46 @@ public class MoreBlockBuilderView extends LinearLayout {
     /** @return the selected return type, as stored in a MoreBlock name (e.g. {@code String}, {@code a|Map}); "void" for none. */
     public String getReturnType() {
         return ReturnMoreblockManager.getMbType(getBlockInformation().first);
+    }
+
+    /** The MoreBlock being edited and how many calls of it the activity has, shown above its new code. */
+    private String editedName;
+    private String editedSpec;
+    private int editedUses;
+
+    public void setEditedMoreBlock(String nameWithType, String spec, int uses) {
+        editedName = nameWithType;
+        editedSpec = spec;
+        editedUses = uses;
+        updateCodePreview();
+    }
+
+    /**
+     * Shows the method the MoreBlock generates, from the same generator the build uses. When editing, the current
+     * method is shown first, so the effect of a change on the code is visible before saving.
+     */
+    private void updateCodePreview() {
+        String name = Helper.getText(binding.edName).trim();
+        StringBuilder code = new StringBuilder();
+        if (editedName != null && editedSpec != null) {
+            code.append("// Now").append(editedUses > 0 ? " (" + editedUses + (editedUses == 1 ? " call" : " calls") + " will follow the change)" : "").append('\n')
+                    .append(signature(editedName, editedSpec)).append("\n\n// After saving\n");
+        }
+        if (name.isEmpty()) {
+            code.append("// Type a block name");
+        } else {
+            Pair<String, String> information = getBlockInformation();
+            code.append(signature(information.first, information.second));
+        }
+        binding.codePreview.setText(code);
+    }
+
+    private static String signature(String nameWithType, String spec) {
+        try {
+            return Lx.getMoreBlockCode(nameWithType, spec, "    // blocks").replace("\r\n", "\n").trim();
+        } catch (RuntimeException e) {
+            return "// " + ReturnMoreblockManager.getMbName(nameWithType);
+        }
     }
 
     public void setFuncNameValidator(ArrayList<String> var1) {

@@ -241,7 +241,9 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         intent.putExtra("project_file", currentActivity);
         intent.putExtra("edit_name", moreBlock.targetId);
         intent.putExtra("edit_spec", spec);
-        intent.putExtra("edit_type_locked", MoreblockEditor.isUsed(jC.a(sc_id), javaName, spec));
+        int uses = MoreblockEditor.countUses(jC.a(sc_id), javaName, spec);
+        intent.putExtra("edit_type_locked", uses > 0);
+        intent.putExtra("edit_uses", uses);
         editMoreBlockLauncher.launch(intent);
     }
 

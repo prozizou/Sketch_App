@@ -69,6 +69,21 @@ public final class MoreblockEditor {
         return ReturnMoreblockManager.getMbName(spec);
     }
 
+    /** @return how many blocks of this activity call the MoreBlock with the given spec. */
+    public static int countUses(eC logic, String javaName, String spec) {
+        String callSpec = callSpec(spec);
+        int uses = 0;
+        for (ArrayList<BlockBean> blocks : logic.b(javaName).values()) {
+            if (blocks == null) continue;
+            for (BlockBean block : blocks) {
+                if ("definedFunc".equals(block.opCode) && callSpec.equals(block.spec)) {
+                    uses++;
+                }
+            }
+        }
+        return uses;
+    }
+
     /** @return whether a block of this activity calls the MoreBlock with the given spec. */
     public static boolean isUsed(eC logic, String javaName, String spec) {
         String callSpec = callSpec(spec);
