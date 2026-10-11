@@ -53,13 +53,14 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <LinearLayout
+            <!-- Action buttons share rows (wrapping when they don't fit) instead of one full-width row each. -->
+            <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/actions_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="8dp"
-                android:paddingTop="4dp" />
+                android:paddingHorizontal="8dp"
+                android:paddingTop="4dp"
+                app:flexWrap="wrap" />
 
             <com.besome.sketch.lib.ui.CustomHorizontalScrollView
                 android:id="@+id/scroll_horizontal"
