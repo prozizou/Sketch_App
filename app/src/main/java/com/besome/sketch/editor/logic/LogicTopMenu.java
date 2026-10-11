@@ -81,6 +81,16 @@ public class LogicTopMenu extends LinearLayout {
      * @param copies how many copies were made so far, shown on the button
      */
     public void setRepeatDuplicate(@Nullable OnClickListener listener, int copies) {
+        setRepeatDuplicate(listener, copies, null);
+    }
+
+    /**
+     * @param onClose shown as a close button while copies are being made, so the user decides when to stop;
+     *                null hides it
+     */
+    public void setRepeatDuplicate(@Nullable OnClickListener listener, int copies, @Nullable OnClickListener onClose) {
+        binding.btnCloseCopies.setOnClickListener(onClose);
+        binding.btnCloseCopies.setVisibility(listener != null && onClose != null ? VISIBLE : GONE);
         binding.layoutCopy.setOnClickListener(listener);
         binding.layoutCopy.setClickable(listener != null);
         String label = Helper.getResString(R.string.common_word_duplicate);

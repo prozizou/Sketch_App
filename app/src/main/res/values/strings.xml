@@ -1150,6 +1150,7 @@ ACTION_VIEW
     <string name="logic_code_error">The code can\'t be shown yet: a block is probably incomplete.</string>
     <string name="logic_canvas_controls_move">Move zoom controls</string>
     <string name="logic_saved">Saved</string>
+    <string name="logic_copies_close">Stop copying</string>
     <plurals name="logic_blocks_count">
         <item quantity="one">%d block</item>
         <item quantity="other">%d blocks</item>

@@ -2214,7 +2214,6 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 return true;
             });
         }
-        viewLogicEditor.setOnCanvasTouchDownListener(this::stopRepeatDuplicate);
         viewLogicEditor.setOnZoomChangedListener(zoom -> binding.tvZoom.setText(Math.round(zoom * 100) + "%"));
         binding.btnCanvasFit.setOnClickListener(v -> viewLogicEditor.fitToContent());
         float density = wB.a(this, 1.0f);
@@ -2448,7 +2447,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             return true;
         }
         if (actionMasked == MotionEvent.ACTION_DOWN) {
-            stopRepeatDuplicate();
+            // Copying stays on while blocks are moved, so each copy can be put in place before the next one.
             if (v instanceof Rs paletteBlock && paletteBlock.getBlockType() != 0) {
                 setCanvasZoom(1f);
             }
@@ -2650,7 +2649,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                     // commenting it to fix it too
                     // rs10.p().k();
                 }
-                duplicateBlock(rs10, 0);
+                duplicateBlock(rs10);
                 startRepeatDuplicate(rs10);
             } else if (v instanceof Rs rs13) {
                 dummy.a(this.v);
@@ -2736,10 +2735,14 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 o.c();
             }
             dummy.setAllow(false);
-            // After a drop on Duplicate the menu stays, so Duplicate can be tapped for more copies.
+            // The block being copied was just deleted: nothing left to copy.
+            if (repeatDuplicateSource != null && repeatDuplicateSource.getParent() == null) {
+                stopRepeatDuplicate();
+            }
+            // While copying, the menu stays after every drop, so Duplicate can be tapped for the next copy.
             h(repeatDuplicateSource != null);
             if (repeatDuplicateSource != null) {
-                logicTopMenu.setRepeatDuplicate(logicTopMenuRepeatListener(), repeatDuplicateCount);
+                logicTopMenu.setRepeatDuplicate(logicTopMenuRepeatListener(), repeatDuplicateCount, closeButton -> stopRepeatDuplicate());
             }
             isDragged = false;
             return true;
@@ -2822,7 +2825,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     /** Copies {@code source} and the blocks attached to it near the top of the canvas, as one undoable step. */
-    private void duplicateBlock(Rs source, int offset) {
+    private void duplicateBlock(Rs source) {
         ArrayList<BlockBean> arrayList2 = new ArrayList<>();
         for (Rs rs : source.getAllChildren()) {
             BlockBean clone2 = rs.getBean().clone();
@@ -2852,27 +2855,71 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 arrayList2.add(clone2);
             }
         }
-        int[] nLocationOnScreen = new int[2];
-        viewLogicEditor.getLocationOnScreen(nLocationOnScreen);
-        int width = nLocationOnScreen[0] + (viewLogicEditor.getWidth() / 2);
-        // Below the top menu, which now stays open for more copies; each further copy lands a bit lower so a
-        // stack of copies stays readable.
-        int[] menuLocationOnScreen = new int[2];
-        logicTopMenu.getLocationOnScreen(menuLocationOnScreen);
-        int top = Math.max(nLocationOnScreen[1], menuLocationOnScreen[1] + logicTopMenu.getHeight());
-        int a2 = top + ((int) wB.a(this, 4.0f + 24.0f * (offset % 8)));
-        ArrayList<BlockBean> a3 = a(arrayList2, width, a2, true);
-        int[] oLocationOnScreen = new int[2];
-        o.getLocationOnScreen(oLocationOnScreen);
-        bC.d(scId).a(s(), a3, width - oLocationOnScreen[0], a2 - oLocationOnScreen[1], null, null);
+        // The copy goes to a free spot of the visible canvas, never on top of existing blocks.
+        CopyPlacement.Spot spot = freeSpotFor(source);
+        int[] paneOnScreen = new int[2];
+        o.getLocationOnScreen(paneOnScreen);
+        int x = Math.round(spot.x());
+        int y = Math.round(spot.y());
+        ArrayList<BlockBean> a3 = a(arrayList2, paneOnScreen[0] + x, paneOnScreen[1] + y, true);
+        bC.d(scId).a(s(), a3, x, y, null, null);
         C();
+        if (!spot.visible() && !a3.isEmpty()) {
+            // No room on screen: the copy went below the code, scroll to it.
+            Rs copy = o.a(Integer.parseInt(a3.get(0).id));
+            if (copy != null) copy.post(() -> viewLogicEditor.revealBlock(copy, viewLogicEditor.getZoom(), null));
+        }
     }
 
-    /** Block dropped on Duplicate: while set, each tap on Duplicate makes another copy of it. */
+    /** A free spot for a copy of {@code source}, in block pane pixels, inside the part of the canvas in view. */
+    private CopyPlacement.Spot freeSpotFor(Rs source) {
+        int[] paneOnScreen = new int[2];
+        o.getLocationOnScreen(paneOnScreen);
+        int[] editorOnScreen = new int[2];
+        viewLogicEditor.getLocationOnScreen(editorOnScreen);
+        float left = editorOnScreen[0];
+        float top = editorOnScreen[1];
+        float right = left + viewLogicEditor.getWidth();
+        float bottom = top + viewLogicEditor.getHeight();
+        // The top menu stays over the canvas while copying.
+        int[] menuOnScreen = new int[2];
+        logicTopMenu.getLocationOnScreen(menuOnScreen);
+        top = Math.max(top, menuOnScreen[1] + logicTopMenu.getHeight());
+        // So does the palette when it is open: along the bottom (portrait) or the left side (landscape).
+        if (X && K.getWidth() > 0 && K.getHeight() > 0) {
+            int[] paletteOnScreen = new int[2];
+            K.getLocationOnScreen(paletteOnScreen);
+            if (K.getWidth() >= (right - left) * 0.6f) {
+                bottom = Math.min(bottom, paletteOnScreen[1]);
+            } else if (paletteOnScreen[0] <= left + 1) {
+                left = Math.max(left, paletteOnScreen[0] + K.getWidth());
+            }
+        }
+        float zoom = viewLogicEditor.getZoom();
+        CopyPlacement.Box visible = new CopyPlacement.Box((left - paneOnScreen[0]) / zoom, (top - paneOnScreen[1]) / zoom,
+                (right - paneOnScreen[0]) / zoom, (bottom - paneOnScreen[1]) / zoom);
+        ArrayList<CopyPlacement.Box> occupied = new ArrayList<>();
+        for (int i = 0; i < o.getChildCount(); i++) {
+            View child = o.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE || child.getWidth() == 0 || child.getHeight() == 0) continue;
+            occupied.add(new CopyPlacement.Box(child.getX(), child.getY(),
+                    child.getX() + child.getWidth(), child.getY() + child.getHeight()));
+        }
+        float density = getResources().getDisplayMetrics().density;
+        return CopyPlacement.find(occupied, visible, source.getWidthSum(), source.getHeightSum(), 8 * density, 12 * density);
+    }
+
+    /**
+     * Block dropped on Duplicate: while set, each tap on Duplicate makes another copy of it. It stays set while blocks
+     * are moved, until the user closes it (close button or Back), so copies can be placed one at a time.
+     */
     private Rs repeatDuplicateSource;
     private int repeatDuplicateCount;
 
     private void startRepeatDuplicate(Rs source) {
+        if (repeatDuplicateSource != null && repeatDuplicateSource != source) {
+            repeatDuplicateSource.animate().alpha(1f).setDuration(150).start();
+        }
         repeatDuplicateSource = source;
         repeatDuplicateCount = 1;
         source.animate().alpha(0.6f).setDuration(150).start();
@@ -2886,9 +2933,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 stopRepeatDuplicate();
                 return;
             }
-            duplicateBlock(repeatDuplicateSource, repeatDuplicateCount);
+            duplicateBlock(repeatDuplicateSource);
             repeatDuplicateCount++;
-            logicTopMenu.setRepeatDuplicate(logicTopMenuRepeatListener(), repeatDuplicateCount);
+            logicTopMenu.setRepeatDuplicate(logicTopMenuRepeatListener(), repeatDuplicateCount, closeButton -> stopRepeatDuplicate());
         };
     }
 
