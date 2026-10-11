@@ -288,15 +288,19 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
             var finder = new OnlineLibraryFinder();
             var plans = new ArrayList<OnlineLibraryFinder.Plan>();
             String error = null;
+            int unreachable = 0;
             for (var entry : result.missing) {
                 try {
                     plans.add(finder.plan(entry));
                 } catch (java.io.IOException e) {
+                    // Only this library: the others may still be found.
                     error = e.getMessage();
-                    break;
+                    unreachable++;
+                    plans.add(new OnlineLibraryFinder.Plan(String.valueOf(entry.get("name")), null, null, null));
                 }
             }
-            String networkError = error;
+            // Offline only when no library could be looked up at all.
+            String networkError = unreachable > 0 && unreachable == result.missing.size() ? error : null;
             runOnUiThread(() -> {
                 h();
                 if (networkError != null) {
