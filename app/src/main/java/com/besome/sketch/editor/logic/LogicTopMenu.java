@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.card.MaterialCardView;
@@ -71,6 +72,20 @@ public class LogicTopMenu extends LinearLayout {
     public void setFavoriteActive(boolean active) {
         isFavoriteActive = active;
         updateLayoutAppearance(binding.layoutFavorite, active, R.color.scolor_blue_01, binding.tvFavorite, binding.ivBookmark);
+    }
+
+    /**
+     * Keeps Duplicate lit after a block was dropped on it: each tap on it (the listener) makes another copy.
+     * Pass null to go back to the normal drop target.
+     *
+     * @param copies how many copies were made so far, shown on the button
+     */
+    public void setRepeatDuplicate(@Nullable OnClickListener listener, int copies) {
+        binding.layoutCopy.setOnClickListener(listener);
+        binding.layoutCopy.setClickable(listener != null);
+        String label = Helper.getResString(R.string.common_word_duplicate);
+        binding.tvCopy.setText(listener != null && copies > 0 ? label + " \u00d7" + copies : label);
+        updateLayoutAppearance(binding.layoutCopy, listener != null, R.color.scolor_green_normal, binding.tvCopy, binding.ivCopy);
     }
 
     public boolean isInsideCopyArea(float x, float y) {

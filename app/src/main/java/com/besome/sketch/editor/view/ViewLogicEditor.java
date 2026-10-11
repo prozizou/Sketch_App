@@ -37,6 +37,7 @@ public class ViewLogicEditor extends LogicEditorScrollView {
 
     private final ScaleGestureDetector pinchDetector;
     private OnZoomChangedListener onZoomChangedListener;
+    private Runnable onCanvasTouchDown;
     private float zoom = 1f;
     private boolean isFirst = true;
 
@@ -82,8 +83,16 @@ public class ViewLogicEditor extends LogicEditorScrollView {
     }
 
     /** Two fingers pinch the canvas; every other gesture is left to the scroll view and the blocks. */
+    /** Told about every finger put down on the canvas, on a block or not. */
+    public void setOnCanvasTouchDownListener(Runnable listener) {
+        onCanvasTouchDown = listener;
+    }
+
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && onCanvasTouchDown != null) {
+            onCanvasTouchDown.run();
+        }
         pinchDetector.onTouchEvent(ev);
         if (pinchDetector.isInProgress() || ev.getPointerCount() > 1) {
             return true;
