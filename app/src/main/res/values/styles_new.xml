@@ -203,4 +203,15 @@
         <item name="android:focusable">true</item>
         <item name="android:textAppearance">?attr/textAppearanceBodyLarge</item>
     </style>
+    <style name="BlockManagerStatValue">
+        <item name="android:textAppearance">?attr/textAppearanceTitleLarge</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="BlockManagerStatLabel">
+        <item name="android:textAppearance">?attr/textAppearanceLabelMedium</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
 </resources>

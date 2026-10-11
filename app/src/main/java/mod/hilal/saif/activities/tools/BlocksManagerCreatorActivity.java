@@ -14,9 +14,12 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -41,6 +44,10 @@ import a.a.a.Rs;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.lib.PCP;
 import pro.sketchware.R;
+import pro.sketchware.blocks.manager.BlockChecks;
+import pro.sketchware.blocks.manager.BlockLibrary;
+import pro.sketchware.blocks.manager.BlockStore;
+import pro.sketchware.blocks.manager.TextHistory;
 import pro.sketchware.databinding.ActivityBlocksManagerCreatorBinding;
 import pro.sketchware.lib.base.BaseTextWatcher;
 import pro.sketchware.lib.highlighter.SimpleHighlighter;
@@ -64,6 +71,14 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
     private int blockPosition = 0;
     private String palletColour = "";
     private String path = "";
+    /** block.json couldn't be read: saving would replace every block with this one, so it is refused. */
+    private boolean blocksUnreadable;
+    private TextHistory codeHistory;
+    private TextHistory specHistory;
+    @Nullable
+    private EditText lastEdited;
+    private boolean restoringHistory;
+    private boolean saved;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -77,6 +92,8 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
 
     @Override
     public void onDestroy() {
+        // Leaving on purpose (Cancel, Back) discards the draft; a crash never gets here, so it stays for next time.
+        if (isFinishing() && !saved) clearDraft();
         super.onDestroy();
         binding = null;
     }
@@ -202,15 +219,11 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
             if (Helper.getText(binding.type).isEmpty()) {
                 binding.type.setText(" ");
             }
-            if (mode.equals("add")) {
-                addBlock();
+            if (blocksUnreadable) {
+                SketchwareUtil.toastError("block.json can't be read: fix or restore it before saving");
+                return;
             }
-            if (mode.equals("insert")) {
-                insertBlockAt(blockPosition);
-            }
-            if (mode.equals("edit")) {
-                editBlock(blockPosition);
-            }
+            checkThenSave();
         });
 
         binding.reset.setOnClickListener(v -> binding.colour.setText(palletColour));
@@ -233,6 +246,8 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         inputProperties();
         addParameters();
         receiveIntents();
+        setUpHistory();
+        offerDraft();
         new SimpleHighlighter(binding.code);
 
         {
@@ -454,6 +469,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         }
         SketchwareUtil.showFailedToParseJsonDialog(this, new File(path), "Custom Blocks", v -> getBlockList());
         blocksList = new ArrayList<>();
+        blocksUnreadable = true;
     }
 
     private void updateBlockSpec(String specId, String color) {
@@ -501,9 +517,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         tempMap.put("code", Helper.getText(binding.code));
         tempMap.put("palette", String.valueOf(blockPosition));
         blocksList.add(tempMap);
-        FileUtil.writeFile(path, getGson().toJson(blocksList));
-        SketchwareUtil.toast("Saved");
-        finish();
+        writeBlocks(tempMap.get("palette"));
     }
 
     private void insertBlockAt(int position) {
@@ -526,9 +540,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         tempMap.put("code", Helper.getText(binding.code));
         tempMap.put("palette", blocksList.get(position).get("palette"));
         blocksList.add(position, tempMap);
-        FileUtil.writeFile(path, getGson().toJson(blocksList));
-        SketchwareUtil.toast("Saved");
-        finish();
+        writeBlocks(tempMap.get("palette"));
     }
 
     private void editBlock(int position) {
@@ -547,8 +559,256 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         }
         tempMap.put("imports", Helper.getText(binding.customImport));
         tempMap.put("code", Helper.getText(binding.code));
-        FileUtil.writeFile(path, getGson().toJson(blocksList));
+        writeBlocks(tempMap.get("palette"));
+    }
+
+    // ---- checks, preview, undo / redo, drafts
+
+    private List<String> otherBlockNames() {
+        List<String> names = new ArrayList<>(id_detector);
+        if (mode.equals("edit") && blockPosition < blocksList.size()) {
+            names.remove(String.valueOf(blocksList.get(blockPosition).get("name")));
+        }
+        return names;
+    }
+
+    private List<BlockChecks.Issue> currentIssues() {
+        return BlockChecks.check(Helper.getText(binding.name), Helper.getText(binding.type), Helper.getText(binding.spec),
+                Helper.getText(binding.code), Helper.getText(binding.customImport), otherBlockNames());
+    }
+
+    /** Errors keep the block from being saved; warnings are shown and can be accepted. */
+    private void checkThenSave() {
+        List<BlockChecks.Issue> issues = currentIssues();
+        boolean errors = issues.stream().anyMatch(i -> i.severity() == BlockChecks.Severity.ERROR);
+        if (issues.isEmpty()) {
+            save();
+            return;
+        }
+        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(errors ? "Fix the block first" : "Check the block")
+                .setMessage(describe(issues));
+        if (errors) {
+            dialog.setPositiveButton(R.string.common_word_ok, null);
+        } else {
+            dialog.setPositiveButton(R.string.common_word_save, (d, w) -> save())
+                    .setNegativeButton(R.string.common_word_cancel, null);
+        }
+        dialog.show();
+    }
+
+    private static String describe(List<BlockChecks.Issue> issues) {
+        StringBuilder text = new StringBuilder();
+        for (BlockChecks.Issue issue : issues) {
+            String mark = switch (issue.severity()) {
+                case ERROR -> "✖ ";
+                case WARNING -> "⚠ ";
+                case INFO -> "ℹ ";
+            };
+            text.append(mark).append(issue.message()).append("\n\n");
+        }
+        return text.toString().trim();
+    }
+
+    private void save() {
+        if (mode.equals("add")) {
+            addBlock();
+        } else if (mode.equals("insert")) {
+            insertBlockAt(blockPosition);
+        } else if (mode.equals("edit")) {
+            editBlock(blockPosition);
+        }
+    }
+
+    /** Saves block.json in one step (keeping a .bak) and dates the palette the block belongs to. */
+    private void writeBlocks(@Nullable Object paletteId) {
+        try {
+            BlockStore.write(new File(path), getGson().toJson(blocksList));
+        } catch (java.io.IOException e) {
+            SketchwareUtil.toastError("Couldn't save the block: " + e.getMessage());
+            return;
+        }
+        touchPalette(paletteId);
+        saved = true;
+        clearDraft();
         SketchwareUtil.toast("Saved");
         finish();
+    }
+
+    private void touchPalette(@Nullable Object paletteId) {
+        if (paletteId == null) return;
+        try {
+            File paletteFile = new File(FileUtil.getExternalStorageDir() + ConfigActivity.getStringSettingValueOrSetAndGet(
+                    ConfigActivity.SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH,
+                    (String) ConfigActivity.getDefaultValue(ConfigActivity.SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH)));
+            BlockStore store = new BlockStore(paletteFile, new File(path), getGson());
+            List<HashMap<String, Object>> palettes = store.readList(paletteFile);
+            int index = (int) Double.parseDouble(paletteId.toString()) - BlockLibrary.FIRST_PALETTE_ID;
+            if (index >= 0 && index < palettes.size()) {
+                palettes.get(index).put(BlockLibrary.KEY_MODIFIED, System.currentTimeMillis());
+                BlockStore.write(paletteFile, getGson().toJson(palettes));
+            }
+        } catch (java.io.IOException | NumberFormatException ignored) {
+            // Only the "last modified" date of the palette is missed
+        }
+    }
+
+    private void setUpHistory() {
+        codeHistory = new TextHistory(Helper.getText(binding.code), 100);
+        specHistory = new TextHistory(Helper.getText(binding.spec), 100);
+        binding.code.addTextChangedListener(new BaseTextWatcher() {
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (restoringHistory) return;
+                codeHistory.record(s.toString(), binding.code.getSelectionStart());
+                lastEdited = binding.code;
+                invalidateOptionsMenu();
+            }
+        });
+        binding.spec.addTextChangedListener(new BaseTextWatcher() {
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (restoringHistory) return;
+                specHistory.record(s.toString(), binding.spec.getSelectionStart());
+                lastEdited = binding.spec;
+                invalidateOptionsMenu();
+            }
+        });
+    }
+
+    private void applyHistory(boolean undo) {
+        EditText field = lastEdited != null ? lastEdited : binding.code;
+        TextHistory history = field == binding.spec ? specHistory : codeHistory;
+        TextHistory.State state = undo ? history.undo() : history.redo();
+        if (state == null) return;
+        restoringHistory = true;
+        field.setText(state.text());
+        field.setSelection(Math.min(state.cursor(), state.text().length()));
+        restoringHistory = false;
+        invalidateOptionsMenu();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        menu.add(0, 1, 0, "Undo").setIcon(R.drawable.ic_mtrl_undo).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, 2, 1, "Redo").setIcon(R.drawable.ic_mtrl_redo).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, 3, 2, "Java preview");
+        menu.add(0, 4, 3, "Check the block");
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(android.view.Menu menu) {
+        TextHistory history = lastEdited == binding.spec ? specHistory : codeHistory;
+        if (history != null) {
+            menu.findItem(1).setEnabled(history.canUndo());
+            menu.findItem(2).setEnabled(history.canRedo());
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
+        switch (item.getItemId()) {
+            case 1 -> applyHistory(true);
+            case 2 -> applyHistory(false);
+            case 3 -> showJavaPreview();
+            case 4 -> {
+                List<BlockChecks.Issue> issues = currentIssues();
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle("Check the block")
+                        .setMessage(issues.isEmpty() ? "No problem found." : describe(issues))
+                        .setPositiveButton(R.string.common_word_ok, null)
+                        .show();
+            }
+            default -> {
+                return super.onOptionsItemSelected(item);
+            }
+        }
+        return true;
+    }
+
+    /** The Java a use of this block adds to the app, with its imports. */
+    private void showJavaPreview() {
+        TextView view = new TextView(this);
+        view.setTypeface(Typeface.MONOSPACE);
+        view.setTextIsSelectable(true);
+        int pad = SketchwareUtil.dpToPx(20);
+        view.setPadding(pad, pad / 2, pad, 0);
+        view.setText(BlockChecks.javaPreview(Helper.getText(binding.spec), Helper.getText(binding.code), Helper.getText(binding.customImport)));
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(view);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Java preview")
+                .setView(scroll)
+                .setPositiveButton(R.string.common_word_ok, null)
+                .show();
+    }
+
+    private String draftKey() {
+        String where = mode.equals("add") ? getIntent().getStringExtra("pallet") : getIntent().getStringExtra("pos");
+        return path + "|" + mode + "|" + where;
+    }
+
+    private android.content.SharedPreferences drafts() {
+        return getSharedPreferences("block_editor_drafts", MODE_PRIVATE);
+    }
+
+    private HashMap<String, Object> currentFields() {
+        HashMap<String, Object> fields = new HashMap<>();
+        fields.put("name", Helper.getText(binding.name));
+        fields.put("type", Helper.getText(binding.type));
+        fields.put("typeName", Helper.getText(binding.typename));
+        fields.put("spec", Helper.getText(binding.spec));
+        fields.put("spec2", Helper.getText(binding.spec2));
+        fields.put("color", Helper.getText(binding.colour));
+        fields.put("imports", Helper.getText(binding.customImport));
+        fields.put("code", Helper.getText(binding.code));
+        return fields;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Kept until the block is saved or the changes are discarded, so a crash or a killed app loses nothing.
+        if (!saved && binding != null && !blocksUnreadable) {
+            drafts().edit().putString(draftKey(), getGson().toJson(currentFields())).apply();
+        }
+    }
+
+    private void clearDraft() {
+        drafts().edit().remove(draftKey()).apply();
+    }
+
+    private void offerDraft() {
+        String json = drafts().getString(draftKey(), null);
+        if (json == null) return;
+        HashMap<String, Object> draft;
+        try {
+            draft = getGson().fromJson(json, new com.google.gson.reflect.TypeToken<HashMap<String, Object>>() {
+            }.getType());
+        } catch (RuntimeException e) {
+            clearDraft();
+            return;
+        }
+        if (draft == null || draft.equals(currentFields())) {
+            clearDraft();
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Unsaved changes")
+                .setMessage("This block has changes that weren't saved (the app was closed before). Restore them?")
+                .setPositiveButton("Restore", (d, w) -> {
+                    binding.name.setText(String.valueOf(draft.getOrDefault("name", "")));
+                    binding.type.setText(String.valueOf(draft.getOrDefault("type", "")));
+                    binding.typename.setText(String.valueOf(draft.getOrDefault("typeName", "")));
+                    binding.spec.setText(String.valueOf(draft.getOrDefault("spec", "")));
+                    binding.spec2.setText(String.valueOf(draft.getOrDefault("spec2", "")));
+                    binding.colour.setText(String.valueOf(draft.getOrDefault("color", "")));
+                    binding.customImport.setText(String.valueOf(draft.getOrDefault("imports", "")));
+                    binding.code.setText(String.valueOf(draft.getOrDefault("code", "")));
+                })
+                .setNegativeButton("Discard", (d, w) -> clearDraft())
+                .show();
     }
 }

@@ -41,6 +41,8 @@ import dev.pranav.filepicker.FilePickerDialogFragment;
 import dev.pranav.filepicker.FilePickerOptions;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
+import pro.sketchware.blocks.manager.BlockLibrary;
+import pro.sketchware.blocks.manager.BlockStore;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 
@@ -167,6 +169,10 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.clear();
+        if (Integer.parseInt(getIntent().getStringExtra("position")) == -1) {
+            menu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Restore blocks");
+            menu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Empty recycle bin");
+        }
         if (Integer.parseInt(getIntent().getStringExtra("position")) != -1) {
             if (mode.equals("normal")) {
                 menu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Swap").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_swap_vertical)).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
@@ -202,11 +208,19 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
                 openFileExplorerImport();
                 break;
 
+            case "Restore blocks":
+                showRestoreSelected();
+                break;
+
+            case "Empty recycle bin":
+                confirmEmptyRecycleBin();
+                break;
+
             case "Export":
                 Object paletteName = pallet_list.get(palette - 9).get("name");
                 if (paletteName instanceof String) {
                     String exportTo = new File(BLOCK_EXPORT_PATH, paletteName + ".json").getAbsolutePath();
-                    FileUtil.writeFile(exportTo, getGson().toJson(filtered_list));
+                    writeAtomically(exportTo, getGson().toJson(filtered_list));
                     SketchwareUtil.toast("Successfully exported blocks to:\n" + exportTo, Toast.LENGTH_LONG);
                 } else {
                     SketchwareUtil.toastError("Invalid name of palette #" + (palette - 9));
@@ -308,7 +322,7 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
 
     private void _swapitems(int sourcePosition, int targetPosition) {
         Collections.swap(all_blocks_list, sourcePosition, targetPosition);
-        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+        saveBlocks();
         _refreshLists();
     }
 
@@ -396,19 +410,19 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
             }
         }
         all_blocks_list.add(position + 1, block);
-        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+        saveBlocks();
         _refreshLists();
     }
 
     private void _deleteBlock(int position) {
         all_blocks_list.remove(position);
-        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+        saveBlocks();
         _refreshLists();
     }
 
     private void _moveToRecycleBin(int position) {
         all_blocks_list.get(position).put("palette", "-1");
-        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+        saveBlocks();
         _refreshLists();
     }
 
@@ -433,10 +447,7 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
                     .setSingleChoiceItems(paletteNames.toArray(new String[0]), -1, (dialog, which) -> restoreToChoice.set(which))
                     .setPositiveButton("Restore", (dialog, which) -> {
                         if (restoreToChoice.get() != -1) {
-                            all_blocks_list.get(position).put("palette", String.valueOf(restoreToChoice.get() + 9));
-                            Collections.swap(all_blocks_list, position, all_blocks_list.size() - 1);
-                            FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
-                            _refreshLists();
+                            restoreBlocks(java.util.List.of(position), restoreToChoice.get());
                         }
                     });
         } else {
@@ -444,16 +455,30 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
             builder.setTitle("Move to")
                     .setSingleChoiceItems(paletteNames.toArray(new String[0]), palette - 9, (dialog, which) -> moveToChoice.set(which))
                     .setPositiveButton("Move", (dialog, which) -> {
-                        all_blocks_list.get(position).put("palette", String.valueOf(moveToChoice.get() + 9));
-                        Collections.swap(all_blocks_list, position, all_blocks_list.size() - 1);
-                        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
-                        _refreshLists();
+                        // Moved to the end of the chosen palette; every other block keeps its place (the
+                        // previous swap with the last block reordered another palette).
+                        BlockLibrary library = library();
+                        library.moveBlocks(java.util.List.of(position), moveToChoice.get());
+                        library.touchId(palette);
+                        commit(library);
                     });
         }
         builder.show();
     }
 
-    private void _importBlocks(ArrayList<HashMap<String, Object>> blocks) {
+    private void _importBlocks(ArrayList<HashMap<String, Object>> rawBlocks) {
+        // Entries without a name, a spec or a known type, or repeated in the file, are left out.
+        java.util.List<BlockLibrary.ImportProblem> problems = BlockLibrary.validate(rawBlocks);
+        java.util.Set<Integer> invalid = new java.util.HashSet<>();
+        for (BlockLibrary.ImportProblem problem : problems) invalid.add(problem.entry());
+        ArrayList<HashMap<String, Object>> blocks = new ArrayList<>();
+        for (int i = 0; i < rawBlocks.size(); i++) {
+            if (!invalid.contains(i)) blocks.add(rawBlocks.get(i));
+        }
+        if (!problems.isEmpty()) {
+            SketchwareUtil.toastError(problems.size() + " entries can't be imported, first: " + problems.get(0).message());
+        }
+        if (blocks.isEmpty()) return;
         try {
             ArrayList<String> names = new ArrayList<>();
             ArrayList<Integer> toAdd = new ArrayList<>();
@@ -478,34 +503,28 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
                     .setPositiveButton("Import", (dialog, which) -> {
                         for (int i = 0; i < blocks.size(); i++) {
                             if (toAdd.contains(i)) {
-                                HashMap<String, Object> map = blocks.get(i);
-                                map.put("palette", String.valueOf(palette));
-                                all_blocks_list.add(map);
+                                addImported(blocks.get(i));
                             }
                         }
-                        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+                        saveBlocks();
                         _refreshLists();
                         SketchwareUtil.toast("Imported successfully");
                     })
                     .setNegativeButton("Reverse", (dialog, which) -> {
                         for (int i = 0; i < blocks.size(); i++) {
                             if (!toAdd.contains(i)) {
-                                HashMap<String, Object> map = blocks.get(i);
-                                map.put("palette", String.valueOf(palette));
-                                all_blocks_list.add(map);
+                                addImported(blocks.get(i));
                             }
                         }
-                        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+                        saveBlocks();
                         _refreshLists();
                         SketchwareUtil.toast("Imported successfully");
                     })
                     .setNeutralButton("All", (dialog, which) -> {
                         for (int i = 0; i < blocks.size(); i++) {
-                            HashMap<String, Object> map = blocks.get(i);
-                            map.put("palette", String.valueOf(palette));
-                            all_blocks_list.add(map);
+                            addImported(blocks.get(i));
                         }
-                        FileUtil.writeFile(blocks_path, getGson().toJson(all_blocks_list));
+                        saveBlocks();
                         _refreshLists();
                         SketchwareUtil.toast("Imported successfully");
                     })
@@ -513,6 +532,108 @@ public class BlocksManagerDetailsActivity extends BaseAppCompatActivity {
         } catch (Exception e) {
             SketchwareUtil.toastError("An error occurred! [" + e.getMessage() + "]");
         }
+    }
+
+    /** Adds an imported block to this palette; a name already used gets a new one, so no opcode is duplicated. */
+    private void addImported(HashMap<String, Object> block) {
+        BlockLibrary library = library();
+        HashMap<String, Object> copy = new HashMap<>(block);
+        copy.put("name", library.uniqueBlockName(String.valueOf(copy.get("name"))));
+        copy.put("palette", String.valueOf(palette));
+        if (!copy.containsKey("type")) copy.put("type", " ");
+        all_blocks_list.add(copy);
+    }
+
+    private BlockLibrary library() {
+        return new BlockLibrary(pallet_list, all_blocks_list);
+    }
+
+    /** Takes the result of a library operation as the new state, saves it and shows it. */
+    private void commit(BlockLibrary library) {
+        pallet_list = new ArrayList<>();
+        for (java.util.Map<String, Object> p : library.palettes()) pallet_list.add(new HashMap<>(p));
+        all_blocks_list = new ArrayList<>();
+        for (java.util.Map<String, Object> b : library.blocks()) all_blocks_list.add(new HashMap<>(b));
+        writeAtomically(pallet_path, getGson().toJson(pallet_list));
+        writeAtomically(blocks_path, getGson().toJson(all_blocks_list));
+        _refreshLists();
+    }
+
+    /** Saves the block list (in one step, keeping a .bak) and marks this palette as just changed. */
+    private void saveBlocks() {
+        writeAtomically(blocks_path, getGson().toJson(all_blocks_list));
+        if (palette >= BlockLibrary.FIRST_PALETTE_ID && palette - BlockLibrary.FIRST_PALETTE_ID < pallet_list.size()) {
+            pallet_list.get(palette - BlockLibrary.FIRST_PALETTE_ID).put(BlockLibrary.KEY_MODIFIED, System.currentTimeMillis());
+            writeAtomically(pallet_path, getGson().toJson(pallet_list));
+        }
+    }
+
+    private static void writeAtomically(String path, String content) {
+        try {
+            BlockStore.write(new File(path), content);
+        } catch (java.io.IOException e) {
+            SketchwareUtil.toastError("Couldn't save " + new File(path).getName() + ": " + e.getMessage());
+        }
+    }
+
+    /** Restores recycle bin blocks to a palette, at its end, keeping their order. */
+    private void restoreBlocks(java.util.List<Integer> blockIndices, int paletteIndex) {
+        BlockLibrary library = library();
+        library.moveBlocks(blockIndices, paletteIndex);
+        commit(library);
+    }
+
+    /** Picks recycle bin blocks, then the palette to restore them to. */
+    private void showRestoreSelected() {
+        if (filtered_list.isEmpty() || pallet_list.isEmpty()) {
+            SketchwareUtil.toastError(pallet_list.isEmpty() ? "Create a palette first" : "The recycle bin is empty");
+            return;
+        }
+        String[] names = new String[filtered_list.size()];
+        boolean[] checked = new boolean[names.length];
+        for (int i = 0; i < names.length; i++) names[i] = String.valueOf(filtered_list.get(i).get("name"));
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Restore blocks")
+                .setMultiChoiceItems(names, checked, (dialog, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton("Next", (dialog, which) -> {
+                    java.util.List<Integer> chosen = new ArrayList<>();
+                    for (int i = 0; i < checked.length; i++) if (checked[i]) chosen.add(reference_list.get(i));
+                    if (chosen.isEmpty()) return;
+                    String[] paletteNames = new String[pallet_list.size()];
+                    for (int j = 0; j < paletteNames.length; j++) paletteNames[j] = String.valueOf(pallet_list.get(j).get("name"));
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle("Restore to")
+                            .setItems(paletteNames, (d, target) -> restoreBlocks(chosen, target))
+                            .setNegativeButton(R.string.common_word_cancel, null)
+                            .show();
+                })
+                .setNeutralButton("All", (dialog, which) -> {
+                    for (int i = 0; i < checked.length; i++) checked[i] = true;
+                    java.util.List<Integer> chosen = new ArrayList<>(reference_list);
+                    String[] paletteNames = new String[pallet_list.size()];
+                    for (int j = 0; j < paletteNames.length; j++) paletteNames[j] = String.valueOf(pallet_list.get(j).get("name"));
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle("Restore to")
+                            .setItems(paletteNames, (d, target) -> restoreBlocks(chosen, target))
+                            .setNegativeButton(R.string.common_word_cancel, null)
+                            .show();
+                })
+                .setNegativeButton(R.string.common_word_cancel, null)
+                .show();
+    }
+
+    private void confirmEmptyRecycleBin() {
+        if (filtered_list.isEmpty()) return;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Empty the recycle bin?")
+                .setMessage("The blocks in it will be deleted permanently.")
+                .setPositiveButton("Empty", (dialog, which) -> {
+                    BlockLibrary library = library();
+                    library.emptyRecycleBin();
+                    commit(library);
+                })
+                .setNegativeButton(R.string.common_word_cancel, null)
+                .show();
     }
 
     private void fabButtonVisibility(boolean visible) {
