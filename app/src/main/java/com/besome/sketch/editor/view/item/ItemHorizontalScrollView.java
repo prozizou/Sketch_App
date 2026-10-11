@@ -61,7 +61,8 @@ public class ItemHorizontalScrollView extends FrameLayout implements ItemView, S
             i2++;
         }
         if (i >= 0 && index >= i) {
-            super.addView(child, index + 1);
+            // Skipping the hidden child must not go past the end (crashed undo with index = childCount).
+            super.addView(child, Math.min(index + 1, childCount));
         } else {
             super.addView(child, index);
         }

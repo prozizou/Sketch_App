@@ -143,7 +143,8 @@ public class ItemVerticalScrollView extends FrameLayout implements ItemView, Scr
             }
 
             if (var6 >= 0 && index >= var6) {
-                super.addView(view, index + 1);
+                // Skipping the hidden child must not go past the end (crashed undo with index = childCount).
+                super.addView(view, Math.min(index + 1, childCount));
             } else {
                 super.addView(view, index);
             }
