@@ -162,21 +162,45 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_toggle_palette"
+        <!-- The blocks collection sits next to the palette button instead of in the toolbar menu. -->
+        <LinearLayout
+            android:id="@+id/fab_row"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/action_button_margin"
-            android:alpha="0.8"
-            android:src="@drawable/block_flled_white"
-            app:backgroundTint="?attr/colorSecondaryContainer"
-            app:elevation="2dp"
-            app:fabCustomSize="36dp"
-            app:maxImageSize="18dp"
-            app:fabSize="mini"
-            app:pressedTranslationZ="4dp"
-            app:tint="?attr/colorOnSecondaryContainer"
-            tools:ignore="ContentDescription" />
+            android:orientation="horizontal">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_blocks_collection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/action_button_margin"
+                android:alpha="0.8"
+                android:contentDescription="@string/common_word_blocks_collection"
+                android:src="@drawable/ic_mtrl_bookmark"
+                app:backgroundTint="?attr/colorSecondaryContainer"
+                app:elevation="2dp"
+                app:fabCustomSize="36dp"
+                app:maxImageSize="18dp"
+                app:fabSize="mini"
+                app:pressedTranslationZ="4dp"
+                app:tint="?attr/colorOnSecondaryContainer" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_toggle_palette"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/action_button_margin"
+                android:alpha="0.8"
+                android:src="@drawable/block_flled_white"
+                app:backgroundTint="?attr/colorSecondaryContainer"
+                app:elevation="2dp"
+                app:fabCustomSize="36dp"
+                app:maxImageSize="18dp"
+                app:fabSize="mini"
+                app:pressedTranslationZ="4dp"
+                app:tint="?attr/colorOnSecondaryContainer"
+                tools:ignore="ContentDescription" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/area_palette"
