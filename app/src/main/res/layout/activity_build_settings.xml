@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Build settings of a project: Simple and Advanced tabs over cards, Cancel / Save fixed at the bottom. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:subtitle="@string/build_settings_subtitle"
+        app:title="@string/build_settings_title" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        app:tabMode="fixed">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/build_settings_tab_simple" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/build_settings_tab_advanced" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="16dp">
+
+            <!-- ============================== Simple ============================== -->
+            <LinearLayout
+                android:id="@+id/simple_page"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            style="@style/BuildSettingsCardTitle"
+                            android:text="@string/build_settings_profile" />
+
+                        <TextView
+                            android:id="@+id/profile_description"
+                            style="@style/BuildSettingsCardBody" />
+
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/profile_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <Button
+                                android:id="@+id/profile_debug"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/build_settings_profile_debug" />
+
+                            <Button
+                                android:id="@+id/profile_release"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/build_settings_profile_release" />
+
+                            <Button
+                                android:id="@+id/profile_custom"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/build_settings_profile_custom" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            style="@style/BuildSettingsCardTitle"
+                            android:text="@string/build_settings_compiler" />
+
+                        <TextView
+                            style="@style/BuildSettingsLabel"
+                            android:text="@string/build_settings_dexer" />
+
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/dexer_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <Button
+                                android:id="@+id/dexer_d8"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/build_settings_dexer_d8" />
+
+                            <Button
+                                android:id="@+id/dexer_dx"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/build_settings_dexer_dx" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                        <TextView
+                            android:id="@+id/dexer_note"
+                            style="@style/BuildSettingsCardBody" />
+
+                        <TextView
+                            style="@style/BuildSettingsLabel"
+                            android:text="@string/build_settings_java_version" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/java_versions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="true"
+                            app:singleSelection="true" />
+
+                        <TextView
+                            android:id="@+id/java_note"
+                            style="@style/BuildSettingsCardBody" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="16dp"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="8dp">
+
+                        <TextView
+                            style="@style/BuildSettingsCardTitle"
+                            android:text="@string/build_settings_diagnostics" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_warnings"
+                            style="@style/BuildSettingsSwitch"
+                            android:text="@string/build_settings_show_warnings" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_logcat"
+                            style="@style/BuildSettingsSwitch"
+                            android:text="@string/build_settings_logcat" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- ============================== Advanced ============================== -->
+            <LinearLayout
+                android:id="@+id/advanced_page"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            style="@style/BuildSettingsCardTitle"
+                            android:text="@string/build_settings_paths" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til_android_jar"
+                            style="?attr/textInputOutlinedStyle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="@string/build_settings_android_jar"
+                            app:endIconContentDescription="@string/build_settings_pick_file"
+                            app:endIconDrawable="@drawable/ic_mtrl_folder"
+                            app:endIconMode="custom"
+                            app:helperText="@string/build_settings_android_jar_help">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/android_jar"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textUri" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til_classpath"
+                            style="?attr/textInputOutlinedStyle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="@string/build_settings_classpath"
+                            app:endIconContentDescription="@string/build_settings_pick_file"
+                            app:endIconDrawable="@drawable/ic_mtrl_folder"
+                            app:endIconMode="custom"
+                            app:helperText="@string/build_settings_classpath_help">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/classpath"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textMultiLine|textUri" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_http_legacy"
+                            style="@style/BuildSettingsSwitch"
+                            android:text="@string/build_settings_http_legacy" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingVertical="8dp">
+
+                        <TextView
+                            style="@style/BuildSettingsCardTitle"
+                            android:paddingHorizontal="16dp"
+                            android:paddingTop="8dp"
+                            android:text="@string/build_settings_output" />
+
+                        <TextView
+                            android:id="@+id/row_shrinking"
+                            style="@style/BuildSettingsLinkRow" />
+
+                        <TextView
+                            android:id="@+id/row_export"
+                            style="@style/BuildSettingsLinkRow"
+                            android:text="@string/build_settings_export" />
+
+                        <TextView
+                            android:id="@+id/row_history"
+                            style="@style/BuildSettingsLinkRow"
+                            android:text="@string/build_settings_history" />
+
+                        <TextView
+                            android:id="@+id/row_memory"
+                            style="@style/BuildSettingsLinkRow"
+                            android:clickable="false"
+                            android:focusable="false" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <Button
+                    android:id="@+id/restore_defaults"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/build_settings_restore_defaults" />
+            </LinearLayout>
+
+            <!-- ============================== Both tabs ============================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/check_card"
+                style="?attr/materialCardViewOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/BuildSettingsCardTitle"
+                        android:text="@string/build_settings_compat" />
+
+                    <TextView
+                        android:id="@+id/check_result"
+                        style="@style/BuildSettingsCardBody"
+                        android:accessibilityLiveRegion="polite" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainer"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:text="@string/common_word_cancel" />
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/common_word_save" />
+    </LinearLayout>
+</LinearLayout>
