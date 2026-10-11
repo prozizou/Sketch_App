@@ -81,7 +81,8 @@ public class ItemLinearLayout extends LinearLayout implements ItemView, ScrollCo
             }
 
             if (var6 >= 0 && index >= var6) {
-                super.addView(child, index + 1);
+                // Skipping the hidden child must not go past the end (crashed undo with index = childCount).
+                super.addView(child, Math.min(index + 1, childCount));
             } else {
                 super.addView(child, index);
             }

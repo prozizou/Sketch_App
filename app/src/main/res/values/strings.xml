@@ -1123,8 +1123,10 @@ ACTION_VIEW
     <string name="whats_new_got_it">Got it</string>
     <string name="whats_new_menu">What\'s new</string>
     <string-array name="whats_new_entries">
-        <item>none|Updates survive a lost connection|When the connection drops, the update download picks up where it stopped instead of starting over. It retries on its own, and Retry or Continue download goes on from the part already downloaded.</item>
-        <item>logic_search|Search a screen\'s logic|Find a variable, a value or any word of a block in the current screen, and open its event with the block highlighted.</item>
+        <item>none|Edit a MoreBlock|Change a MoreBlock\'s name and parameters from its Edit button: every use of it in the screen is updated, keeping the values of unchanged parameters.</item>
+        <item>none|A roomier Logic editor|My Variables, Blocks and your favorite palette as tabs, the block search behind an icon, the blocks collection next to the palette button, and Duplicate can be tapped again for more copies.</item>
+        <item>none|Updates in the background|Keep working while an update downloads; a notification shows its progress and installs it when it is ready.</item>
+        <item>none|Fixes|No more crash when undoing in the View editor, no leftovers when switching property tabs, smooth browsing of many custom palettes, and System Settings now live in App settings.</item>
     </string-array>
     <string name="whats_new_open_in_project">Open in which project?</string>
     <string name="whats_new_no_project">Create a project first to try this.</string>

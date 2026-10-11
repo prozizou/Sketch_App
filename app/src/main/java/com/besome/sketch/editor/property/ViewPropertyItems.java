@@ -65,6 +65,9 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
         }
     }
 
+    /** Whether the Basic properties are what is shown (rather than the Recent list or the Attributes cards). */
+    private boolean showingBasic;
+
     public ViewPropertyItems(Context var1) {
         super(var1);
         Cx.a().a(var1);
@@ -313,6 +316,7 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
      */
     public void setupAttributeCards(ViewBean bean) {
         c = bean;
+        showingBasic = false;
         f.clear();
         removeAllViews();
         LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -477,13 +481,16 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
         c = bean;
         Cx.a().b(c.getClassInfo().getClassName());
         
-        if (!isSameView) {
+        // Same view, but coming back from Recent or Attributes: their rows are still here, so rebuild from scratch.
+        if (!isSameView || !showingBasic) {
             removeAllViews();
             f.clear();
             extraSections.clear();
             hiddenByFilter.clear();
+            setGravity(Gravity.START | Gravity.TOP);
         }
-        
+        showingBasic = true;
+
         if (bean.id.equals("_fab")) {
             setupBasicAndLayoutProperties(bean);
         } else {
@@ -777,6 +784,7 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
 
     public void setupAllPropertiesFromConfig(ViewBean bean) {
         c = bean;
+        showingBasic = false;
         removeAllViews();
         LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
