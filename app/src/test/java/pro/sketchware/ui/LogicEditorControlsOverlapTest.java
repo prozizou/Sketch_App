@@ -79,4 +79,14 @@ public class LogicEditorControlsOverlapTest {
         View drawer = root.findViewById(R.id.right_drawer);
         assertTrue(drawer.getZ() > bar.getZ());
     }
+
+    /** One floating button above the palette, and it opens the blocks collection (the tabs open the palette). */
+    @Test
+    public void theBlocksButtonIsTheCollectionButton() throws Exception {
+        View root = inflate(960, 1920, null);
+        android.view.ViewGroup row = root.findViewById(R.id.fab_row);
+        assertEquals(1, row.getChildCount());
+        View blocks = root.findViewById(R.id.fab_toggle_palette);
+        assertEquals(root.getResources().getString(R.string.common_word_blocks_collection), blocks.getContentDescription());
+    }
 }
