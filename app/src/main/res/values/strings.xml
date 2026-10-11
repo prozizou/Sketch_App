@@ -422,6 +422,7 @@ Please try again after removing the blocks with this variable"</string>
     <string name="logic_editor_message_select_copy_block">Select a block you want to copy</string>
     <string name="logic_editor_message_variable_name_must_start_letter">The variable name must start with a letter</string>
     <string name="logic_editor_more_block_actionbar_title_create_more_block">Create a new More Block</string>
+    <string name="logic_editor_message_highlight_block_missing">The block to show is no longer in this event</string>
     <string name="logic_editor_more_block_actionbar_title_edit_more_block">Edit More Block</string>
     <string name="logic_editor_more_block_message_type_locked">This More Block is used in the logic: its return type can\'t change. Its name and parameters can.</string>
     <string name="logic_more_block_message_edited">More Block updated (%d uses changed)</string>

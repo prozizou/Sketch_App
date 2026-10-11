@@ -1,5 +1,8 @@
 package com.besome.sketch.editor.view;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -8,6 +11,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
@@ -179,6 +183,58 @@ public class ViewLogicEditor extends LogicEditorScrollView {
         scrollTo(clampScrollX(fit.scrollX()), clampScrollY(fit.scrollY()));
         invalidate();
         notifyZoomChanged();
+    }
+
+    /**
+     * Scrolls, with a short animation, so that {@code block} (a view inside the block pane) is centred on screen.
+     * When the canvas is zoomed out below {@code minZoom} it first zooms in to that level, so the block is readable.
+     * Blocks larger than the screen are shown from their top-left corner.
+     *
+     * @param onShown run once the block is in place
+     * @return false when the view isn't part of the block pane
+     */
+    public boolean revealBlock(View block, float minZoom, Runnable onShown) {
+        float x = 0;
+        float y = 0;
+        View view = block;
+        while (view != null && view != blockPane) {
+            x += view.getX();
+            y += view.getY();
+            view = view.getParent() instanceof View parent ? parent : null;
+        }
+        if (view == null) return false;
+
+        if (zoom < minZoom) {
+            setZoom(minZoom);
+        }
+        float padding = 24 * getResources().getDisplayMetrics().density;
+        float width = block.getWidth() * zoom;
+        float height = block.getHeight() * zoom;
+        int targetX = Math.round(width + 2 * padding > getWidth() ? x * zoom - padding : x * zoom + width / 2 - getWidth() / 2f);
+        int targetY = Math.round(height + 2 * padding > getHeight() ? y * zoom - padding : y * zoom + height / 2 - getHeight() / 2f);
+        targetX = clampScrollX(targetX);
+        targetY = clampScrollY(targetY);
+
+        int startX = getScrollX();
+        int startY = getScrollY();
+        int endX = targetX;
+        int endY = targetY;
+        ValueAnimator scroll = ValueAnimator.ofFloat(0f, 1f);
+        scroll.setDuration(startX == endX && startY == endY ? 0 : 400);
+        scroll.setInterpolator(new DecelerateInterpolator());
+        scroll.addUpdateListener(animation -> {
+            float f = (float) animation.getAnimatedValue();
+            scrollTo(Math.round(startX + (endX - startX) * f), Math.round(startY + (endY - startY) * f));
+            invalidate();
+        });
+        scroll.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (onShown != null) onShown.run();
+            }
+        });
+        scroll.start();
+        return true;
     }
 
     private void applyScale() {
