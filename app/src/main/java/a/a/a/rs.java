@@ -33,6 +33,7 @@ import com.besome.sketch.beans.ViewBean;
 import com.besome.sketch.editor.LogicEditorActivity;
 import com.besome.sketch.editor.event.AddEventActivity;
 import com.besome.sketch.editor.event.CollapsibleEventLayout;
+import com.besome.sketch.editor.makeblock.MakeBlockActivity;
 import com.besome.sketch.lib.base.CollapsibleViewHolder;
 import com.besome.sketch.lib.ui.CollapsibleButton;
 import com.google.android.material.button.MaterialButton;
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import mod.hey.studios.moreblock.MoreblockEditor;
 import mod.hey.studios.moreblock.ReturnMoreblockManager;
 import mod.hey.studios.moreblock.importer.MoreblockImporterDialog;
 import mod.hey.studios.util.Helper;
@@ -73,6 +75,19 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
     private View searchContainer;
     private final ActivityResultLauncher<Intent> addEventLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
             result -> refreshEvents());
+    private final ActivityResultLauncher<Intent> editMoreBlockLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        Intent data = result.getData();
+        if (result.getResultCode() == android.app.Activity.RESULT_OK && data != null && currentActivity != null) {
+            String oldName = data.getStringExtra("edit_name");
+            String newName = data.getStringExtra("block_name");
+            String newSpec = data.getStringExtra("block_spec");
+            if (oldName != null && newName != null && newSpec != null) {
+                int uses = MoreblockEditor.apply(jC.a(sc_id), currentActivity.getJavaName(), oldName, newName, newSpec);
+                bB.a(requireContext(), getString(R.string.logic_more_block_message_edited, uses), 0).show();
+            }
+        }
+        refreshEvents();
+    });
     private final ActivityResultLauncher<Intent> openEvent = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         // in case any Events were added, e.g. a new MoreBlock
         refreshEvents();
@@ -212,6 +227,22 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                 }
             }
         }
+    }
+
+    /** Opens the MoreBlock builder filled with this MoreBlock; saving replaces it everywhere it is used. */
+    private void editMoreBlock(EventBean moreBlock) {
+        String javaName = currentActivity.getJavaName();
+        String spec = jC.a(sc_id).b(javaName, moreBlock.targetId);
+        if (spec.isEmpty()) {
+            return;
+        }
+        Intent intent = new Intent(requireActivity(), MakeBlockActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        intent.putExtra("project_file", currentActivity);
+        intent.putExtra("edit_name", moreBlock.targetId);
+        intent.putExtra("edit_spec", spec);
+        intent.putExtra("edit_type_locked", MoreblockEditor.isUsed(jC.a(sc_id), javaName, spec));
+        editMoreBlockLauncher.launch(intent);
     }
 
     private void deleteMoreBlock(EventBean moreBlock, int position) {
@@ -486,8 +517,10 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
             holder.optionsLayout.showDelete();
             if (eventBean.eventType == EventBean.EVENT_TYPE_ETC) {
                 holder.optionsLayout.showAddToCollection();
+                holder.optionsLayout.showEdit();
             } else {
                 holder.optionsLayout.hideAddToCollection();
+                holder.optionsLayout.hideEdit();
             }
             if (eventBean.eventType == EventBean.EVENT_TYPE_ACTIVITY) {
                 if (eventBean.eventName.equals("initializeLogic")) {
@@ -668,7 +701,9 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                         if (v instanceof CollapsibleButton button) {
                             setAnimateNextTransformation(true);
                             int id = button.getButtonId();
-                            if (id == 2) {
+                            if (id == 3) {
+                                editMoreBlock(eventBean);
+                            } else if (id == 2) {
                                 eventBean.buttonPressed = id;
                                 eventBean.isConfirmation = false;
                                 eventBean.isCollapsed = false;

@@ -23,6 +23,7 @@ import a.a.a.bB;
 import a.a.a.mB;
 import a.a.a.uq;
 import a.a.a.wB;
+import mod.hey.studios.moreblock.MoreblockEditor;
 import mod.hey.studios.moreblock.MoreblockValidator;
 import mod.hey.studios.moreblock.ReturnMoreblockManager;
 import mod.hey.studios.util.Helper;
@@ -264,6 +265,50 @@ public class MoreBlockBuilderView extends LinearLayout {
         Rs var2 = new Rs(activity, 0, "", type, "definedFunc");
         block = var2;
         updateBlockPreview(binding.blockArea, binding.removeArea, var2, Helper.getText(binding.edName), variablesSpecAndNamePair);
+    }
+
+    /**
+     * Fills the builder with an existing MoreBlock, so it can be edited.
+     *
+     * @param nameWithType the MoreBlock name, with its return type, e.g. {@code uniqueID[String]}
+     * @param spec         its spec, e.g. {@code uniqueID[String] %s.prefix}
+     */
+    public void loadMoreBlock(String nameWithType, String spec) {
+        variablesSpecAndNamePair.clear();
+        variablesSpecAndNamePair.addAll(MoreblockEditor.parts(spec));
+
+        ArrayList<String> reservedVariableNames = new ArrayList<>(Arrays.asList(uq.a()));
+        for (Pair<String, String> variable : variablesSpecAndNamePair) {
+            if (!variable.first.equals("t")) {
+                reservedVariableNames.add(variable.second);
+            }
+        }
+        variableNameValidator.a(reservedVariableNames.toArray(new String[0]));
+
+        binding.edName.setText(ReturnMoreblockManager.getMbName(nameWithType));
+        int chipId = switch (ReturnMoreblockManager.getMbType(nameWithType)) {
+            case "String" -> R.id.radio_mb_type_string;
+            case "double" -> R.id.radio_mb_type_number;
+            case "boolean" -> R.id.radio_mb_type_boolean;
+            case "a|Map" -> R.id.radio_mb_type_map;
+            case "l|List String" -> R.id.radio_mb_type_liststring;
+            case "l|List Map" -> R.id.radio_mb_type_listmap;
+            case "v|View" -> R.id.radio_mb_type_view;
+            default -> R.id.radio_mb_type_void;
+        };
+        binding.radioMbType.check(chipId);
+        refresh(getType());
+    }
+
+    /** @return whether the builder no longer describes the MoreBlock {@code (nameWithType, spec)}. */
+    public boolean isModified(String nameWithType, String spec) {
+        Pair<String, String> current = getBlockInformation();
+        return !current.first.equals(nameWithType) || !current.second.equals(spec);
+    }
+
+    /** @return the selected return type, as stored in a MoreBlock name (e.g. {@code String}, {@code a|Map}); "void" for none. */
+    public String getReturnType() {
+        return ReturnMoreblockManager.getMbType(getBlockInformation().first);
     }
 
     public void setFuncNameValidator(ArrayList<String> var1) {

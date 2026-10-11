@@ -422,6 +422,9 @@ Please try again after removing the blocks with this variable"</string>
     <string name="logic_editor_message_select_copy_block">Select a block you want to copy</string>
     <string name="logic_editor_message_variable_name_must_start_letter">The variable name must start with a letter</string>
     <string name="logic_editor_more_block_actionbar_title_create_more_block">Create a new More Block</string>
+    <string name="logic_editor_more_block_actionbar_title_edit_more_block">Edit More Block</string>
+    <string name="logic_editor_more_block_message_type_locked">This More Block is used in the logic: its return type can\'t change. Its name and parameters can.</string>
+    <string name="logic_more_block_message_edited">More Block updated (%d uses changed)</string>
     <string name="logic_editor_more_block_button_add">ADD</string>
     <string name="logic_editor_more_block_dialog_description_goback">Your current work will be lost</string>
     <string name="logic_editor_more_block_dialog_message_confirm_goback">Are you sure?</string>
@@ -502,6 +505,7 @@ Please try again after removing the blocks with this variable"</string>
     <string name="logic_editor_title_select_view">Select widget</string>
     <string name="logic_editor_title_select_visibility">Select visibility</string>
     <string name="logic_list_menu_add_to_collection">Add To Collection</string>
+    <string name="logic_list_menu_edit">Edit</string>
     <string name="logic_more_block_desc_add_variable_resource">"Variables and resources in moreblock are added automatically. Do you want to continue?
 But, components should be added manually for working correctly."</string>
     <string name="logic_more_block_desc_change_block_name">The name of moreblock is duplicated. Please edit the name of moreblock.</string>
