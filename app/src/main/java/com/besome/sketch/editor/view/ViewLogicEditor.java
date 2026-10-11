@@ -66,16 +66,13 @@ public class ViewLogicEditor extends LogicEditorScrollView {
         gridPaint.setStrokeWidth(1.5f * density);
         gridPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        pinchDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        pinchDetector = TwoFingerPinch.create(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override
             public boolean onScale(ScaleGestureDetector detector) {
                 setZoom(zoom * detector.getScaleFactor(), detector.getFocusX(), detector.getFocusY());
                 return true;
             }
         });
-        // Zoom only with two fingers. "Quick scale" (double tap then drag with one finger) is on by default and
-        // turned quick successive swipes, made to scroll, into zooming.
-        pinchDetector.setQuickScaleEnabled(false);
     }
 
     public void setOnZoomChangedListener(OnZoomChangedListener listener) {
