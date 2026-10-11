@@ -73,7 +73,7 @@ public class BuildSettingsActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
         binding = ActivityBuildSettingsBinding.inflate(getLayoutInflater());
@@ -126,7 +126,7 @@ public class BuildSettingsActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         // The code shrinking screen may have changed its mode meanwhile.
         if (binding != null) setUpAdvancedRows();
