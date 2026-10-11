@@ -67,6 +67,9 @@ public class ColorPickerDialog extends PopupWindow {
     private Material3LibraryManager material3LibraryManager;
     private yq yq;
     private ColorsEditorManager colorsEditorManager;
+    /** The color the picker opened with, and whether it may be see-through: where the color wheel starts. */
+    private String initialColor;
+    private boolean transparencyAllowed;
 
     public ColorPickerDialog(Activity activity, int var3, boolean isTransparentColor, boolean isNoneColor) {
         super(activity);
@@ -88,6 +91,36 @@ public class ColorPickerDialog extends PopupWindow {
 
     private String getHexColor(int color) {
         return String.format("#%06X", color);
+    }
+
+    /**
+     * Opens the color wheel first; its "Palettes" button opens this list (named colors, colors.xml, Material 3
+     * colors, transparent / none). A color that refers to a resource or an attribute opens the list directly, where
+     * that reference is shown selected.
+     */
+    @Override
+    public void showAtLocation(View parent, int gravity, int x, int y) {
+        Integer start = initialColor == null ? null : pro.sketchware.colorwheel.ColorWheelMath.parseHex(initialColor);
+        boolean reference = initialColor != null && (initialColor.startsWith("@") || initialColor.startsWith("?"));
+        if (reference || colorPickerCallback == null) {
+            super.showAtLocation(parent, gravity, x, y);
+            return;
+        }
+        pro.sketchware.colorwheel.ColorWheelDialog.show(activity, start != null ? start : Color.WHITE, transparencyAllowed,
+                color -> {
+                    rememberPickedColor(color);
+                    colorPickerCallback.a(color);
+                },
+                () -> super.showAtLocation(parent, gravity, x, y));
+    }
+
+    /** Keeps a color picked on the wheel among the Custom colors of the list, newest first. */
+    private void rememberPickedColor(int color) {
+        String hex = String.format("#%08X", color);
+        String saved = colorPref.f("P24I1");
+        if (!saved.contains(hex)) {
+            colorPref.a("P24I1", (Object) (hex + "," + saved));
+        }
     }
 
     private void deleteAllSavedColors() {
@@ -115,6 +148,8 @@ public class ColorPickerDialog extends PopupWindow {
 
     public void initialize(Activity activity, String color, boolean isTransparentColor, boolean isNoneColor) {
         this.activity = activity;
+        initialColor = color;
+        transparencyAllowed = isTransparentColor;
         colorPref = new DB(activity, "P24");
         initializeColorData(isTransparentColor, isNoneColor);
         initializeResColors();
