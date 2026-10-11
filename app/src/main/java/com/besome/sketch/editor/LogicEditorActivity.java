@@ -33,6 +33,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -2168,6 +2169,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         setupCodePanel();
         setViewMode(LogicViewMode.fromStored(getSharedPreferences("logic_editor_ui", MODE_PRIVATE).getString("view_mode", null)));
         paletteBlockBinding.searchHeader.addTextChangedListener(new PaletteSelector.SimpleTextWatcher(text -> paletteSelector.setSearchQuery(text.toString())));
+        paletteBlockBinding.searchToggle.setOnClickListener(v -> setPaletteSearchOpen(paletteBlockBinding.searchHeader.getVisibility() != View.VISIBLE));
         extraPaletteBlock = new ExtraPaletteBlock(this, isViewBindingEnabled);
 
         svgUtils = new SvgUtils(this);
@@ -2211,8 +2213,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         boolean variables = navItemId == R.id.nav_variables;
         // "My Variables" is the Variable palette alone: no category chips and no category search.
         paletteSelector.setVariablesOnly(variables);
-        paletteBlockBinding.paletteSelector.setVisibility(variables ? View.GONE : View.VISIBLE);
-        paletteBlockBinding.searchHeader.setVisibility(variables ? View.GONE : View.VISIBLE);
+        if (variables) setPaletteSearchOpen(false);
+        paletteBlockBinding.paletteRow.setVisibility(variables ? View.GONE : View.VISIBLE);
         if (variables) {
             paletteSelector.performClickPalette(PaletteSelector.VARIABLES_PALETTE);
         } else if (navItemId == R.id.nav_favorite) {
@@ -2222,6 +2224,25 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 bB.a(this, getString(R.string.logic_nav_favorite_hint), Toast.LENGTH_LONG).show();
             }
             paletteSelector.performClickPalette(prefs.getInt(KEY_FAVORITE_PALETTE, DEFAULT_FAVORITE_PALETTE));
+        }
+    }
+
+    /**
+     * The palette search is a single icon until it is needed: opening shows the field and the keyboard, closing
+     * clears the search and hides the field again.
+     */
+    private void setPaletteSearchOpen(boolean open) {
+        EditText field = paletteBlockBinding.searchHeader;
+        field.setVisibility(open ? View.VISIBLE : View.GONE);
+        paletteBlockBinding.searchToggle.setImageResource(open ? R.drawable.ic_mtrl_close : R.drawable.ic_search_palette);
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (open) {
+            field.requestFocus();
+            if (imm != null) imm.showSoftInput(field, InputMethodManager.SHOW_IMPLICIT);
+        } else {
+            if (field.getText().length() > 0) field.setText("");
+            field.clearFocus();
+            if (imm != null) imm.hideSoftInputFromWindow(field.getWindowToken(), 0);
         }
     }
 
