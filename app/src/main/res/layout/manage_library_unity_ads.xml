@@ -83,6 +83,15 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/unity_ads_download_sdk" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_repair_sdk"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/unity_ads_repair_sdk"
+                android:visibility="gone" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/game_id_layout"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"

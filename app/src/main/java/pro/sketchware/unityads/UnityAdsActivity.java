@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +38,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean sdkInstalled;
+    private List<UnityAdsRequirements.Requirement> missingRequirements = new ArrayList<>();
 
     /** What the Manage libraries screen shows for this library: ON when the project would generate code. */
     public static boolean isEnabled(String scId) {
@@ -71,6 +73,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
 
         binding.layoutSwitchCard.setOnClickListener(v -> toggleEnabled());
         binding.btnDownloadSdk.setOnClickListener(v -> downloadSdk());
+        binding.btnRepairSdk.setOnClickListener(v -> repairSdk());
     }
 
     @Override
@@ -102,13 +105,45 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     private void refreshSdkStatus() {
         sdkInstalled = UnityAdsSdk.isInstalled(LocalLibrariesUtil.getLocalLibraries(scId));
         binding.sdkStatus.setText(sdkInstalled ? R.string.unity_ads_sdk_installed : R.string.unity_ads_sdk_missing);
+        binding.btnDownloadSdk.setVisibility(sdkInstalled ? View.GONE : View.VISIBLE);
+        binding.btnRepairSdk.setVisibility(View.GONE);
         if (sdkInstalled) {
-            List<String> withoutCode = UnityAdsStore.librariesWithoutCode(scId);
-            if (!withoutCode.isEmpty()) {
-                binding.sdkStatus.setText(getString(R.string.unity_ads_sdk_without_code, String.join(", ", withoutCode)));
+            missingRequirements = UnityAdsStore.missingRequirements(scId);
+            if (!missingRequirements.isEmpty()) {
+                List<String> names = new ArrayList<>();
+                for (UnityAdsRequirements.Requirement requirement : missingRequirements) {
+                    names.add(requirement.artifactId());
+                }
+                binding.sdkStatus.setText(getString(R.string.unity_ads_sdk_incomplete, String.join(", ", names)));
+                binding.btnRepairSdk.setVisibility(View.VISIBLE);
             }
         }
-        binding.btnDownloadSdk.setVisibility(sdkInstalled ? View.GONE : View.VISIBLE);
+    }
+
+    private void repairSdk() {
+        List<UnityAdsRequirements.Requirement> toRepair = new ArrayList<>(missingRequirements);
+        if (toRepair.isEmpty()) {
+            return;
+        }
+        binding.btnRepairSdk.setEnabled(false);
+        executor.execute(() -> {
+            UnityAdsRepair.Result result = UnityAdsRepair.run(scId, toRepair, (coordinate, index, total) ->
+                    mainHandler.post(() -> {
+                        if (binding != null) {
+                            binding.sdkStatus.setText(getString(R.string.unity_ads_repairing, coordinate, index + 1, total));
+                        }
+                    }));
+            mainHandler.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                binding.btnRepairSdk.setEnabled(true);
+                refreshSdkStatus();
+                if (result.failed.isEmpty()) {
+                    SketchwareUtil.toast(getString(R.string.unity_ads_repair_done));
+                } else {
+                    SketchwareUtil.toastError(getString(R.string.unity_ads_repair_failed, String.join(", ", result.failed)));
+                }
+            });
+        });
     }
 
     private void toggleEnabled() {

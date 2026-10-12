@@ -1,9 +1,14 @@
 package pro.sketchware.unityads;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.zip.ZipFile;
 
 import dev.aldi.sayuti.editor.manage.LocalLibrariesUtil;
 import pro.sketchware.utility.FileUtil;
@@ -65,24 +70,32 @@ public final class UnityAdsStore {
     }
 
     /**
-     * Names of the SDK's libraries in the project that have no compiled code (classes.dex): their classes would be
-     * missing from the app, and the SDK fails to start. Usually a download whose dexing step failed.
+     * The given class files that are present in the project's local libraries <em>with</em> compiled code
+     * (classes.dex next to classes.jar): those are the classes the built app will contain.
      */
-    public static List<String> librariesWithoutCode(String scId) {
-        List<String> names = new ArrayList<>();
+    public static Set<String> availableClasses(String scId, Collection<String> classFiles) {
+        Set<String> found = new HashSet<>();
         for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
-            if (!UnityAdsSdk.isSdkRelated(library)) {
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            File jar = new File(folder, "classes.jar");
+            if (!new File(folder, "classes.dex").isFile() || !jar.isFile()) {
                 continue;
             }
-            Object dexPath = library.get("dexPath");
-            Object jarPath = library.get("jarPath");
-            boolean hasCode = dexPath != null && new File(dexPath.toString()).isFile();
-            // A library with no jar has no classes at all (resources only): nothing to miss.
-            boolean hasClasses = jarPath != null && new File(jarPath.toString()).isFile();
-            if (hasClasses && !hasCode) {
-                names.add(String.valueOf(library.get("name")));
+            try (ZipFile zip = new ZipFile(jar)) {
+                for (String classFile : classFiles) {
+                    if (zip.getEntry(classFile) != null) {
+                        found.add(classFile);
+                    }
+                }
+            } catch (IOException ignored) {
+                // An unreadable jar provides nothing; its classes will be reported missing.
             }
         }
-        return names;
+        return found;
+    }
+
+    /** What the SDK needs and the project doesn't have, empty when it can start. */
+    public static List<UnityAdsRequirements.Requirement> missingRequirements(String scId) {
+        return UnityAdsRequirements.missing(availableClasses(scId, UnityAdsRequirements.classFiles()));
     }
 }
