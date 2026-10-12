@@ -54,7 +54,9 @@ public class UnityAdsHelperSourceTest {
     @Test
     public void runsTheDeferredInitializersTheManifestHandsOver() {
         String source = UnityAdsHelperSource.generate("a.b", config());
-        assertTrue(source.contains("startDeferredInitializers(context)"));
+        assertTrue(source.contains("startDeferredInitializers(starter)"));
+        assertTrue("must run after Application.onCreate, where the app's crash screen shows a trace",
+                source.contains("MAIN.postAtFrontOfQueue("));
         assertTrue("must look for the value the manifest merge writes",
                 source.contains("\"" + UnityAdsManifest.DEFERRED_VALUE + "\".equals(metaData.getString(name))"));
         assertTrue(source.contains("androidx.startup.AppInitializer"));
