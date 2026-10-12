@@ -1,10 +1,10 @@
 {
   "versionCode": 157,
-  "versionName": "v7.2.4-dev (001b206)",
-  "commit": "001b206f6981a8045b1d0f16c774897e761708c8",
+  "versionName": "v7.2.4-dev (076b910)",
+  "commit": "076b91039dcdb99bdc25fcab4fffb0a4d9f772b1",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-266",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-266/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "123ed06b08c00ef3cbdd87179906ef4aa9689c5178b41db3ce1821a9ec85f6cf",
-  "notes": "Dev build (arm64): Merge pull request #62 from prozizou/ccr-db425cfe-k3vuat"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-279",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-279/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "a0266ef59fab3b440f3a14e748064faf9d33e9e0325d832bdf8f4d32c0030228",
+  "notes": "Dev build (arm64): Add project README and give the unit-test JVM a 3 GB heap (#65)"
 }
