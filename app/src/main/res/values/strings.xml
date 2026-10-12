@@ -175,7 +175,7 @@ Choosing a theme mode lets you personalize the app\'s appearance, notes:\n
     <string name="unity_ads_fix_values">Fix the highlighted fields first.</string>
     <string name="unity_ads_checking_version">Looking up the latest SDK version…</string>
     <string name="unity_ads_auto_banner">Show a banner at the bottom of every screen</string>
-    <string name="unity_ads_hint">When on, Unity Ads starts by itself when the app opens and the banner option needs no block. Use the Unity Ads blocks for interstitial and rewarded ads: \"show\" loads the ad first if needed. In test mode, errors appear as messages on screen. Find the Game ID and placement IDs in the Unity dashboard.</string>
+    <string name="unity_ads_hint">When on, Unity Ads starts by itself when the app opens and the banner option needs no block. Use the Unity Ads blocks for interstitial and rewarded ads: \"show\" loads the ad first if needed. In test mode, errors appear in full in a dialog you can copy. Find the Game ID and placement IDs in the Unity dashboard.</string>
     <string name="design_library_description_admob">Use Google AdMob</string>
     <string name="design_library_description_appcompat_and_design">Drawer Layout, Floating Action Button</string>
     <string name="design_library_description_firebase">Use Firebase Database and Authentication</string>
