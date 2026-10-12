@@ -170,13 +170,13 @@
                     <io.github.rosemoe.sora.widget.CodeEditor
                         android:id="@+id/json_editor"
                         android:layout_width="match_parent"
-                        android:layout_height="300dp"
+                        android:layout_height="240dp"
                         android:contentDescription="@string/fb_editor_description" />
 
                     <LinearLayout
                         android:id="@+id/editor_empty"
                         android:layout_width="match_parent"
-                        android:layout_height="300dp"
+                        android:layout_height="240dp"
                         android:background="?attr/colorSurface"
                         android:gravity="center"
                         android:orientation="vertical"

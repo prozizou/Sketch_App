@@ -980,7 +980,7 @@ public class ManageFirebaseActivity extends BaseAppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(Menu.NONE, MENU_HELP, 0, R.string.fb_menu_help).setIcon(R.drawable.ic_mtrl_help).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(Menu.NONE, MENU_SETUP, 1, R.string.fb_menu_setup).setIcon(R.drawable.ic_mtrl_settings).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(Menu.NONE, MENU_SETUP, 1, R.string.fb_menu_setup).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         menu.add(Menu.NONE, MENU_DELETE, 2, R.string.fb_menu_delete).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         return true;
     }
