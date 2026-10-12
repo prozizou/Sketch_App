@@ -31,6 +31,8 @@ import pro.sketchware.R;
 import pro.sketchware.activities.resourceseditor.components.utils.StringsEditorManager;
 import pro.sketchware.blocks.ExtraBlocks;
 import pro.sketchware.control.logic.LogicClickListener;
+import pro.sketchware.unityads.UnityAdsBlocks;
+import pro.sketchware.unityads.UnityAdsStore;
 import pro.sketchware.utility.CustomVariableUtil;
 import pro.sketchware.utility.FileResConfig;
 import pro.sketchware.utility.FileUtil;
@@ -917,6 +919,12 @@ public class ExtraPaletteBlock {
                         logicEditor.a(" ", "mapViewSetMarkerIcon");
                         logicEditor.a(" ", "mapViewSetMarkerVisible");
                     }
+                }
+            }
+            if (UnityAdsStore.isActive(sc_id)) {
+                logicEditor.a(UnityAdsBlocks.PALETTE_TITLE, getTitleBgColor());
+                for (UnityAdsBlocks.Block block : UnityAdsBlocks.all()) {
+                    logicEditor.a(block.type, block.name);
                 }
             }
             {

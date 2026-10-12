@@ -29,6 +29,9 @@ import mod.hey.studios.util.ProjectFile;
 import mod.hilal.saif.blocks.CommandBlock;
 import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.SketchApplication;
+import pro.sketchware.unityads.UnityAdsConfig;
+import pro.sketchware.unityads.UnityAdsHelperSource;
+import pro.sketchware.unityads.UnityAdsStore;
 import pro.sketchware.util.library.BuiltInLibraryManager;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.xml.XmlBuilder;
@@ -510,6 +513,10 @@ public class yq {
             N.addPermission(jq.PERMISSION_ACCESS_NETWORK_STATE);
             N.setupAdmob(adMob);
         }
+        if (UnityAdsStore.isActive(sc_id)) {
+            N.addPermission(jq.PERMISSION_INTERNET);
+            N.addPermission(jq.PERMISSION_ACCESS_NETWORK_STATE);
+        }
         if (googleMaps.useYn.equals(ProjectLibraryBean.LIB_USE_Y)) {
             N.isMapUsed = true;
             N.addPermission(jq.PERMISSION_INTERNET);
@@ -856,6 +863,12 @@ public class yq {
                 srcCodeBeans.add(new SrcCodeBean("GoogleMapController.java",
                         Lx.j(Lx.f(packageName), false)));
             }
+        }
+
+        UnityAdsConfig unityAds = UnityAdsStore.read(sc_id);
+        if (unityAds.isActive() && !javaFiles.contains(new File(javaDir + UnityAdsHelperSource.FILE_NAME))) {
+            srcCodeBeans.add(new SrcCodeBean(UnityAdsHelperSource.FILE_NAME,
+                    UnityAdsHelperSource.generate(packageName, unityAds)));
         }
 
         String manifestOverride = readManifestOverride();

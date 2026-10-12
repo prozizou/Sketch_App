@@ -91,6 +91,11 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
         buildSettings = (BuildSettings) getArguments().getSerializable("buildSettings");
         localLibFile = getArguments().getString("localLibFile");
 
+        String prefilledDependency = getArguments().getString("dependency");
+        if (prefilledDependency != null && !prefilledDependency.isEmpty()) {
+            binding.dependencyInput.setText(prefilledDependency);
+        }
+
         binding.btnDownload.setOnClickListener(v -> initDownloadFlow());
 
         connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
