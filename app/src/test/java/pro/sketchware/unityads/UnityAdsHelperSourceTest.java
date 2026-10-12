@@ -44,13 +44,27 @@ public class UnityAdsHelperSourceTest {
 
     @Test
     public void recordsStartupCrashesAndRecoversInSafeMode() {
+        for (boolean testMode : new boolean[]{true, false}) {
+            UnityAdsConfig config = config();
+            config.testMode = testMode;
+            String source = UnityAdsHelperSource.generate("a.b", config);
+            assertTrue(source.contains("installCrashRecorder(starter)"));
+            assertTrue(source.contains("recoverFromCrash(context);"));
+            assertFalse("recording and recovering must not depend on test mode", source.contains("if (TEST_MODE) {\n                        recoverFromCrash"));
+            assertFalse(source.contains("if (TEST_MODE) {\n                                    installCrashRecorder"));
+            assertTrue("the recorder must go in after Application.onCreate, which replaces the handler",
+                    source.indexOf("MAIN.postAtFrontOfQueue") < source.indexOf("installCrashRecorder(starter)"));
+            assertTrue("the previous crash handler must still be called", source.contains("previous.uncaughtException(thread, throwable)"));
+        }
+    }
+
+    @Test
+    public void notesLaunchesThatNeverShowedAScreenAndAsksAndroidHowTheyEnded() {
         String source = UnityAdsHelperSource.generate("a.b", config());
-        assertTrue(source.contains("installCrashRecorder(starter)"));
-        assertTrue(source.contains("recoverFromCrash(context)"));
-        assertTrue("the crash recorder must only run in test mode", source.contains("if (TEST_MODE) {\n                                    // Only now"));
-        assertTrue("the recorder must go in after Application.onCreate, which replaces the handler",
-                source.indexOf("MAIN.postAtFrontOfQueue") < source.indexOf("installCrashRecorder(starter)"));
-        assertTrue("the previous crash handler must still be called", source.contains("previous.uncaughtException(thread, throwable)"));
+        assertTrue(source.contains("getHistoricalProcessExitReasons"));
+        assertTrue(source.contains("putBoolean(\"stable\", false)"));
+        assertTrue(source.contains("markStable();"));
+        assertFalse("pending reports are shown in every mode", source.contains("if (TEST_MODE) {\n                    showPendingReports"));
     }
 
     @Test
