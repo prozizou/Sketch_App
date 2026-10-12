@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipFile;
 
+import dev.aldi.sayuti.editor.manage.EmbeddedLibs;
 import dev.aldi.sayuti.editor.manage.LocalLibrariesUtil;
 import pro.sketchware.utility.FileUtil;
 
@@ -92,6 +93,24 @@ public final class UnityAdsStore {
             }
         }
         return found;
+    }
+
+    /**
+     * SDK libraries that carry JARs in their libs/ folder which were never compiled (Unity Ads embeds the OMID
+     * measurement SDK this way): their classes are missing from the app, which crashes when the SDK uses them.
+     */
+    public static List<String> librariesWithUncompiledJars(String scId) {
+        List<String> names = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            if (!UnityAdsSdk.isSdkRelated(library)) {
+                continue;
+            }
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            if (EmbeddedLibs.hasUncompiled(folder)) {
+                names.add(folder.getName());
+            }
+        }
+        return names;
     }
 
     /** What the SDK needs and the project doesn't have, empty when it can start. */

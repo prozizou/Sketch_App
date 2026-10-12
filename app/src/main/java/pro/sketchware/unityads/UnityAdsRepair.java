@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 
 import org.cosmic.ide.dependency.resolver.api.Artifact;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +44,23 @@ public final class UnityAdsRepair {
         // Marks the libraries as part of the SDK, so their manifests are merged like the others'.
         String dependencyLabel = UnityAdsSdk.dependency(sdkVersion == null ? "repair" : sdkVersion);
         BuildSettings buildSettings = new BuildSettings(scId);
+
+        // JARs an AAR carries in its libs/ folder (Unity's OMID SDK) that the downloader never compiled.
+        List<String> uncompiled = UnityAdsStore.librariesWithUncompiledJars(scId);
+        if (!uncompiled.isEmpty()) {
+            progress.onStep("embedded libraries", 0, missing.size() + 1);
+            for (String library : uncompiled) {
+                List<String> notCompiled = DependencyResolver.dexEmbeddedJars(
+                        new File(LocalLibrariesUtil.getLocalLibsRoot(), library),
+                        DependencyResolver.compileLibraryJars(buildSettings));
+                for (String jar : notCompiled) {
+                    result.failed.add(library + "/libs/" + jar);
+                }
+                if (notCompiled.isEmpty()) {
+                    result.added.add(library + " (embedded libraries)");
+                }
+            }
+        }
 
         for (int i = 0; i < missing.size(); i++) {
             String coordinate = missing.get(i).coordinate;

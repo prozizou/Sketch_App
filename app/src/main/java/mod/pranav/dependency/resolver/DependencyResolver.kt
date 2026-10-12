@@ -6,6 +6,7 @@ import com.android.tools.r8.D8
 import com.android.tools.r8.D8Command
 import com.android.tools.r8.OutputMode
 import com.google.gson.Gson
+import dev.aldi.sayuti.editor.manage.EmbeddedLibs
 import kotlinx.coroutines.runBlocking
 import mod.hey.studios.build.BuildSettings
 import mod.hey.studios.util.Helper
@@ -22,6 +23,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.regex.Pattern
 import java.util.zip.ZipFile
 import kotlin.io.path.readText
@@ -46,6 +48,53 @@ class DependencyResolver(
           |    {"url": "https://repo.maven.apache.org/maven2", "name": "Apache Maven"}
           |]
         """.trimMargin()
+
+        /** What D8 compiles a library against: the lambda stubs and the android.jar. */
+        @JvmStatic
+        fun compileLibraryJars(buildSettings: BuildSettings): List<Path> = listOf(
+            BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.toPath().resolve("core-lambda-stubs.jar"),
+            Paths.get(
+                buildSettings.getValue(
+                    BuildSettings.SETTING_ANDROID_JAR_PATH,
+                    BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.resolve("android.jar").absolutePath
+                )
+            )
+        )
+
+        /**
+         * Compiles the JARs an AAR carries in its libs/ folder (see [EmbeddedLibs]); the downloader only
+         * compiled classes.jar, so their classes were missing from the app.
+         *
+         * @return names of the JARs that couldn't be compiled
+         */
+        @JvmStatic
+        fun dexEmbeddedJars(libraryFolder: File, libraryJars: List<Path>): List<String> {
+            val failed = mutableListOf<String>()
+            for (jar in EmbeddedLibs.jarsToCompile(libraryFolder)) {
+                val output = Files.createTempDirectory(libraryFolder.toPath(), "embedded-dex")
+                try {
+                    D8.run(
+                        D8Command.builder().setIntermediate(true).setMode(CompilationMode.RELEASE)
+                            .addProgramFiles(jar.toPath()).addLibraryFiles(libraryJars)
+                            .setOutput(output, OutputMode.DexIndexed).build()
+                    )
+                    val dexFiles = output.toFile().listFiles { file -> file.name.endsWith(".dex") }
+                        ?.sortedBy { it.name }.orEmpty()
+                    dexFiles.forEachIndexed { index, dex ->
+                        Files.move(
+                            dex.toPath(), EmbeddedLibs.dexFor(libraryFolder, jar, index).toPath(),
+                            StandardCopyOption.REPLACE_EXISTING
+                        )
+                    }
+                    if (dexFiles.isEmpty()) failed.add(jar.name)
+                } catch (e: Exception) {
+                    failed.add(jar.name)
+                } finally {
+                    output.toFile().deleteRecursively()
+                }
+            }
+            return failed
+        }
     }
 
     private val downloadPath: String =
@@ -155,6 +204,10 @@ class DependencyResolver(
                     "classes.aar"
                 )
             )
+            dexEmbeddedJars(
+                Paths.get(downloadPath, "${dependency.artifactId}-v${dependency.version}").toFile(),
+                libraryJars
+            )
             val packageName = findPackageName(
                 Paths.get(downloadPath, "${dependency.artifactId}-v${dependency.version}")
                     .toAbsolutePath().toString(),
@@ -211,6 +264,7 @@ class DependencyResolver(
                 callback.unzipping(dep)
                 unzip(path)
                 Files.delete(path)
+                dexEmbeddedJars(path.parent.toFile(), libraryJars)
                 val packageName =
                     findPackageName(path.parent.toAbsolutePath().toString(), dep.groupId)
                 path.parent.resolve("config").writeText(packageName)

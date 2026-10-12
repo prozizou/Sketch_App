@@ -109,10 +109,14 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
         binding.btnRepairSdk.setVisibility(View.GONE);
         if (sdkInstalled) {
             missingRequirements = UnityAdsStore.missingRequirements(scId);
-            if (!missingRequirements.isEmpty()) {
+            List<String> uncompiled = UnityAdsStore.librariesWithUncompiledJars(scId);
+            if (!missingRequirements.isEmpty() || !uncompiled.isEmpty()) {
                 List<String> names = new ArrayList<>();
                 for (UnityAdsRequirements.Requirement requirement : missingRequirements) {
                     names.add(requirement.artifactId());
+                }
+                for (String library : uncompiled) {
+                    names.add(library + " (embedded libraries)");
                 }
                 binding.sdkStatus.setText(getString(R.string.unity_ads_sdk_incomplete, String.join(", ", names)));
                 binding.btnRepairSdk.setVisibility(View.VISIBLE);
@@ -122,7 +126,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
 
     private void repairSdk() {
         List<UnityAdsRequirements.Requirement> toRepair = new ArrayList<>(missingRequirements);
-        if (toRepair.isEmpty()) {
+        if (toRepair.isEmpty() && UnityAdsStore.librariesWithUncompiledJars(scId).isEmpty()) {
             return;
         }
         binding.btnRepairSdk.setEnabled(false);
