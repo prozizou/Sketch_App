@@ -91,6 +91,19 @@ L'APK de chaque version est signé avec la clé de publication du projet ; la so
   - Brouillon local, confirmation avant d'abandonner, enregistrement atomique (avec `.bak`), état conservé à la rotation,
     barre Annuler / Enregistrer qui suit le clavier.
 
+### Firebase
+
+- **Firebase Manager** : un seul éditeur `google-services.json` (import de fichier, collage, édition, formatage,
+  coloration JSON, numéros de ligne). Le fichier est analysé et validé (syntaxe avec numéro de ligne, champs requis,
+  format des identifiants, URL, cohérence du package) ; plusieurs clients Android sont gérés et celui du package du
+  projet est choisi. Le résumé affiche le projet, l'URL de base de données, le bucket et les clients OAuth ; l'App ID
+  et la clé API restent masqués et ne sont jamais écrits dans les journaux.
+- **Tests de connexion séparés** : initialisation du SDK, authentification (la clé est-elle acceptée ?) et accès aux
+  services (base de données, stockage), en lecture anonyme seulement. Les règles de sécurité de Firebase ne sont pas
+  contournées : un « accès refusé » est la bonne réponse.
+- Les quatre valeurs lues par la compilation (URL de la base ou ID du projet, App ID, clé API, bucket) sont écrites
+  comme avant : les projets existants s'ouvrent sans migration manuelle.
+
 ### Compiler et publier
 
 - Pipeline : AAPT2, ECJ, Kotlin, D8, R8 (avec fichier de mapping), export **APK** et **AAB**, signature.

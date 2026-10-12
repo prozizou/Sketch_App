@@ -1,6 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -9,297 +11,316 @@
         android:id="@+id/toolbar"
         layout="@layout/toolbar" />
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp">
 
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
+            android:id="@+id/column"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            style="?attr/materialCardViewFilledStyle"
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:cardCornerRadius="16dp">
+            android:layout_gravity="center_horizontal"
+            android:orientation="vertical">
 
-            <LinearLayout
-                android:id="@+id/layout_switch"
+            <!-- Enabled + status -->
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="?selectableItemBackground"
-                android:paddingHorizontal="14dp"
-                android:paddingVertical="6dp"
-                android:gravity="center"
-                android:orientation="horizontal">
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/layout_switch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <TextView
+                            android:id="@+id/tv_enable"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:singleLine="true"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="Enabled" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/lib_switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:clickable="false"
+                            android:importantForAccessibility="no" />
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <LinearLayout
+                        android:id="@+id/status_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="8dp">
+
+                        <ImageView
+                            android:id="@+id/status_icon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:importantForAccessibility="no"
+                            tools:src="@drawable/ic_mtrl_check" />
+
+                        <TextView
+                            android:id="@+id/status_text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="Valid configuration" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Editor -->
+            <pro.sketchware.blocks.editor.CollapsibleSection
+                android:id="@+id/section_editor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:sectionExpanded="true"
+                app:sectionTitle="@string/fb_section_json">
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_import"
+                            style="@style/Widget.Material3.Button.TonalButton.Icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/fb_import_file"
+                            app:icon="@drawable/ic_mtrl_file" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_paste"
+                            style="@style/Widget.Material3.Button.TonalButton.Icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/fb_paste"
+                            app:icon="@drawable/ic_mtrl_copy" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_format"
+                            style="@style/Widget.Material3.Button.TonalButton.Icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/fb_format"
+                            app:icon="@drawable/ic_mtrl_formattext" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_reveal"
+                            style="@style/Widget.Material3.Button.TonalButton.Icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/fb_edit"
+                            app:icon="@drawable/ic_eye" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp">
+
+                    <io.github.rosemoe.sora.widget.CodeEditor
+                        android:id="@+id/json_editor"
+                        android:layout_width="match_parent"
+                        android:layout_height="240dp"
+                        android:contentDescription="@string/fb_editor_description" />
+
+                    <LinearLayout
+                        android:id="@+id/editor_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="240dp"
+                        android:background="?attr/colorSurface"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="24dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/fb_empty_title"
+                            android:textAppearance="?attr/textAppearanceTitleSmall"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:gravity="center"
+                            android:text="@string/fb_empty_body"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+                </FrameLayout>
 
                 <TextView
-                    android:id="@+id/tv_enable"
-                    android:layout_width="0dp"
+                    android:id="@+id/editor_note"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:singleLine="true"
-                    android:textColor="?colorControlNormal"
-                    android:textSize="18sp"
-                    tools:text="@string/design_library_settings_title_enabled" />
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="@string/fb_note_masked" />
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/lib_switch"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:id="@+id/issues_list"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:layout_marginLeft="8dp"
-                    android:clickable="false" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
+            </pro.sketchware.blocks.editor.CollapsibleSection>
 
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginBottom="16dp"
-            android:layout_weight="1"
-            android:fillViewport="true">
-
-            <LinearLayout
+            <!-- Summary -->
+            <pro.sketchware.blocks.editor.CollapsibleSection
+                android:id="@+id/section_summary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_marginTop="4dp"
+                app:sectionExpanded="true"
+                app:sectionTitle="@string/fb_section_summary">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/summary_empty"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:orientation="horizontal">
+                    android:paddingVertical="8dp"
+                    android:text="@string/fb_summary_empty"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginRight="8dp"
-                        android:src="@drawable/ic_mtrl_link" />
+                <HorizontalScrollView
+                    android:id="@+id/client_scroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:visibility="gone">
 
-                    <TextView
-                        android:id="@+id/tv_title_project_id"
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/client_chips"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:textColor="?colorControlNormal"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        tools:text="@string/design_library_firebase_title_project_id" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    style="?attr/materialCardViewFilledStyle"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:cardCornerRadius="14dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="8dp">
-
-                        <TextView
-                            android:id="@+id/tv_project_id"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:layout_weight="1"
-                            android:padding="8dp"
-                            android:textColor="?colorControlNormal"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true" />
+                </HorizontalScrollView>
 
                 <LinearLayout
+                    android:id="@+id/summary_rows"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical" />
+            </pro.sketchware.blocks.editor.CollapsibleSection>
 
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginRight="8dp"
-                        android:src="@drawable/ic_mtrl_id" />
+            <!-- Tests -->
+            <pro.sketchware.blocks.editor.CollapsibleSection
+                android:id="@+id/section_tests"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:sectionExpanded="false"
+                app:sectionTitle="@string/fb_section_tests">
 
-                    <TextView
-                        android:id="@+id/tv_title_app_id"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:textColor="?colorControlNormal"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        tools:text="@string/design_library_firebase_title_app_id" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    style="?attr/materialCardViewFilledStyle"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:cardCornerRadius="14dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="4dp">
-
-                        <TextView
-                            android:id="@+id/tv_app_id"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="middle"
-                            android:maxLines="1"
-                            android:paddingVertical="16dp"
-                            android:textColor="?colorControlNormal"
-                            android:textSize="12sp" />
-
-                        <ImageButton
-                            android:id="@+id/btn_toggle_app_id"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/firebase_reveal_value"
-                            android:padding="9dp"
-                            android:src="@drawable/ic_eye" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    android:text="@string/fb_tests_intro"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <LinearLayout
+                    android:id="@+id/tests_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
 
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginRight="8dp"
-                        android:src="@drawable/ic_mtrl_key" />
-
-                    <TextView
-                        android:id="@+id/tv_title_api_key"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:textColor="?colorControlNormal"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        tools:text="@string/design_library_firebase_title_api_key" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_run_tests"
+                    style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    style="?attr/materialCardViewFilledStyle"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:cardCornerRadius="14dp">
+                    android:layout_marginTop="8dp"
+                    android:text="@string/fb_run_tests"
+                    app:icon="@drawable/ic_mtrl_run" />
+            </pro.sketchware.blocks.editor.CollapsibleSection>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="4dp">
+    <!-- Fixed actions -->
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-                        <TextView
-                            android:id="@+id/tv_api_key"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="middle"
-                            android:maxLines="1"
-                            android:paddingVertical="16dp"
-                            android:textColor="?colorControlNormal"
-                            android:textSize="12sp" />
-
-                        <ImageButton
-                            android:id="@+id/btn_toggle_api_key"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/firebase_reveal_value"
-                            android:padding="9dp"
-                            android:src="@drawable/ic_eye" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginRight="8dp"
-                        android:src="@drawable/ic_mtrl_link" />
-
-                    <TextView
-                        android:id="@+id/tv_title_storage_url"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:textColor="?colorControlNormal"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        tools:text="@string/design_library_firebase_title_storage_bucket_url" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    style="?attr/materialCardViewFilledStyle"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:cardCornerRadius="14dp">
-
-                    <TextView
-                        android:id="@+id/tv_storage_url"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:padding="16dp"
-                        android:textColor="?colorControlNormal"
-                        android:textSize="12sp" />
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-        </ScrollView>
+    <LinearLayout
+        android:id="@+id/bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp">
 
         <Button
             android:id="@+id/btn_console"
             style="@style/Widget.Material3Expressive.Button.TonalButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="@string/design_library_firebase_button_goto_firebase_console" />
+            android:text="@string/design_library_firebase_button_goto_firebase_console" />
 
         <Button
-            android:id="@+id/btn_import"
+            android:id="@+id/btn_save"
             style="@style/Widget.Material3Expressive.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Import from google-services.json"
+            android:layout_marginTop="8dp"
+            android:text="@string/fb_save"
             android:textColor="@color/event_on_accent"
             app:backgroundTint="@color/event_accent" />
     </LinearLayout>
