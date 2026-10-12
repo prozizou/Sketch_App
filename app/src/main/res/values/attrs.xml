@@ -22,4 +22,9 @@
     <attr name="colorVioletContainer" format="color" />
     <attr name="colorOnVioletContainer" format="color" />
     <attr name="harmonizeViolet" format="boolean" />
+
+    <declare-styleable name="CollapsibleSection">
+        <attr name="sectionTitle" format="string" />
+        <attr name="sectionExpanded" format="boolean" />
+    </declare-styleable>
 </resources>
