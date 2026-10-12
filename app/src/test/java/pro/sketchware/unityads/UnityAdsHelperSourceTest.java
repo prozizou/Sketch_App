@@ -59,6 +59,16 @@ public class UnityAdsHelperSourceTest {
     }
 
     @Test
+    public void saysWhatIsStillMissingInsteadOfStayingSilentInTestMode() {
+        String source = UnityAdsHelperSource.generate("a.b", config());
+        assertTrue(source.contains("checkProgress();"));
+        assertTrue(source.contains("note(\"initialized\")"));
+        assertTrue(source.contains("note(\"banner loaded\")"));
+        assertTrue(source.contains("has not finished starting 20 seconds after the app opened"));
+        assertTrue("messages and the check only exist in test mode", source.contains("private static void note(final String message) {\n        Log.i(TAG, message);\n        if (!TEST_MODE) {"));
+    }
+
+    @Test
     public void notesLaunchesThatNeverShowedAScreenAndAsksAndroidHowTheyEnded() {
         String source = UnityAdsHelperSource.generate("a.b", config());
         assertTrue(source.contains("getHistoricalProcessExitReasons"));
