@@ -175,7 +175,9 @@ Choosing a theme mode lets you personalize the app\'s appearance, notes:\n
     <string name="unity_ads_repair_sdk">Repair the SDK</string>
     <string name="unity_ads_repairing">Downloading %1$s (%2$d/%3$d)…</string>
     <string name="unity_ads_repair_done">SDK repaired. Build the project again.</string>
-    <string name="unity_ads_repair_failed">Couldn\'t download: %1$s. Check the internet connection and try again.</string>
+    <string name="unity_ads_repair_failed">Some libraries could not be installed. Check the internet connection and try again, or send this text:\n\n%1$s</string>
+    <string name="unity_ads_reinstall_sdk">Reinstall the SDK</string>
+    <string name="unity_ads_libs_without_code">Libraries listed in the project but with no compiled code (their download failed): %1$s</string>
     <string name="unity_ads_sdk_installed">Unity Ads SDK found in this project.</string>
     <string name="unity_ads_need_sdk">Download the Unity Ads SDK first.</string>
     <string name="unity_ads_fix_values">Fix the highlighted fields first.</string>

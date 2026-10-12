@@ -115,6 +115,27 @@ public final class UnityAdsStore {
         return names;
     }
 
+    /**
+     * SDK libraries that are listed in the project but have no compiled code (no classes.dex): the download of
+     * these failed or stopped half way. Names only; cheap, no class files are read.
+     */
+    public static List<String> librariesWithoutCode(String scId) {
+        List<String> names = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            if (!UnityAdsSdk.isSdkRelated(library)) {
+                continue;
+            }
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            if (new File(folder, "classes.jar").isFile() && !new File(folder, "classes.dex").isFile()) {
+                names.add(folder.getName());
+            } else if (!new File(folder, "classes.jar").isFile() && !new File(folder, "res").isDirectory()) {
+                // The entry exists but its download left nothing usable.
+                names.add(folder.getName());
+            }
+        }
+        return names;
+    }
+
     /** What the SDK needs and the project doesn't have, empty when it can start. */
     public static List<UnityAdsRequirements.Requirement> missingRequirements(String scId) {
         return UnityAdsRequirements.missing(availableClasses(scId, UnityAdsRequirements.classFiles()));
