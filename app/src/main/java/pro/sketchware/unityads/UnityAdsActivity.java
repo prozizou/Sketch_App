@@ -67,6 +67,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
         binding.interstitialPlacement.setText(config.interstitialPlacement);
         binding.rewardedPlacement.setText(config.rewardedPlacement);
         binding.testMode.setChecked(config.testMode);
+        binding.autoBanner.setChecked(config.autoBanner);
 
         binding.layoutSwitchCard.setOnClickListener(v -> toggleEnabled());
         binding.btnDownloadSdk.setOnClickListener(v -> downloadSdk());
@@ -141,6 +142,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
         config.interstitialPlacement = text(binding.interstitialPlacement.getText());
         config.rewardedPlacement = text(binding.rewardedPlacement.getText());
         config.testMode = binding.testMode.isChecked();
+        config.autoBanner = binding.autoBanner.isChecked();
         return config;
     }
 

@@ -26,6 +26,8 @@ public class UnityAdsConfig {
     public boolean enabled;
     public String gameId = "";
     public boolean testMode = true;
+    /** Shows a banner at the bottom of every screen without any block. */
+    public boolean autoBanner = true;
     public String bannerPlacement = DEFAULT_BANNER_PLACEMENT;
     public String interstitialPlacement = DEFAULT_INTERSTITIAL_PLACEMENT;
     public String rewardedPlacement = DEFAULT_REWARDED_PLACEMENT;

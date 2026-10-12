@@ -45,6 +45,17 @@ public class UnityAdsSdkTest {
         assertFalse(UnityAdsSdk.isInstalled(null));
     }
 
+    @Test
+    public void librariesDownloadedWithTheSdkAreRelated() {
+        HashMap<String, Object> coroutines = entry("kotlinx-coroutines-android-v1.7.3");
+        coroutines.put("dependency", "com.unity3d.ads:unity-ads:4.12.5");
+        assertTrue(UnityAdsSdk.isSdkRelated(coroutines));
+        HashMap<String, Object> other = entry("glide-v4.16.0");
+        other.put("dependency", "com.github.bumptech.glide:glide:4.16.0");
+        assertFalse(UnityAdsSdk.isSdkRelated(other));
+        assertTrue(UnityAdsSdk.isSdkRelated(entry("unity-ads-v4.12.5")));
+    }
+
     private static HashMap<String, Object> entry(String name) {
         HashMap<String, Object> map = new HashMap<>();
         map.put("name", name);

@@ -150,6 +150,13 @@
                 android:layout_marginTop="12dp"
                 android:text="@string/unity_ads_test_mode" />
 
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/auto_banner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/unity_ads_auto_banner" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

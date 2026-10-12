@@ -52,6 +52,19 @@ public final class UnityAdsSdk {
         return false;
     }
 
+    /**
+     * True for the SDK's own local library and for every library the downloader fetched with it (their
+     * "dependency" field is the SDK's coordinates): their manifests must be merged into the app's.
+     */
+    public static boolean isSdkRelated(Map<String, Object> library) {
+        Object dependency = library.get("dependency");
+        if (dependency != null && dependency.toString().startsWith(UnityAdsConfig.SDK_GROUP + ":" + UnityAdsConfig.SDK_ARTIFACT + ":")) {
+            return true;
+        }
+        Object name = library.get("name");
+        return name != null && isSdkFolderName(name.toString());
+    }
+
     static boolean isSdkFolderName(String name) {
         // The downloader names folders "<artifactId>-v<version>": "unity-ads-v4.12.5". "unity-ads-4.12.5" is accepted
         // too; "unity-ads-mediation-v1.0" or "unity-ads-foo" must not count as the SDK itself.

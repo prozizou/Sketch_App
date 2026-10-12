@@ -28,6 +28,21 @@ public class UnityAdsHelperSourceTest {
     }
 
     @Test
+    public void autoBannerFollowsTheSetting() {
+        UnityAdsConfig config = config();
+        assertTrue(UnityAdsHelperSource.generate("a.b", config).contains("AUTO_BANNER = true"));
+        config.autoBanner = false;
+        assertTrue(UnityAdsHelperSource.generate("a.b", config).contains("AUTO_BANNER = false"));
+    }
+
+    @Test
+    public void declaresTheProviderTheManifestPointsTo() {
+        String source = UnityAdsHelperSource.generate("com.my.app", config());
+        assertTrue(source.contains("public static class InitProvider extends ContentProvider"));
+        assertEquals("com.my.app.UnityAdsHelper$InitProvider", UnityAdsManifest.initProviderClass("com.my.app"));
+    }
+
+    @Test
     public void testModeOffIsWrittenAsFalse() {
         UnityAdsConfig config = config();
         config.testMode = false;
