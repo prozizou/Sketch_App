@@ -505,7 +505,7 @@ public final class GoogleServicesConfig {
             reader.setStrictness(Strictness.STRICT);
             JsonElement element = JsonParser.parseReader(reader);
             if (reader.peek() != JsonToken.END_DOCUMENT) return null;
-            return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(element) + "\n";
+            return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeNulls().create().toJson(element) + "\n";
         } catch (Exception e) {
             return null;
         }
@@ -563,7 +563,7 @@ public final class GoogleServicesConfig {
         clients.add(client);
         root.add("client", clients);
         root.addProperty("configuration_version", "1");
-        return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(root) + "\n";
+        return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeNulls().create().toJson(root) + "\n";
     }
 
     // ---- small JSON helpers
