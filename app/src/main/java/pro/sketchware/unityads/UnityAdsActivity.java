@@ -73,13 +73,13 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         refreshSdkStatus();
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         if (binding != null) {
             save();
@@ -87,7 +87,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         executor.shutdownNow();
         super.onDestroy();
     }
