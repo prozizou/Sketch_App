@@ -39,6 +39,14 @@ public final class UnityAdsManifest {
     /** Children of {@code <application>} copied from library manifests, matched by android:name. */
     private static final Set<String> APPLICATION_CHILDREN = new HashSet<>(Arrays.asList(
             "activity", "activity-alias", "service", "receiver", "provider", "meta-data", "uses-library"));
+    static final String STARTUP_PROVIDER = "androidx.startup.InitializationProvider";
+    static final String STARTUP_VALUE = "androidx.startup";
+    /**
+     * Marks a start-up initializer that UnityAdsHelper runs itself, inside try/catch. The value stops androidx.startup
+     * from running it, but the entry stays readable from the manifest.
+     */
+    public static final String DEFERRED_VALUE = "unityads.deferred";
+
     private static final Set<String> PERMISSIONS = new HashSet<>(Arrays.asList(
             "uses-permission", "uses-permission-sdk-23"));
 
@@ -69,6 +77,7 @@ public final class UnityAdsManifest {
             root.appendChild(application);
         }
 
+        Set<String> libraryInitializers = new HashSet<>();
         for (String libraryManifest : libraryManifests) {
             Document library;
             try {
@@ -76,8 +85,10 @@ public final class UnityAdsManifest {
             } catch (Exception e) {
                 continue;
             }
+            collectInitializers(library.getDocumentElement(), libraryInitializers);
             mergeLibrary(app, root, application, library.getDocumentElement(), packageName);
         }
+        deferInitializers(application, libraryInitializers);
 
         addInitProvider(app, application, packageName);
 
@@ -85,6 +96,43 @@ public final class UnityAdsManifest {
             return serialize(app);
         } catch (Exception e) {
             return appManifest;
+        }
+    }
+
+    /** Names of the start-up initializers a library manifest declares. */
+    private static void collectInitializers(Element libraryRoot, Set<String> names) {
+        for (Element child : children(libraryRoot)) {
+            if (!child.getTagName().equals("application")) {
+                continue;
+            }
+            for (Element component : children(child)) {
+                if (component.getTagName().equals("provider") && androidName(component).equals(STARTUP_PROVIDER)) {
+                    for (Element metaData : children(component)) {
+                        if (metaData.getTagName().equals("meta-data") && !isRemoved(metaData)
+                                && STARTUP_VALUE.equals(metaData.getAttributeNS(ANDROID_NS, "value"))) {
+                            names.add(androidName(metaData));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Initializers the libraries added to androidx.startup (WorkManager, the Unity SDK...) run at app start before
+     * anything of the app exists, so a failure in one is a bare "app stopped". UnityAdsHelper runs them itself
+     * instead and reports what went wrong.
+     */
+    private static void deferInitializers(Element application, Set<String> names) {
+        Element provider = findByName(application, "provider", STARTUP_PROVIDER);
+        if (provider == null) {
+            return;
+        }
+        for (Element metaData : children(provider)) {
+            if (metaData.getTagName().equals("meta-data") && names.contains(androidName(metaData))
+                    && STARTUP_VALUE.equals(metaData.getAttributeNS(ANDROID_NS, "value"))) {
+                metaData.setAttributeNS(ANDROID_NS, "android:value", DEFERRED_VALUE);
+            }
         }
     }
 
@@ -148,6 +196,8 @@ public final class UnityAdsManifest {
         provider.setAttributeNS(ANDROID_NS, "android:name", name);
         provider.setAttributeNS(ANDROID_NS, "android:authorities", packageName + ".unityadshelper");
         provider.setAttributeNS(ANDROID_NS, "android:exported", "false");
+        // Highest first: this provider must start before androidx.startup and the others.
+        provider.setAttributeNS(ANDROID_NS, "android:initOrder", "1000");
         application.appendChild(provider);
     }
 

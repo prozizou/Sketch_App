@@ -108,6 +108,41 @@ public class UnityAdsManifestTest {
     }
 
     @Test
+    public void libraryInitializersAreHandedToTheHelperAndTheAppsOwnAreNot() throws Exception {
+        String app = APP.replace("</provider>", "<meta-data android:name=\"androidx.emoji2.text.EmojiCompatInitializer\" android:value=\"androidx.startup\" /></provider>");
+        Document document = parse(UnityAdsManifest.merge(app, Collections.singletonList(UNITY), "com.my.app"));
+
+        assertEquals("deferred: the SDK's initializer", UnityAdsManifest.DEFERRED_VALUE, metaDataValue(document, "com.unity3d.services.core.configuration.AdsSdkInitializer"));
+        assertEquals("deferred: a library's initializer", UnityAdsManifest.DEFERRED_VALUE, metaDataValue(document, "androidx.lifecycle.ProcessLifecycleInitializer"));
+        assertEquals("the app's own entry keeps running at start", "androidx.startup", metaDataValue(document, "androidx.emoji2.text.EmojiCompatInitializer"));
+    }
+
+    @Test
+    public void theHelpersProviderStartsBeforeEverythingElse() throws Exception {
+        Document document = merged();
+        NodeList providers = document.getElementsByTagName("provider");
+        for (int i = 0; i < providers.getLength(); i++) {
+            Element provider = (Element) providers.item(i);
+            if (UnityAdsManifest.androidName(provider).equals("com.my.app.UnityAdsHelper$InitProvider")) {
+                assertEquals("1000", provider.getAttributeNS(UnityAdsManifest.ANDROID_NS, "initOrder"));
+                return;
+            }
+        }
+        throw new AssertionError("provider missing");
+    }
+
+    private static String metaDataValue(Document document, String name) {
+        NodeList nodes = document.getElementsByTagName("meta-data");
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Element element = (Element) nodes.item(i);
+            if (UnityAdsManifest.androidName(element).equals(name)) {
+                return element.getAttributeNS(UnityAdsManifest.ANDROID_NS, "value");
+            }
+        }
+        return null;
+    }
+
+    @Test
     public void copiesQueries() throws Exception {
         assertEquals(1, merged().getElementsByTagName("queries").getLength());
     }

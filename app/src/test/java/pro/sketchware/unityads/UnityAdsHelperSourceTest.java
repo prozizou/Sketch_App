@@ -52,6 +52,15 @@ public class UnityAdsHelperSourceTest {
     }
 
     @Test
+    public void runsTheDeferredInitializersTheManifestHandsOver() {
+        String source = UnityAdsHelperSource.generate("a.b", config());
+        assertTrue(source.contains("startDeferredInitializers(context)"));
+        assertTrue("must look for the value the manifest merge writes",
+                source.contains("\"" + UnityAdsManifest.DEFERRED_VALUE + "\".equals(metaData.getString(name))"));
+        assertTrue(source.contains("androidx.startup.AppInitializer"));
+    }
+
+    @Test
     public void testModeOffIsWrittenAsFalse() {
         UnityAdsConfig config = config();
         config.testMode = false;

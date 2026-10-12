@@ -25,7 +25,9 @@ import java.util.zip.ZipFile;
 public final class ClassReferenceScanner {
     /** Classes the Android platform or the JDK provides; not expected in any library. */
     private static final String[] PLATFORM = {"java/", "javax/", "android/", "dalvik/", "org/w3c/", "org/xml/",
-            "org/json/", "org/apache/http/", "libcore/", "sun/", "com/android/"};
+            "org/xmlpull/", "org/json/", "org/apache/http/", "libcore/", "sun/", "com/android/",
+            // Optional integrations the libraries only use if present (OkHttp's Conscrypt, Room's paging).
+            "org/conscrypt/", "androidx/paging/"};
 
     private ClassReferenceScanner() {
     }
@@ -63,7 +65,17 @@ public final class ClassReferenceScanner {
         return missing;
     }
 
+    /** Resource classes (androidx/core/R, R$id...) are generated when the app is built, not found in libraries. */
+    static boolean isResourceClass(String className) {
+        int slash = className.lastIndexOf('/');
+        String simple = className.substring(slash + 1);
+        return simple.equals("R") || simple.startsWith("R$");
+    }
+
     static boolean isPlatform(String className) {
+        if (className.equals("module-info") || isResourceClass(className)) {
+            return true;
+        }
         for (String prefix : PLATFORM) {
             if (className.startsWith(prefix)) {
                 return true;

@@ -80,6 +80,17 @@ public class ClassReferenceScannerTest {
     }
 
     @Test
+    public void generatedAndOptionalClassesAreNotReported() {
+        assertTrue(ClassReferenceScanner.isPlatform("androidx/core/R"));
+        assertTrue(ClassReferenceScanner.isPlatform("androidx/core/R$id"));
+        assertTrue(ClassReferenceScanner.isPlatform("org/xmlpull/v1/XmlPullParser"));
+        assertTrue(ClassReferenceScanner.isPlatform("org/conscrypt/Conscrypt"));
+        assertFalse("a class that merely starts with R is a real class", ClassReferenceScanner.isPlatform("androidx/room/RoomDatabase"));
+        assertFalse(ClassReferenceScanner.isPlatform("androidx/datastore/core/DataStore"));
+        assertFalse(ClassReferenceScanner.isPlatform("com/iab/omid/library/unity3d/Omid"));
+    }
+
+    @Test
     public void unreadableInputsAreSkipped() throws IOException {
         File notAJar = temp.newFile("broken.jar");
         File garbage = jar("garbage.jar", Collections.singletonMap("a/B.class", new byte[]{1, 2, 3}));
