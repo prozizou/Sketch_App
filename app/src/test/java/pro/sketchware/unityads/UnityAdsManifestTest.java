@@ -121,7 +121,8 @@ public class UnityAdsManifestTest {
         Document document = parse(UnityAdsManifest.merge(app, Collections.singletonList(UNITY), "com.my.app"));
 
         assertEquals("deferred: the SDK's initializer", UnityAdsManifest.DEFERRED_VALUE, metaDataValue(document, "com.unity3d.services.core.configuration.AdsSdkInitializer"));
-        assertEquals("deferred: a library's initializer", UnityAdsManifest.DEFERRED_VALUE, metaDataValue(document, "androidx.lifecycle.ProcessLifecycleInitializer"));
+        assertEquals("ProcessLifecycleInitializer refuses to start lazily, and the emoji initializer needs it at app start", "androidx.startup",
+                metaDataValue(document, "androidx.lifecycle.ProcessLifecycleInitializer"));
         assertEquals("the app's own entry keeps running at start", "androidx.startup", metaDataValue(document, "androidx.emoji2.text.EmojiCompatInitializer"));
     }
 

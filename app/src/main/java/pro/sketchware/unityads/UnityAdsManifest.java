@@ -46,6 +46,11 @@ public final class UnityAdsManifest {
      * from running it, but the entry stays readable from the manifest.
      */
     public static final String DEFERRED_VALUE = "unityads.deferred";
+    /**
+     * Initializers that must stay with androidx.startup: ProcessLifecycleInitializer throws "cannot be initialized lazily"
+     * unless the manifest says "androidx.startup", and EmojiCompatInitializer (initialized at app start) needs it.
+     */
+    static final Set<String> NOT_DEFERRABLE = new HashSet<>(Arrays.asList("androidx.lifecycle.ProcessLifecycleInitializer"));
 
     private static final Set<String> PERMISSIONS = new HashSet<>(Arrays.asList(
             "uses-permission", "uses-permission-sdk-23"));
@@ -132,7 +137,7 @@ public final class UnityAdsManifest {
             return;
         }
         for (Element metaData : children(provider)) {
-            if (metaData.getTagName().equals("meta-data") && names.contains(androidName(metaData))
+            if (metaData.getTagName().equals("meta-data") && names.contains(androidName(metaData)) && !NOT_DEFERRABLE.contains(androidName(metaData))
                     && STARTUP_VALUE.equals(metaData.getAttributeNS(ANDROID_NS, "value"))) {
                 metaData.setAttributeNS(ANDROID_NS, "android:value", DEFERRED_VALUE);
             }
