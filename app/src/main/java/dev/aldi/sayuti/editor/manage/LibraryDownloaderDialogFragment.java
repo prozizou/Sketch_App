@@ -189,6 +189,7 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
                     handler.post(() -> binding.overallProgress.setIndeterminate(true)));
             BuiltInLibraries.maybeExtractCoreLambdaStubsJar();
 
+            try {
             resolver.resolveDependency(new DependencyResolver.DependencyResolverCallback() {
                 @Override
                 public void onResolving(@NonNull Artifact artifact, @NonNull Artifact dependency) {
@@ -328,6 +329,15 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
                     });
                 }
             });
+            } catch (Throwable t) {
+                Log.e("LibraryDownloader", "Downloading " + dependencyName + " failed", t);
+                handler.post(() -> {
+                    if (binding == null) return;
+                    setDownloadState(false);
+                    SketchwareUtil.showAnErrorOccurredDialog(getActivity(),
+                            "Downloading " + dependencyName + " failed: " + Log.getStackTraceString(t));
+                });
+            }
         });
     }
 

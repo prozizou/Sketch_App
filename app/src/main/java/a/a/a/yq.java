@@ -873,7 +873,8 @@ public class yq {
 
         String manifestOverride = readManifestOverride();
         srcCodeBeans.add(new SrcCodeBean("AndroidManifest.xml",
-                manifestOverride != null ? manifestOverride : CommandBlock.applyCommands("AndroidManifest.xml", ix.a())));
+                manifestOverride != null ? manifestOverride
+                        : UnityAdsStore.applyToManifest(sc_id, packageName, CommandBlock.applyCommands("AndroidManifest.xml", ix.a()))));
         srcCodeBeans.add(new SrcCodeBean("styles.xml", getXMLStyle()));
         srcCodeBeans.add(new SrcCodeBean("colors.xml", getXMLColor()));
         srcCodeBeans.add(new SrcCodeBean("strings.xml", getXMLString()));
@@ -947,7 +948,7 @@ public class yq {
             builder.buildBuiltInLibraryInformation();
             Ix ix = new Ix(N, projectFileManager.b(), builder.getBuiltInLibraryManager());
             ix.setYq(this);
-            return CommandBlock.applyCommands("AndroidManifest.xml", ix.a());
+            return UnityAdsStore.applyToManifest(sc_id, packageName, CommandBlock.applyCommands("AndroidManifest.xml", ix.a()));
         }
 
         for (ProjectFileBean file : files) {

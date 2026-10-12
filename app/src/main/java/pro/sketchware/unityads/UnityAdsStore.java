@@ -1,7 +1,19 @@
 package pro.sketchware.unityads;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.zip.ZipFile;
 
+import dev.aldi.sayuti.editor.manage.EmbeddedLibs;
+import dev.aldi.sayuti.editor.manage.LocalLibrariesUtil;
 import pro.sketchware.utility.FileUtil;
 
 /** Reads and writes a project's Unity Ads settings, next to its other per-project data. */
@@ -30,5 +42,153 @@ public final class UnityAdsStore {
     /** True when the project has Unity Ads switched on with valid settings. */
     public static boolean isActive(String scId) {
         return read(scId).isActive();
+    }
+
+    /** The AndroidManifest.xml contents of the SDK and of the libraries downloaded with it that the project uses. */
+    public static List<String> readSdkManifests(String scId) {
+        List<String> manifests = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            if (!UnityAdsSdk.isSdkRelated(library)) {
+                continue;
+            }
+            Object path = library.get("manifestPath");
+            File manifest = path != null ? new File(path.toString())
+                    : new File(LocalLibrariesUtil.getLocalLibsRoot(), library.get("name") + "/AndroidManifest.xml");
+            if (manifest.isFile()) {
+                manifests.add(FileUtil.readFile(manifest.getAbsolutePath()));
+            }
+        }
+        return manifests;
+    }
+
+    /**
+     * Adds the SDK's manifest entries and the helper's start-up provider to a generated manifest, when the project
+     * uses Unity Ads; returns {@code manifest} unchanged otherwise.
+     */
+    public static String applyToManifest(String scId, String packageName, String manifest) {
+        if (!isActive(scId)) {
+            return manifest;
+        }
+        return UnityAdsManifest.merge(manifest, readSdkManifests(scId), packageName);
+    }
+
+    /**
+     * The given class files that are present in the project's local libraries <em>with</em> compiled code
+     * (classes.dex next to classes.jar): those are the classes the built app will contain.
+     */
+    public static Set<String> availableClasses(String scId, Collection<String> classFiles) {
+        Set<String> found = new HashSet<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            File jar = new File(folder, "classes.jar");
+            if (!new File(folder, "classes.dex").isFile() || !jar.isFile()) {
+                continue;
+            }
+            try (ZipFile zip = new ZipFile(jar)) {
+                for (String classFile : classFiles) {
+                    if (zip.getEntry(classFile) != null) {
+                        found.add(classFile);
+                    }
+                }
+            } catch (IOException ignored) {
+                // An unreadable jar provides nothing; its classes will be reported missing.
+            }
+        }
+        return found;
+    }
+
+    /**
+     * SDK libraries that carry JARs in their libs/ folder which were never compiled (Unity Ads embeds the OMID
+     * measurement SDK this way): their classes are missing from the app, which crashes when the SDK uses them.
+     */
+    public static List<String> librariesWithUncompiledJars(String scId) {
+        List<String> names = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            if (!UnityAdsSdk.isSdkRelated(library)) {
+                continue;
+            }
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            if (EmbeddedLibs.hasUncompiled(folder)) {
+                names.add(folder.getName());
+            }
+        }
+        return names;
+    }
+
+    /**
+     * SDK libraries that are listed in the project but have no compiled code (no classes.dex): the download of
+     * these failed or stopped half way. Names only; cheap, no class files are read.
+     */
+    public static List<String> librariesWithoutCode(String scId) {
+        List<String> names = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            if (!UnityAdsSdk.isSdkRelated(library)) {
+                continue;
+            }
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            if (new File(folder, "classes.jar").isFile() && !new File(folder, "classes.dex").isFile()) {
+                names.add(folder.getName());
+            } else if (!new File(folder, "classes.jar").isFile() && !new File(folder, "res").isDirectory()) {
+                // The entry exists but its download left nothing usable.
+                names.add(folder.getName());
+            }
+        }
+        return names;
+    }
+
+    /** What the SDK needs and the project doesn't have, empty when it can start. */
+    public static List<UnityAdsRequirements.Requirement> missingRequirements(String scId) {
+        return UnityAdsRequirements.missing(availableClasses(scId, UnityAdsRequirements.classFiles()));
+    }
+
+    /** Classes only some SDK features use; the SDK works without them. */
+    private static final String[] OPTIONAL_PREFIXES = {"com/google/android/gms/appset/", "com/ironsource/adqualitysdk/"};
+
+    /**
+     * Classes the SDK's code refers to that the app will not contain, so it crashes with NoClassDefFoundError when
+     * that code runs. Reads the libraries' class files: slow, run it off the main thread.
+     *
+     * @return missing class mapped to one SDK class that uses it; empty when the SDK is complete
+     */
+    public static Map<String, String> missingClasses(String scId) {
+        List<File> program = new ArrayList<>();
+        List<File> provided = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            boolean sdk = UnityAdsSdk.isSdkRelated(library);
+            File classes = new File(folder, "classes.jar");
+            if (classes.isFile()) {
+                if (sdk) {
+                    program.add(classes);
+                }
+                if (new File(folder, "classes.dex").isFile()) {
+                    provided.add(classes);
+                }
+            }
+            File[] embedded = new File(folder, "libs").listFiles();
+            if (embedded != null) {
+                for (File jar : embedded) {
+                    if (!jar.getName().endsWith(".jar")) {
+                        continue;
+                    }
+                    if (sdk) {
+                        program.add(jar);
+                    }
+                    if (EmbeddedLibs.dexFor(folder, jar, 0).isFile()) {
+                        provided.add(jar);
+                    }
+                }
+            }
+        }
+        Map<String, String> missing = new TreeMap<>(ClassReferenceScanner.findMissing(program, provided));
+        missing.keySet().removeIf(name -> {
+            for (String prefix : OPTIONAL_PREFIXES) {
+                if (name.startsWith(prefix)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        return missing;
     }
 }

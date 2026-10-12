@@ -23,6 +23,7 @@ public class UnityAdsConfigTest {
         config.enabled = true;
         config.gameId = "1234567";
         config.testMode = false;
+        config.autoBanner = false;
         config.bannerPlacement = "MyBanner";
         config.interstitialPlacement = "MyInter";
         config.rewardedPlacement = "MyReward";
@@ -32,6 +33,7 @@ public class UnityAdsConfigTest {
         assertTrue(read.enabled);
         assertEquals("1234567", read.gameId);
         assertFalse(read.testMode);
+        assertFalse(read.autoBanner);
         assertEquals("MyBanner", read.bannerPlacement);
         assertEquals("MyInter", read.interstitialPlacement);
         assertEquals("MyReward", read.rewardedPlacement);
@@ -42,6 +44,7 @@ public class UnityAdsConfigTest {
         UnityAdsConfig config = UnityAdsConfig.fromJson("{\"enabled\":true,\"gameId\":\"42\"}");
         assertEquals(UnityAdsConfig.DEFAULT_BANNER_PLACEMENT, config.bannerPlacement);
         assertEquals(UnityAdsConfig.DEFAULT_INTERSTITIAL_PLACEMENT, config.interstitialPlacement);
+        assertTrue("files from before the setting existed get the automatic banner", config.autoBanner);
         assertTrue(config.isActive());
     }
 
