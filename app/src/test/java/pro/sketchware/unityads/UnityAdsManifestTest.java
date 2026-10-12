@@ -34,6 +34,7 @@ public class UnityAdsManifestTest {
             + "    <uses-permission android:name=\"android.permission.INTERNET\" />\n"
             + "    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />\n"
             + "    <uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\" tools:node=\"remove\" />\n"
+            + "    <permission android:name=\"${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION\" android:protectionLevel=\"signature\" />\n"
             + "    <queries><intent><action android:name=\"android.intent.action.VIEW\" /></intent></queries>\n"
             + "    <application>\n"
             + "        <activity android:name=\"com.unity3d.services.ads.adunit.AdUnitActivity\" android:exported=\"false\"\n"
@@ -84,6 +85,13 @@ public class UnityAdsManifestTest {
         assertEquals(1, count(document, "uses-permission", "android.permission.INTERNET"));
         assertEquals(1, count(document, "uses-permission", "android.permission.ACCESS_NETWORK_STATE"));
         assertEquals(0, count(document, "uses-permission", "android.permission.ACCESS_WIFI_STATE"));
+    }
+
+    @Test
+    public void copiesPermissionsALibraryDeclaresOnce() throws Exception {
+        String once = UnityAdsManifest.merge(APP, Collections.singletonList(UNITY), "com.my.app");
+        String twice = UnityAdsManifest.merge(once, Collections.singletonList(UNITY), "com.my.app");
+        assertEquals(1, count(parse(twice), "permission", "com.my.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"));
     }
 
     @Test

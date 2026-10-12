@@ -45,9 +45,11 @@ public class UnityAdsHelperSourceTest {
     @Test
     public void recordsStartupCrashesAndRecoversInSafeMode() {
         String source = UnityAdsHelperSource.generate("a.b", config());
-        assertTrue(source.contains("installCrashRecorder(context)"));
+        assertTrue(source.contains("installCrashRecorder(starter)"));
         assertTrue(source.contains("recoverFromCrash(context)"));
-        assertTrue("the crash recorder must only run in test mode", source.contains("if (TEST_MODE) {\n                        installCrashRecorder"));
+        assertTrue("the crash recorder must only run in test mode", source.contains("if (TEST_MODE) {\n                                    // Only now"));
+        assertTrue("the recorder must go in after Application.onCreate, which replaces the handler",
+                source.indexOf("MAIN.postAtFrontOfQueue") < source.indexOf("installCrashRecorder(starter)"));
         assertTrue("the previous crash handler must still be called", source.contains("previous.uncaughtException(thread, throwable)"));
     }
 

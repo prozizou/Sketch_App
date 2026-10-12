@@ -49,6 +49,9 @@ public final class UnityAdsManifest {
 
     private static final Set<String> PERMISSIONS = new HashSet<>(Arrays.asList(
             "uses-permission", "uses-permission-sdk-23"));
+    /** Permissions a library declares itself (androidx.core's DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION...). */
+    private static final Set<String> PERMISSION_DECLARATIONS = new HashSet<>(Arrays.asList(
+            "permission", "permission-group", "permission-tree"));
 
     private UnityAdsManifest() {
     }
@@ -142,8 +145,8 @@ public final class UnityAdsManifest {
             if (isRemoved(child)) {
                 continue;
             }
-            if (PERMISSIONS.contains(tag)) {
-                if (findByName(root, tag, androidName(child)) == null) {
+            if (PERMISSIONS.contains(tag) || PERMISSION_DECLARATIONS.contains(tag)) {
+                if (findByName(root, tag, androidName(child).replace("${applicationId}", packageName)) == null) {
                     root.insertBefore(copy(app, child, packageName), application);
                 }
             } else if (tag.equals("queries")) {
