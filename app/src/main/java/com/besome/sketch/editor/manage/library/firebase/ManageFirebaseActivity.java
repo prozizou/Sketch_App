@@ -1,5 +1,6 @@
 package com.besome.sketch.editor.manage.library.firebase;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -229,6 +230,7 @@ public class ManageFirebaseActivity extends BaseAppCompatActivity {
 
     // ---- setup
 
+    @SuppressLint("ClickableViewAccessibility") // only lets the page's scroll view keep its hands off the editor; clicks stay the editor's
     private void setUpEditor() {
         EditorUtils.loadJsonConfig(binding.jsonEditor);
         binding.jsonEditor.setTypefaceText(EditorUtils.getTypeface(this));
@@ -660,11 +662,15 @@ public class ManageFirebaseActivity extends BaseAppCompatActivity {
         } else if (config.hasErrors()) {
             icon = R.drawable.ic_mtrl_cancel;
             tint = androidx.appcompat.R.attr.colorError;
-            text = getString(R.string.fb_status_invalid, config.count(GoogleServicesConfig.Severity.ERROR), config.count(GoogleServicesConfig.Severity.WARNING));
+            int errors = config.count(GoogleServicesConfig.Severity.ERROR);
+            int warnings = config.count(GoogleServicesConfig.Severity.WARNING);
+            text = getString(R.string.fb_status_invalid, getResources().getQuantityString(R.plurals.fb_errors, errors, errors),
+                    getResources().getQuantityString(R.plurals.fb_warnings, warnings, warnings));
         } else if (config.count(GoogleServicesConfig.Severity.WARNING) > 0) {
             icon = R.drawable.ic_mtrl_warning;
             tint = com.google.android.material.R.attr.colorTertiary;
-            text = getString(R.string.fb_status_valid_warnings, config.count(GoogleServicesConfig.Severity.WARNING));
+            int warnings = config.count(GoogleServicesConfig.Severity.WARNING);
+            text = getString(R.string.fb_status_valid, getResources().getQuantityString(R.plurals.fb_warnings, warnings, warnings));
         } else {
             icon = R.drawable.ic_mtrl_check;
             tint = androidx.appcompat.R.attr.colorPrimary;
@@ -691,7 +697,7 @@ public class ManageFirebaseActivity extends BaseAppCompatActivity {
             list.addView(issueRow(issues.get(i)));
         }
         if (issues.size() > shown) {
-            TextView more = text(getString(R.string.fb_issues_more, issues.size() - shown), com.google.android.material.R.attr.textAppearanceBodySmall);
+            TextView more = text(getResources().getQuantityString(R.plurals.fb_issues_more, issues.size() - shown, issues.size() - shown), com.google.android.material.R.attr.textAppearanceBodySmall);
             more.setPadding(0, dp(4), 0, 0);
             list.addView(more);
         }
@@ -770,7 +776,7 @@ public class ManageFirebaseActivity extends BaseAppCompatActivity {
         addRow(rows, R.string.fb_row_storage, config.storageBucket(), null);
         GoogleServicesConfig.Client client = config.selectedClient();
         if (client != null && !client.oauthClients.isEmpty()) {
-            addRow(rows, R.string.fb_row_oauth, getString(R.string.fb_oauth_value, client.oauthClients.size(),
+            addRow(rows, R.string.fb_row_oauth, getResources().getQuantityString(R.plurals.fb_oauth_value, client.oauthClients.size(), client.oauthClients.size(),
                     getString(config.webClientId().isEmpty() ? R.string.fb_oauth_absent : R.string.fb_oauth_present)), null);
         }
     }

@@ -1516,8 +1516,23 @@ ACTION_VIEW
     <string name="fb_menu_delete">Delete configuration</string>
     <string name="fb_status_empty">No configuration</string>
     <string name="fb_status_valid">Valid configuration · %1$s</string>
-    <string name="fb_status_valid_warnings">Valid configuration · %1$d warning(s)</string>
-    <string name="fb_status_invalid">%1$d error(s), %2$d warning(s)</string>
+    <string name="fb_status_invalid">%1$s, %2$s</string>
+    <plurals name="fb_errors">
+        <item quantity="one">%d error</item>
+        <item quantity="other">%d errors</item>
+    </plurals>
+    <plurals name="fb_warnings">
+        <item quantity="one">%d warning</item>
+        <item quantity="other">%d warnings</item>
+    </plurals>
+    <plurals name="fb_oauth_value">
+        <item quantity="one">%1$d client, web client id %2$s</item>
+        <item quantity="other">%1$d clients, web client id %2$s</item>
+    </plurals>
+    <plurals name="fb_issues_more">
+        <item quantity="one">and %d more issue</item>
+        <item quantity="other">and %d more issues</item>
+    </plurals>
     <string name="fb_summary_empty">The values read from the file appear here.</string>
     <string name="fb_row_project_id">Project ID</string>
     <string name="fb_row_project_number">Project number</string>
@@ -1530,12 +1545,10 @@ ACTION_VIEW
     <string name="fb_value_none">Not set</string>
     <string name="fb_package_matches">%1$s (matches this project)</string>
     <string name="fb_package_differs">%1$s (this project uses %2$s)</string>
-    <string name="fb_oauth_value">%1$d client(s), web client id %2$s</string>
     <string name="fb_oauth_present">present</string>
     <string name="fb_oauth_absent">absent</string>
     <string name="fb_client_chip">Client: %1$s</string>
     <string name="fb_issue_line">Line %1$d · %2$s</string>
-    <string name="fb_issues_more">and %1$d more</string>
     <string name="fb_tests_intro">Each test is separate. They only read anonymously and never get around your Firebase security rules: \"access denied\" is the expected, good answer.</string>
     <string name="fb_run_tests">Run tests</string>
     <string name="fb_running">Running…</string>

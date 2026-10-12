@@ -52,7 +52,7 @@ public final class HttpsTransport implements FirebaseChecks.Transport {
             while (out.size() < MAX_BODY_BYTES && (n = stream.read(buffer)) > 0) {
                 out.write(buffer, 0, Math.min(n, MAX_BODY_BYTES - out.size()));
             }
-            return out.toString(StandardCharsets.UTF_8);
+            return new String(out.toByteArray(), StandardCharsets.UTF_8);
         }
     }
 }

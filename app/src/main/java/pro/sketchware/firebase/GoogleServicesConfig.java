@@ -478,7 +478,8 @@ public final class GoogleServicesConfig {
     public static String maskSecrets(String json) {
         if (json == null) return "";
         Matcher m = SECRET_VALUE.matcher(json);
-        StringBuilder out = new StringBuilder();
+        // StringBuffer: the StringBuilder overloads of appendReplacement/appendTail need Android 14.
+        StringBuffer out = new StringBuffer();
         while (m.find()) {
             m.appendReplacement(out, Matcher.quoteReplacement(m.group(1) + mask(m.group(2)) + m.group(3)));
         }
