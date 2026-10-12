@@ -117,6 +117,8 @@ android {
             returnDefaultValues = true
             includeAndroidResources = true
             all {
+                // Robolectric screen tests keep whole layouts and bitmaps alive; the default 512 MB test heap overflows.
+                maxHeapSize = '3g'
                 // The prebuilt a.a.a jars hold old bytecode (no stack maps) that Android's dex tooling accepts but a
                 // desktop JVM refuses to verify; tests that load their classes (the properties screen) need this.
                 jvmArgs '-XX:+UnlockDiagnosticVMOptions', '-XX:-BytecodeVerificationRemote'
