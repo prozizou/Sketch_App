@@ -212,7 +212,8 @@
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="com.besome.sketch.editor.manage.library.firebase.ManageFirebaseActivity"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.besome.sketch.editor.manage.library.admob.ManageAdmobActivity"
             android:configChanges="orientation|screenSize" />
