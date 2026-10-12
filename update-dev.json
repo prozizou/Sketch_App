@@ -1,10 +1,10 @@
 {
   "versionCode": 157,
-  "versionName": "v7.2.4-dev (076b910)",
-  "commit": "076b91039dcdb99bdc25fcab4fffb0a4d9f772b1",
+  "versionName": "v7.2.4-dev (6ccd9ba)",
+  "commit": "6ccd9babeb8c6b37f1973f418dc8ccccbd79f6b6",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-279",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-279/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "a0266ef59fab3b440f3a14e748064faf9d33e9e0325d832bdf8f4d32c0030228",
-  "notes": "Dev build (arm64): Add project README and give the unit-test JVM a 3 GB heap (#65)"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-285",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-285/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "0f252cfc3bb4b9c2472bd305aa638cb97535a9f354bfb8dd479055f715e74149",
+  "notes": "Dev build (arm64): Firebase Manager: one google-services.json editor with validation and connection tests (#66)"
 }
