@@ -2,6 +2,7 @@ package pro.sketchware.blocks.editor;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.util.TypedValue;
 import android.transition.AutoTransition;
 import android.transition.TransitionManager;
 import android.util.AttributeSet;
@@ -51,10 +52,11 @@ public class CollapsibleSection extends LinearLayout {
         header.setMinimumHeight(Math.round(48 * density));
         header.setClickable(true);
         header.setFocusable(true);
-        int[] attr = {android.R.attr.selectableItemBackground};
-        TypedArray ripple = context.obtainStyledAttributes(attr);
-        header.setForeground(ripple.getDrawable(0));
-        ripple.recycle();
+        TypedValue ripple = new TypedValue();
+        if (context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
+                && ripple.resourceId != 0) {
+            header.setForeground(androidx.appcompat.content.res.AppCompatResources.getDrawable(context, ripple.resourceId));
+        }
         header.setPadding(Math.round(4 * density), 0, Math.round(4 * density), 0);
 
         titleView = new TextView(context);

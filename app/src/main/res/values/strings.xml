@@ -770,7 +770,6 @@ But, components should be added manually for working correctly."</string>
     <string name="be_import_add">Add</string>
     <string name="be_import_remove">Remove import</string>
     <string name="be_import_edit">Edit import</string>
-    <string name="be_import_suggestions">Used in the code</string>
     <string name="be_code_hint">Java code of the block</string>
     <string name="be_code_search">Search</string>
     <string name="be_code_search_hint">Find in the code</string>
@@ -808,9 +807,7 @@ But, components should be added manually for working correctly."</string>
     <string name="be_update_refs_no">Leave the code</string>
     <string name="be_name_in_use">Block name already in use</string>
     <string name="be_name_invalid">Letters, digits, _ and $ only, not starting with a digit</string>
-    <string name="be_name_empty">The block needs a name</string>
     <string name="be_color_invalid">Invalid hex color</string>
-    <string name="be_spec_problem">%1$s</string>
     <string name="color_wheel_title">Pick a color</string>
     <string name="color_wheel_brightness">Brightness</string>
     <string name="color_wheel_opacity">Opacity</string>
@@ -917,7 +914,6 @@ ACTION_VIEW
     <string name="search_recent_title_delete_keyword_dialog">Delete Keyword</string>
     <string name="search_result_message_no_data">No search result to show. :(</string>
     <string name="search_result_title">Search Result of %s</string>
-    <string name="block_preview_title">Block Preview</string>
     <string name="sign_apk_desc_export_apk_file">APK file is generated. APK file is generated in the save directory below. Please check the save directory.</string>
     <string name="sign_apk_desc_generate_apk_file">Click sign button below and generate an APK file!</string>
     <string name="sign_apk_title_apk_file_save_path">Save Directory</string>

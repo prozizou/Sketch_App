@@ -161,13 +161,8 @@
     <string name="common_word_daynight">DayNight</string>
     <string name="common_word_filter">Filter</string>
     <string name="common_word_main">main</string>
-    <string name="common_word_edit_block">Edit block</string>
-    <string name="common_word_type_name">Type name</string>
-    <string name="common_word_design">Design</string>
     <string name="common_word_color">Color</string>
     <string name="common_word_parameters">Parameters</string>
-    <string name="common_word_spec">Spec</string>
-    <string name="common_word_spec2">Spec2</string>
     <string name="common_word_widget_title">Widget title</string>
     <string name="common_word_select_category">Select category</string>
     <string name="common_word_xml_attributes">XML attributes</string>
