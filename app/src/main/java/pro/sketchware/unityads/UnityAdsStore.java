@@ -63,4 +63,26 @@ public final class UnityAdsStore {
         }
         return UnityAdsManifest.merge(manifest, readSdkManifests(scId), packageName);
     }
+
+    /**
+     * Names of the SDK's libraries in the project that have no compiled code (classes.dex): their classes would be
+     * missing from the app, and the SDK fails to start. Usually a download whose dexing step failed.
+     */
+    public static List<String> librariesWithoutCode(String scId) {
+        List<String> names = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            if (!UnityAdsSdk.isSdkRelated(library)) {
+                continue;
+            }
+            Object dexPath = library.get("dexPath");
+            Object jarPath = library.get("jarPath");
+            boolean hasCode = dexPath != null && new File(dexPath.toString()).isFile();
+            // A library with no jar has no classes at all (resources only): nothing to miss.
+            boolean hasClasses = jarPath != null && new File(jarPath.toString()).isFile();
+            if (hasClasses && !hasCode) {
+                names.add(String.valueOf(library.get("name")));
+            }
+        }
+        return names;
+    }
 }

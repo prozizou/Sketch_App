@@ -102,6 +102,12 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     private void refreshSdkStatus() {
         sdkInstalled = UnityAdsSdk.isInstalled(LocalLibrariesUtil.getLocalLibraries(scId));
         binding.sdkStatus.setText(sdkInstalled ? R.string.unity_ads_sdk_installed : R.string.unity_ads_sdk_missing);
+        if (sdkInstalled) {
+            List<String> withoutCode = UnityAdsStore.librariesWithoutCode(scId);
+            if (!withoutCode.isEmpty()) {
+                binding.sdkStatus.setText(getString(R.string.unity_ads_sdk_without_code, String.join(", ", withoutCode)));
+            }
+        }
         binding.btnDownloadSdk.setVisibility(sdkInstalled ? View.GONE : View.VISIBLE);
     }
 
