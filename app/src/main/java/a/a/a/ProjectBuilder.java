@@ -49,9 +49,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import mod.agus.jcoderz.editor.library.ExtLibSelected;
@@ -63,6 +65,7 @@ import mod.hey.studios.project.proguard.ProguardHandler;
 import mod.hey.studios.util.SystemLogPrinter;
 import mod.jbk.build.BuildProgressReceiver;
 import mod.jbk.build.BuiltInLibraries;
+import mod.jbk.build.ResourceJars;
 import mod.jbk.build.compiler.dex.DexCompiler;
 import mod.jbk.build.compiler.resource.ResourceCompiler;
 import mod.jbk.util.LogUtil;
@@ -71,6 +74,7 @@ import mod.pranav.build.JarBuilder;
 import mod.pranav.build.R8Compiler;
 import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.SketchApplication;
+import pro.sketchware.unityads.UnityAdsStore;
 import pro.sketchware.util.library.BuiltInLibraryManager;
 import pro.sketchware.utility.FilePathUtil;
 import pro.sketchware.utility.FileUtil;
@@ -590,19 +594,37 @@ public class ProjectBuilder {
         }
     }
 
+    private static void addResourcesFromJar(ApkBuilder apkBuilder, File jar, boolean skipDuplicates, Set<String> added, File directory)
+            throws ApkCreationException, SealedApkException, DuplicateFileException {
+        apkBuilder.addResourcesFromJar(skipDuplicates ? ResourceJars.withoutEntries(jar, added, directory) : jar);
+    }
+
     public void buildApk() throws By {
         String firstDexPath = dexesToAddButNotMerge.isEmpty() ? yq.classesDexPath : dexesToAddButNotMerge.remove(0).getAbsolutePath();
         try {
             ApkBuilder apkBuilder = new ApkBuilder(new File(yq.unsignedUnalignedApkPath), new File(yq.resourcesApkPath), new File(firstDexPath), null, null, System.out);
 
+            // With Unity Ads the SDK brings its own copies of libraries NWS also has (Kotlin...), which ship the same
+            // resource files. Keep the first copy, as the DEX merge does, instead of stopping on "Duplicate files".
+            boolean skipDuplicateResources = UnityAdsStore.isActive(yq.sc_id);
+            Set<String> addedResources = new HashSet<>();
+            File deduplicatedDirectory = new File(yq.binDirectoryPath, "deduplicated-resources");
+            File[] leftovers = deduplicatedDirectory.listFiles();
+            if (leftovers != null) {
+                for (File leftover : leftovers) {
+                    leftover.delete();
+                }
+            }
+
             for (Jp library : builtInLibraryManager.getLibraries()) {
-                apkBuilder.addResourcesFromJar(BuiltInLibraries.getLibraryClassesJarPath(library.getName()));
+                addResourcesFromJar(apkBuilder, BuiltInLibraries.getLibraryClassesJarPath(library.getName()),
+                        skipDuplicateResources, addedResources, deduplicatedDirectory);
             }
 
             for (String jarPath : mll.getJarLocalLibrary().split(":")) {
                 // A local library without classes.jar (resources only, or deleted files) has nothing to add here.
                 if (isReadable(jarPath)) {
-                    apkBuilder.addResourcesFromJar(new File(jarPath));
+                    addResourcesFromJar(apkBuilder, new File(jarPath), skipDuplicateResources, addedResources, deduplicatedDirectory);
                 }
             }
 
