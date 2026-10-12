@@ -1,10 +1,10 @@
 {
   "versionCode": 157,
-  "versionName": "v7.2.4-dev (6ccd9ba)",
-  "commit": "6ccd9babeb8c6b37f1973f418dc8ccccbd79f6b6",
+  "versionName": "v7.2.4-dev (81cf207)",
+  "commit": "81cf207922086082aab91fd300c6b850a8c28410",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-285",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-285/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "0f252cfc3bb4b9c2472bd305aa638cb97535a9f354bfb8dd479055f715e74149",
-  "notes": "Dev build (arm64): Firebase Manager: one google-services.json editor with validation and connection tests (#66)"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-306",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-306/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "c0e07f29810ffaa907db85752a4754839fd3f5cdfed9f1666889f085cea2ffb3",
+  "notes": "Dev build (arm64): Merge pull request #68 from prozizou/ccr-ef83d2d2-n53b3c"
 }
