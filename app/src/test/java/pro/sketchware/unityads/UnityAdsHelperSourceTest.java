@@ -65,6 +65,8 @@ public class UnityAdsHelperSourceTest {
         assertTrue(source.contains("note(\"initialized\")"));
         assertTrue(source.contains("note(\"banner loaded\")"));
         assertTrue(source.contains("has not finished starting 20 seconds after the app opened"));
+        assertTrue("tells a network problem from a stuck SDK", source.contains("Connection test to gateway.unityads.unity3d.com"));
+        assertTrue(source.contains("Thread.getAllStackTraces()"));
         assertTrue("messages and the check only exist in test mode", source.contains("private static void note(final String message) {\n        Log.i(TAG, message);\n        if (!TEST_MODE) {"));
     }
 
