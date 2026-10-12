@@ -72,10 +72,10 @@ public final class UnityAdsRepair {
     }
 
     /**
-     * @param missing   libraries the SDK needs that the project lacks, each downloaded alone
+     * @param missing   group:artifact:version of libraries the SDK needs that the project lacks, each downloaded alone
      * @param reinstall download the whole SDK again (needs the SDK's version in the project's libraries)
      */
-    public static Result run(String scId, List<UnityAdsRequirements.Requirement> missing, boolean reinstall, Progress progress) {
+    public static Result run(String scId, List<String> missing, boolean reinstall, Progress progress) {
         Result result = new Result();
         BuiltInLibraries.maybeExtractAndroidJar();
         BuiltInLibraries.maybeExtractCoreLambdaStubsJar();
@@ -98,7 +98,7 @@ public final class UnityAdsRepair {
             }
         } else {
             for (int i = 0; i < missing.size(); i++) {
-                String coordinate = missing.get(i).coordinate;
+                String coordinate = missing.get(i);
                 progress.onStep(coordinate, i, missing.size());
                 String[] parts = coordinate.split(":");
                 Collector collector = download(parts[0], parts[1], parts[2], true, buildSettings);

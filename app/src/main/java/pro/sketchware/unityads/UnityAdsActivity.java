@@ -4,11 +4,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.BufferedReader;
@@ -17,8 +21,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,13 +43,21 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
 
     private ManageLibraryUnityAdsBinding binding;
     private String scId;
+    /** Reads class files; slow, and must never hold up a download. */
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    /** Downloads and repairs. */
+    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean sdkInstalled;
     private String statusText = "";
     private boolean needsReinstall;
     private int statusGeneration;
     private List<UnityAdsRequirements.Requirement> missingRequirements = new ArrayList<>();
+    /** Row views of the libraries list, by coordinate, to show each download's progress and failure on its row. */
+    private final Map<String, MaterialButton> rowButtons = new HashMap<>();
+    private final Map<String, TextView> rowStatuses = new HashMap<>();
+    private List<UnityAdsKnownLibraries.Entry> missingLibraries = new ArrayList<>();
+    private boolean downloadingAll;
 
     /** What the Manage libraries screen shows for this library: ON when the project would generate code. */
     public static boolean isEnabled(String scId) {
@@ -97,6 +112,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     @Override
     public void onDestroy() {
         executor.shutdownNow();
+        workExecutor.shutdownNow();
         super.onDestroy();
     }
 
@@ -131,6 +147,145 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
                 binding.btnRepairSdk.setVisibility(View.VISIBLE);
             }
             showMissingClassesLater(generation);
+            showLibrariesLater(generation);
+        } else {
+            binding.libraryList.removeAllViews();
+        }
+    }
+
+    /** Lists the SDK's libraries the project lacks, each with its own download button. */
+    private void showLibrariesLater(int generation) {
+        String version = UnityAdsRequirements.sdkVersion(LocalLibrariesUtil.getLocalLibraries(scId));
+        if (!UnityAdsKnownLibraries.SDK_VERSION.equals(version)) {
+            // Another SDK version than the table describes: only the full reinstall is reliable.
+            binding.libraryList.removeAllViews();
+            return;
+        }
+        executor.execute(() -> {
+            Set<String> available = UnityAdsStore.availableClasses(scId, UnityAdsKnownLibraries.classFiles());
+            List<UnityAdsKnownLibraries.Entry> missing = UnityAdsKnownLibraries.missing(available);
+            mainHandler.post(() -> {
+                if (isFinishing() || isDestroyed() || generation != statusGeneration) return;
+                missingLibraries = missing;
+                renderLibraries(UnityAdsKnownLibraries.all().size() - missing.size());
+            });
+        });
+    }
+
+    private void renderLibraries(int present) {
+        binding.libraryList.removeAllViews();
+        rowButtons.clear();
+        rowStatuses.clear();
+        if (missingLibraries.isEmpty()) {
+            return;
+        }
+        TextView summary = new TextView(this);
+        summary.setText(getString(R.string.unity_ads_libraries_summary, present, missingLibraries.size()));
+        summary.setPadding(0, dp(8), 0, dp(4));
+        binding.libraryList.addView(summary);
+
+        MaterialButton all = newButton(getString(R.string.unity_ads_download_all, missingLibraries.size()));
+        all.setOnClickListener(v -> downloadAllMissing());
+        all.setEnabled(!downloadingAll);
+        binding.libraryList.addView(all);
+
+        for (UnityAdsKnownLibraries.Entry entry : missingLibraries) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            TextView name = new TextView(this);
+            name.setText(entry.artifactId() + " " + entry.version());
+            row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            MaterialButton button = newButton(getString(R.string.unity_ads_download));
+            button.setOnClickListener(v -> downloadOne(entry));
+            row.addView(button);
+            binding.libraryList.addView(row);
+
+            TextView status = new TextView(this);
+            status.setTextIsSelectable(true);
+            status.setVisibility(View.GONE);
+            binding.libraryList.addView(status);
+            rowButtons.put(entry.coordinate, button);
+            rowStatuses.put(entry.coordinate, status);
+        }
+    }
+
+    private MaterialButton newButton(String label) {
+        MaterialButton button = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        button.setText(label);
+        button.setAllCaps(false);
+        return button;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private void setRow(String coordinate, @Nullable String message, boolean buttonEnabled) {
+        TextView status = rowStatuses.get(coordinate);
+        MaterialButton button = rowButtons.get(coordinate);
+        if (status != null && message != null) {
+            status.setText(message);
+            status.setVisibility(View.VISIBLE);
+        }
+        if (button != null) {
+            button.setEnabled(buttonEnabled);
+        }
+    }
+
+    /** Downloads one library and shows the result, or the reason it failed, on its own row. */
+    private void downloadOne(UnityAdsKnownLibraries.Entry entry) {
+        setRow(entry.coordinate, getString(R.string.unity_ads_downloading), false);
+        workExecutor.execute(() -> {
+            UnityAdsRepair.Result result = runRepair(entry.coordinate);
+            mainHandler.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (result.failed.isEmpty()) {
+                    setRow(entry.coordinate, getString(R.string.unity_ads_done), false);
+                    refreshSdkStatus();
+                } else {
+                    setRow(entry.coordinate, getString(R.string.unity_ads_row_failed, String.join("\n", result.failed)), true);
+                }
+            });
+        });
+    }
+
+    private void downloadAllMissing() {
+        if (downloadingAll) {
+            return;
+        }
+        downloadingAll = true;
+        List<UnityAdsKnownLibraries.Entry> todo = new ArrayList<>(missingLibraries);
+        for (UnityAdsKnownLibraries.Entry entry : todo) {
+            setRow(entry.coordinate, getString(R.string.unity_ads_downloading), false);
+        }
+        workExecutor.execute(() -> {
+            for (UnityAdsKnownLibraries.Entry entry : todo) {
+                UnityAdsRepair.Result result = runRepair(entry.coordinate);
+                mainHandler.post(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    setRow(entry.coordinate, result.failed.isEmpty() ? getString(R.string.unity_ads_done)
+                            : getString(R.string.unity_ads_row_failed, String.join("\n", result.failed)), !result.failed.isEmpty());
+                });
+            }
+            mainHandler.post(() -> {
+                downloadingAll = false;
+                if (!isFinishing() && !isDestroyed()) {
+                    refreshSdkStatus();
+                }
+            });
+        });
+    }
+
+    /** Never throws: a failure becomes a line of the result, so it is always shown to the person. */
+    private UnityAdsRepair.Result runRepair(String coordinate) {
+        try {
+            return UnityAdsRepair.run(scId, Collections.singletonList(coordinate), false, (what, index, total) -> {
+            });
+        } catch (Throwable e) {
+            UnityAdsRepair.Result result = new UnityAdsRepair.Result();
+            result.failed.add(coordinate + ": " + e);
+            return result;
         }
     }
 
@@ -168,22 +323,33 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
             return;
         }
         binding.btnRepairSdk.setEnabled(false);
-        executor.execute(() -> {
-            UnityAdsRepair.Result result = UnityAdsRepair.run(scId, toRepair, reinstall, (coordinate, index, total) ->
-                    mainHandler.post(() -> {
-                        if (binding != null) {
-                            binding.sdkStatus.setText(getString(R.string.unity_ads_repairing, coordinate, index + 1, total));
-                        }
-                    }));
+        List<String> coordinates = new ArrayList<>();
+        for (UnityAdsRequirements.Requirement requirement : toRepair) {
+            coordinates.add(requirement.coordinate);
+        }
+        workExecutor.execute(() -> {
+            UnityAdsRepair.Result result;
+            try {
+                result = UnityAdsRepair.run(scId, coordinates, reinstall, (coordinate, index, total) ->
+                        mainHandler.post(() -> {
+                            if (binding != null) {
+                                binding.sdkStatus.setText(getString(R.string.unity_ads_repairing, coordinate, index + 1, total));
+                            }
+                        }));
+            } catch (Throwable e) {
+                result = new UnityAdsRepair.Result();
+                result.failed.add("Unexpected error: " + e);
+            }
+            UnityAdsRepair.Result finalResult = result;
             mainHandler.post(() -> {
                 if (isFinishing() || isDestroyed()) return;
                 binding.btnRepairSdk.setEnabled(true);
                 refreshSdkStatus();
-                if (result.failed.isEmpty()) {
+                if (finalResult.failed.isEmpty()) {
                     SketchwareUtil.toast(getString(R.string.unity_ads_repair_done));
                 } else {
                     SketchwareUtil.showAnErrorOccurredDialog(this,
-                            getString(R.string.unity_ads_repair_failed, String.join("\n", result.failed)));
+                            getString(R.string.unity_ads_repair_failed, String.join("\n", finalResult.failed)));
                 }
             });
         });
@@ -249,7 +415,7 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
         }
         binding.btnDownloadSdk.setEnabled(false);
         binding.sdkStatus.setText(R.string.unity_ads_checking_version);
-        executor.execute(() -> {
+        workExecutor.execute(() -> {
             String version = latestVersion();
             mainHandler.post(() -> {
                 if (isFinishing() || isDestroyed()) return;

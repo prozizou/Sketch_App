@@ -172,6 +172,12 @@ Choosing a theme mode lets you personalize the app\'s appearance, notes:\n
     <string name="unity_ads_sdk_missing">The Unity Ads SDK is not in this project yet. Download it before turning Unity Ads on.</string>
     <string name="unity_ads_sdk_incomplete">Unity Ads SDK found, but these libraries it needs are missing or have no compiled code, so ads can\'t start: %1$s.</string>
     <string name="unity_ads_missing_classes">Classes the SDK needs but your app doesn\'t contain (the app can crash when it uses them): %1$s</string>
+    <string name="unity_ads_libraries_summary">Libraries of the SDK: %1$d present, %2$d missing</string>
+    <string name="unity_ads_download">Download</string>
+    <string name="unity_ads_download_all">Download all missing (%1$d)</string>
+    <string name="unity_ads_downloading">Downloading…</string>
+    <string name="unity_ads_done">Done</string>
+    <string name="unity_ads_row_failed">Failed:\n%1$s</string>
     <string name="unity_ads_repair_sdk">Repair the SDK</string>
     <string name="unity_ads_repairing">Downloading %1$s (%2$d/%3$d)…</string>
     <string name="unity_ads_repair_done">SDK repaired. Build the project again.</string>
