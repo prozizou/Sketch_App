@@ -112,6 +112,8 @@ L'APK de chaque version est signé avec la clé de publication du projet ; la so
 - Compilateur adapté aux appareils à peu de mémoire (limite de threads pour D8/R8).
 - **Release Manager** : historique, conservation du mapping, analyse de taille.
 - Bibliothèques : graphe intégré, bibliothèques locales ou en ligne, exclusion des bibliothèques intégrées.
+- Unity Ads : écran de réglages (Game ID, emplacements, mode test), téléchargement du SDK, classe `UnityAdsHelper` générée
+  et catégorie de blocs « Unity Ads » (bannière, interstitielle, récompensée, événements).
 - Export des sources pour Android Studio, avec génération optionnelle d'un workflow CI.
 
 ### Qualité et sécurité d'un projet
@@ -255,6 +257,9 @@ séparés par des espaces — sans nom ni valeur par défaut. Le code Java gén�
 - Pas de pipette dans le sélecteur de couleur (aucune API Android).
 - Les `imports` d'un bloc personnalisé sont enregistrés mais **ignorés** par le générateur de code actuel.
 - Les modèles AdMob / Firebase supposent que la bibliothèque correspondante est dans le projet.
+- Unity Ads : la logique (réglages, génération du code, blocs) est testée sur JVM ; l'écran, le téléchargement du SDK et la
+  compilation d'un projet utilisant le SDK **n'ont pas été essayés sur un appareil**. La bannière se place dans une vue
+  existante (bloc « show banner … inside »), il n'y a pas de composant bannière dans l'éditeur de vues.
 - Le « débogueur de blocs » est une simulation, pas un débogueur en direct sur l'appareil.
 - Multi-sélection et application des guides (aimantation, alignement) à un projet : non réalisées ;
   voir [`docs/IDE_ROADMAP.md`](docs/IDE_ROADMAP.md) pour l'état exact de chaque chantier.

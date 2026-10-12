@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import a.a.a.eC;
 import a.a.a.jC;
 import mod.hilal.saif.activities.tools.ConfigActivity;
+import pro.sketchware.unityads.UnityAdsBlocks;
 
 public class ExtraBlocks {
 
@@ -73,6 +74,8 @@ public class ExtraBlocks {
         //RewardedVideoAd
         arrayList.add(addBlock("rewardedVideoAdLoad", " ", "", "RewardedAd.load(%2$s.this, _reward_ad_unit_id, new AdRequest.Builder().build(), _%1$s_rewarded_ad_load_callback);", "#2ca5e2", "%m.videoad load in %m.activity"));
         arrayList.add(addBlock("rewardedVideoAdShow", " ", "", "%1s.show(%2$s.this, _%1$s_on_user_earned_reward_listener);", "#2ca5e2", "%m.videoad show in %m.activity"));
+        // Unity Ads
+        UnityAdsBlocks.addTo(arrayList);
     }
 
     /**
