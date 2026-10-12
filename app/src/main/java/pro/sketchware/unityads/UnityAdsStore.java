@@ -7,7 +7,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.zip.ZipFile;
 
 import dev.aldi.sayuti.editor.manage.EmbeddedLibs;
@@ -116,5 +118,56 @@ public final class UnityAdsStore {
     /** What the SDK needs and the project doesn't have, empty when it can start. */
     public static List<UnityAdsRequirements.Requirement> missingRequirements(String scId) {
         return UnityAdsRequirements.missing(availableClasses(scId, UnityAdsRequirements.classFiles()));
+    }
+
+    /** Classes only some SDK features use; the SDK works without them. */
+    private static final String[] OPTIONAL_PREFIXES = {"com/google/android/gms/appset/", "com/ironsource/adqualitysdk/"};
+
+    /**
+     * Classes the SDK's code refers to that the app will not contain, so it crashes with NoClassDefFoundError when
+     * that code runs. Reads the libraries' class files: slow, run it off the main thread.
+     *
+     * @return missing class mapped to one SDK class that uses it; empty when the SDK is complete
+     */
+    public static Map<String, String> missingClasses(String scId) {
+        List<File> program = new ArrayList<>();
+        List<File> provided = new ArrayList<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            File folder = new File(LocalLibrariesUtil.getLocalLibsRoot(), String.valueOf(library.get("name")));
+            boolean sdk = UnityAdsSdk.isSdkRelated(library);
+            File classes = new File(folder, "classes.jar");
+            if (classes.isFile()) {
+                if (sdk) {
+                    program.add(classes);
+                }
+                if (new File(folder, "classes.dex").isFile()) {
+                    provided.add(classes);
+                }
+            }
+            File[] embedded = new File(folder, "libs").listFiles();
+            if (embedded != null) {
+                for (File jar : embedded) {
+                    if (!jar.getName().endsWith(".jar")) {
+                        continue;
+                    }
+                    if (sdk) {
+                        program.add(jar);
+                    }
+                    if (EmbeddedLibs.dexFor(folder, jar, 0).isFile()) {
+                        provided.add(jar);
+                    }
+                }
+            }
+        }
+        Map<String, String> missing = new TreeMap<>(ClassReferenceScanner.findMissing(program, provided));
+        missing.keySet().removeIf(name -> {
+            for (String prefix : OPTIONAL_PREFIXES) {
+                if (name.startsWith(prefix)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        return missing;
     }
 }

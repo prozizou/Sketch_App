@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,6 +39,8 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean sdkInstalled;
+    private String statusText = "";
+    private int statusGeneration;
     private List<UnityAdsRequirements.Requirement> missingRequirements = new ArrayList<>();
 
     /** What the Manage libraries screen shows for this library: ON when the project would generate code. */
@@ -104,7 +107,9 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
 
     private void refreshSdkStatus() {
         sdkInstalled = UnityAdsSdk.isInstalled(LocalLibrariesUtil.getLocalLibraries(scId));
-        binding.sdkStatus.setText(sdkInstalled ? R.string.unity_ads_sdk_installed : R.string.unity_ads_sdk_missing);
+        int generation = ++statusGeneration;
+        statusText = getString(sdkInstalled ? R.string.unity_ads_sdk_installed : R.string.unity_ads_sdk_missing);
+        binding.sdkStatus.setText(statusText);
         binding.btnDownloadSdk.setVisibility(sdkInstalled ? View.GONE : View.VISIBLE);
         binding.btnRepairSdk.setVisibility(View.GONE);
         if (sdkInstalled) {
@@ -118,10 +123,30 @@ public class UnityAdsActivity extends BaseAppCompatActivity {
                 for (String library : uncompiled) {
                     names.add(library + " (embedded libraries)");
                 }
-                binding.sdkStatus.setText(getString(R.string.unity_ads_sdk_incomplete, String.join(", ", names)));
+                statusText = getString(R.string.unity_ads_sdk_incomplete, String.join(", ", names));
+                binding.sdkStatus.setText(statusText);
                 binding.btnRepairSdk.setVisibility(View.VISIBLE);
             }
+            showMissingClassesLater(generation);
         }
+    }
+
+    /** Scans the SDK's classes in the background and adds what the app won't contain to the status. */
+    private void showMissingClassesLater(int generation) {
+        executor.execute(() -> {
+            Map<String, String> missing = UnityAdsStore.missingClasses(scId);
+            mainHandler.post(() -> {
+                if (isFinishing() || isDestroyed() || generation != statusGeneration || missing.isEmpty()) return;
+                List<String> names = new ArrayList<>();
+                for (String name : missing.keySet()) {
+                    if (names.size() == 6) break;
+                    names.add(name.replace('/', '.'));
+                }
+                String more = missing.size() > names.size() ? " (+" + (missing.size() - names.size()) + ")" : "";
+                binding.sdkStatus.setText(statusText + "\n\n"
+                        + getString(R.string.unity_ads_missing_classes, String.join(", ", names) + more));
+            });
+        });
     }
 
     private void repairSdk() {

@@ -91,7 +91,8 @@ public final class UnityAdsRepair {
                                 downloaded.addAll(artifacts);
                             }
                         });
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
+                // The downloader reports most problems through the callback, but an I/O error can still escape.
                 failed[0] = true;
             }
             if (failed[0] || downloaded.isEmpty()) {

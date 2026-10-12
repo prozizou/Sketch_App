@@ -6,6 +6,7 @@ import com.android.tools.r8.D8
 import com.android.tools.r8.D8Command
 import com.android.tools.r8.OutputMode
 import com.google.gson.Gson
+import dev.aldi.sayuti.editor.manage.ArchiveCheck
 import dev.aldi.sayuti.editor.manage.EmbeddedLibs
 import kotlinx.coroutines.runBlocking
 import mod.hey.studios.build.BuildSettings
@@ -20,6 +21,7 @@ import org.cosmic.ide.dependency.resolver.repositories
 import pro.sketchware.utility.FileUtil
 import pro.sketchware.utility.ZipSafety
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -48,6 +50,8 @@ class DependencyResolver(
           |    {"url": "https://repo.maven.apache.org/maven2", "name": "Apache Maven"}
           |]
         """.trimMargin()
+
+        private const val DOWNLOAD_ATTEMPTS = 3
 
         /** What D8 compiles a library against: the lambda stubs and the android.jar. */
         @JvmStatic
@@ -181,12 +185,14 @@ class DependencyResolver(
             dependencyClasspath.add(Paths.get(it))
         }
 
-        dependency.downloadTo(
-            File(downloadPath + "/${dependency.artifactId}-v${dependency.version}/classes.${dependency.extension}")
-                .apply {
-                    parentFile?.mkdirs()
-                }
-        )
+        val rootArchive = File(
+            downloadPath + "/${dependency.artifactId}-v${dependency.version}/classes.${dependency.extension}"
+        ).apply { parentFile?.mkdirs() }
+        val rootProblem = downloadChecked(dependency, rootArchive)
+        if (rootProblem != null) {
+            callback.onDownloadError(dependency, rootProblem)
+            return@runBlocking
+        }
 
         if (dependency.extension == "aar") {
             callback.unzipping(dependency)
@@ -258,7 +264,12 @@ class DependencyResolver(
 
             Files.createDirectories(path.parent)
 
-            dep.downloadTo(File(path.toString()))
+            val problem = downloadChecked(dep, File(path.toString()))
+            if (problem != null) {
+                // Stop instead of skipping it: a library with a missing dependency crashes the app later.
+                callback.onDownloadError(dep, problem)
+                return@runBlocking
+            }
 
             if (dep.extension == "aar") {
                 callback.unzipping(dep)
@@ -298,6 +309,33 @@ class DependencyResolver(
 
         callback.onTaskCompleted(
             dependency.getAllDependencies().map { "${it.artifactId}-v${it.version}" })
+    }
+
+    /**
+     * Downloads [artifact] to [file] and checks that it is a complete archive, trying again if it isn't. A
+     * rate-limited or interrupted download leaves an error page or a cut-off file, which used to crash the app while
+     * unzipping ("zip END header not found").
+     *
+     * @return null when the file is good, otherwise why it isn't
+     */
+    private fun downloadChecked(artifact: Artifact, file: File): Throwable? {
+        var failure: Throwable? = null
+        for (attempt in 1..DOWNLOAD_ATTEMPTS) {
+            try {
+                file.delete()
+                artifact.downloadTo(file)
+                if (ArchiveCheck.isValidZip(file)) return null
+                failure = IOException(
+                    "The downloaded file for $artifact is not a complete archive " +
+                        "(the connection was cut off, or the server sent an error page such as a download limit)."
+                )
+            } catch (e: Exception) {
+                failure = e
+            }
+            file.delete()
+            if (attempt < DOWNLOAD_ATTEMPTS) Thread.sleep(2000L * attempt)
+        }
+        return failure
     }
 
     private fun findPackageName(path: String, defaultValue: String): String {
