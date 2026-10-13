@@ -69,6 +69,8 @@ public class UnityAdsHelperSourceTest {
         assertTrue(source.contains("Thread.getAllStackTraces()"));
         assertTrue("includes the app's own log", source.contains("\"logcat\", \"-d\""));
         assertTrue(source.contains("UnityAds.setDebugMode(true)"));
+        assertTrue("repeats the call whose exception the SDK swallows", source.contains("WorkManager.getInstance FAILS"));
+        assertTrue(source.contains("start-up steps run by the helper"));
         assertTrue("messages and the check only exist in test mode", source.contains("private static void note(final String message) {\n        Log.i(TAG, message);\n        if (!TEST_MODE) {"));
     }
 
