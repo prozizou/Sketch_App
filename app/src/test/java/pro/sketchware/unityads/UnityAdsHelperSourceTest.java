@@ -75,6 +75,17 @@ public class UnityAdsHelperSourceTest {
     }
 
     @Test
+    public void startsWorkManagerItselfWhenItsManifestEntryIsMissing() {
+        String source = UnityAdsHelperSource.generate("a.b", config());
+        assertTrue(source.contains("ensureWorkManager(starter);"));
+        assertTrue("WorkManager is reached by reflection so projects without it still compile",
+                source.contains("Class.forName(\"androidx.work.WorkManager\")") && !source.contains("import androidx.work"));
+        assertTrue("after the manifest's own initializers, before Unity starts",
+                source.indexOf("startDeferredInitializers(starter);") < source.indexOf("ensureWorkManager(starter);")
+                        && source.indexOf("ensureWorkManager(starter);") < source.indexOf("initialize(starter);"));
+    }
+
+    @Test
     public void notesLaunchesThatNeverShowedAScreenAndAsksAndroidHowTheyEnded() {
         String source = UnityAdsHelperSource.generate("a.b", config());
         assertTrue(source.contains("getHistoricalProcessExitReasons"));
