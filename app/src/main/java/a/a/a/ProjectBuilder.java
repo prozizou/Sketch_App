@@ -48,6 +48,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -65,6 +66,7 @@ import mod.hey.studios.project.proguard.ProguardHandler;
 import mod.hey.studios.util.SystemLogPrinter;
 import mod.jbk.build.BuildProgressReceiver;
 import mod.jbk.build.BuiltInLibraries;
+import mod.jbk.build.LibraryVersions;
 import mod.jbk.build.ResourceJars;
 import mod.jbk.build.compiler.dex.DexCompiler;
 import mod.jbk.build.compiler.resource.ResourceCompiler;
@@ -695,7 +697,26 @@ public class ProjectBuilder {
         }
 
         /* Add used built-in libraries' DEX files */
+        // Unity Ads needs newer copies of some libraries NWS ships (kotlinx-coroutines): use only the newer one.
+        List<String> outdatedBuiltIns = Collections.emptyList();
+        if (UnityAdsStore.isActive(yq.sc_id)) {
+            List<String> builtInNames = new ArrayList<>();
+            for (Jp builtInLibrary : builtInLibraryManager.getLibraries()) {
+                builtInNames.add(builtInLibrary.getName());
+            }
+            List<String> localNames = new ArrayList<>();
+            for (HashMap<String, Object> localLibrary : mll.list) {
+                localNames.add(String.valueOf(localLibrary.get("name")));
+            }
+            outdatedBuiltIns = LibraryVersions.outdatedBuiltIns(builtInNames, localNames);
+            if (!outdatedBuiltIns.isEmpty()) {
+                LogUtil.d(TAG, "Using newer downloaded copies instead of built-in libraries: " + outdatedBuiltIns);
+            }
+        }
         for (Jp builtInLibrary : builtInLibraryManager.getLibraries()) {
+            if (outdatedBuiltIns.contains(builtInLibrary.getName())) {
+                continue;
+            }
             File dexFile = BuiltInLibraries.getLibraryDexFile(builtInLibrary.getName());
             if (dexFile.exists()) {
                 dexes.add(dexFile);
