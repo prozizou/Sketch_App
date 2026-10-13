@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
@@ -32,6 +33,7 @@ import java.util.List;
 import a.a.a.Lx;
 import a.a.a.Rs;
 import a.a.a.ZB;
+import a.a.a.bB;
 import a.a.a.mB;
 import a.a.a.uq;
 import mod.hey.studios.moreblock.MoreblockEditor;
@@ -74,6 +76,8 @@ public class MoreBlockBuilderView extends LinearLayout {
     private final ParameterAdapter adapter = new ParameterAdapter();
     private final ItemTouchHelper touchHelper;
     private final MoreblockValidator blockNameValidator;
+    /** The list the name validator reads: replaced in place, so the validator never has to be swapped. */
+    private final ArrayList<String> takenNames;
     private ZB advancedNameValidator;
     private Listener listener;
     private Rs block;
@@ -95,6 +99,7 @@ public class MoreBlockBuilderView extends LinearLayout {
     public MoreBlockBuilderView(Activity activity, ArrayList<String> takenNames) {
         super(activity);
         this.activity = activity;
+        this.takenNames = takenNames;
         binding = MakeBlockLayoutBinding.inflate(activity.getLayoutInflater(), this, true);
 
         blockNameValidator = new MoreblockValidator(activity, binding.tiName, uq.b, uq.a(), takenNames);
@@ -168,6 +173,32 @@ public class MoreBlockBuilderView extends LinearLayout {
         binding.blockArea.addView(block);
         refreshPreview();
         updateParametersSection();
+    }
+
+    /** For screens that embed the form and learn the taken names later, see {@link #setFuncNameValidator}. */
+    public MoreBlockBuilderView(Activity activity) {
+        this(activity, new ArrayList<>());
+    }
+
+    /** Replaces the names the new MoreBlock can't use. */
+    public void setFuncNameValidator(ArrayList<String> names) {
+        takenNames.clear();
+        takenNames.addAll(names);
+    }
+
+    /** @return whether nothing was entered yet; same as {@link #isEmpty()}. */
+    public boolean a() {
+        return isEmpty();
+    }
+
+    /** @return whether the block can be created; if not, tells the user and focuses the name. */
+    public boolean b() {
+        if (isValid()) {
+            return true;
+        }
+        bB.b(getContext(), Helper.getResString(R.string.logic_editor_message_name_requied), Toast.LENGTH_SHORT).show();
+        focusName();
+        return false;
     }
 
     public void setListener(Listener listener) {

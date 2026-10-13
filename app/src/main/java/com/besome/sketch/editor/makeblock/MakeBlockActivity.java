@@ -262,14 +262,14 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         handler.removeCallbacks(saveDraft);
         persistDraft();
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         handler.removeCallbacks(saveDraft);
         super.onDestroy();
     }
