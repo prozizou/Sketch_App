@@ -1,13 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/make_block_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
     android:orientation="vertical">
 
-    <include layout="@layout/toolbar" />
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?android:attr/colorBackground"
+        app:navigationIcon="@drawable/ic_mtrl_arrow_left"
+        app:navigationIconTint="?attr/colorOnSurface"
+        app:navigationContentDescription="@string/common_word_goback"
+        app:titleTextAppearance="?attr/textAppearanceTitleLarge" />
 
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/makeblock_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Always visible; it sits above the system navigation bar through the root's window insets. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainer"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_create"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:enabled="false"
+            android:text="@string/common_word_create"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            app:cornerRadius="16dp" />
+    </FrameLayout>
 </LinearLayout>

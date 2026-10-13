@@ -2,6 +2,7 @@ package com.besome.sketch.editor.makeblock;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import a.a.a.kq;
 import a.a.a.mB;
@@ -48,17 +50,30 @@ public class VariableItemView extends LinearLayout {
     }
 
     private String getTypeName(String type, String name) {
+        return getTypeName(getContext(), type, name);
+    }
+
+    /**
+     * @param fullSpec a parameter type as stored in a spec, e.g. {@code s}, {@code m.view} or {@code m.listInt}
+     * @return its human readable name, e.g. "String", "view" or "List Number"
+     */
+    public static String typeTitle(Context context, String fullSpec) {
+        int dot = fullSpec.indexOf('.');
+        return dot < 0 ? getTypeName(context, fullSpec, "") : getTypeName(context, fullSpec.substring(0, dot), fullSpec.substring(dot + 1));
+    }
+
+    private static String getTypeName(Context context, String type, String name) {
         switch (type) {
             case "b":
-                type = getContext().getString(R.string.logic_variable_type_boolean);
+                type = context.getString(R.string.logic_variable_type_boolean);
                 break;
 
             case "d":
-                type = getContext().getString(R.string.logic_variable_type_number);
+                type = context.getString(R.string.logic_variable_type_number);
                 break;
 
             case "s":
-                type = getContext().getString(R.string.logic_variable_type_string);
+                type = context.getString(R.string.logic_variable_type_string);
                 break;
 
             default:
@@ -67,31 +82,31 @@ public class VariableItemView extends LinearLayout {
 
         switch (name) {
             case "varInt":
-                type = getContext().getString(R.string.logic_variable_type_number);
+                type = context.getString(R.string.logic_variable_type_number);
                 break;
 
             case "varBool":
-                type = getContext().getString(R.string.logic_variable_type_boolean);
+                type = context.getString(R.string.logic_variable_type_boolean);
                 break;
 
             case "varStr":
-                type = getContext().getString(R.string.logic_variable_type_string);
+                type = context.getString(R.string.logic_variable_type_string);
                 break;
 
             case "varMap":
-                type = getContext().getString(R.string.logic_variable_type_map);
+                type = context.getString(R.string.logic_variable_type_map);
                 break;
 
             case "listInt":
-                type = getContext().getString(R.string.logic_variable_type_list_number);
+                type = context.getString(R.string.logic_variable_type_list_number);
                 break;
 
             case "listStr":
-                type = getContext().getString(R.string.logic_variable_type_list_string);
+                type = context.getString(R.string.logic_variable_type_list_string);
                 break;
 
             case "listMap":
-                type = getContext().getString(R.string.logic_variable_type_list_map);
+                type = context.getString(R.string.logic_variable_type_list_map);
                 break;
 
             default:
@@ -212,6 +227,26 @@ public class VariableItemView extends LinearLayout {
         viewsVariableList.add(new VariableItem("m", "mactv", R.drawable.widget_edit_text));
         viewsVariableList.add(new VariableItem("m", "viewpager", R.drawable.widget_relative_layout));
         viewsVariableList.add(new VariableItem("m", "badgeview", R.drawable.pro_account_100dp_primary));
+    }
+
+    /**
+     * Selects the item matching {@code fullSpec} (e.g. {@code s} or {@code m.view}).
+     *
+     * @return whether the type is one of the items this selector offers
+     */
+    public boolean select(String fullSpec) {
+        int dot = fullSpec.indexOf('.');
+        String type = dot < 0 ? fullSpec : fullSpec.substring(0, dot);
+        String name = dot < 0 ? "" : fullSpec.substring(dot + 1);
+        for (ArrayList<VariableItem> items : List.of(variableItems, viewsVariableList, componentsVariableList)) {
+            for (VariableItem item : items) {
+                if (item.type.equals(type) && item.name.equals(name)) {
+                    setPreview(item);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public Pair<String, String> getSelectedItem() {
