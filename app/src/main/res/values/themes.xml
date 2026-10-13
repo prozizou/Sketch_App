@@ -51,6 +51,30 @@
         <item name="toolbarStyle">@style/Widget.SketchwarePro.Toolbar.SmallText</item>
     </style>
 
+
+    <!-- The New More Block screen: graphite with violet accents (dark), following the app's light/dark choice. -->
+    <style name="Theme.SketchwarePro.MoreBlock" parent="Theme.SketchwarePro.SmallToolbar">
+        <item name="colorPrimary">@color/mb_violet</item>
+        <item name="colorOnPrimary">@color/mb_violet_on</item>
+        <item name="colorPrimaryContainer">@color/mb_violet_container</item>
+        <item name="colorOnPrimaryContainer">@color/mb_violet_on_container</item>
+        <item name="colorSecondaryContainer">@color/mb_violet_container</item>
+        <item name="colorOnSecondaryContainer">@color/mb_violet_on_container</item>
+        <item name="android:colorBackground">@color/mb_graphite_background</item>
+        <item name="colorSurface">@color/mb_graphite_background</item>
+        <item name="colorSurfaceContainerLowest">@color/mb_graphite_background</item>
+        <item name="colorSurfaceContainerLow">@color/mb_graphite_surface</item>
+        <item name="colorSurfaceContainer">@color/mb_graphite_surface</item>
+        <item name="colorSurfaceContainerHigh">@color/mb_graphite_surface_high</item>
+        <item name="colorSurfaceContainerHighest">@color/mb_graphite_surface_highest</item>
+        <item name="colorSurfaceVariant">@color/mb_graphite_surface_highest</item>
+        <item name="colorOnSurface">@color/mb_graphite_on_surface</item>
+        <item name="colorOnBackground">@color/mb_graphite_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/mb_graphite_on_surface_variant</item>
+        <item name="colorOutline">@color/mb_graphite_outline</item>
+        <item name="colorOutlineVariant">@color/mb_graphite_outline</item>
+    </style>
+
     <!-- Platform attributes of the splash theme; values-v27 adds the light navigation bar (API 27+). -->
     <style name="Theme.SketchwarePro.Starting.Platform" parent="Theme.SplashScreen" />
 

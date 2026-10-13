@@ -95,4 +95,16 @@
     <color name="event_accent_container">#ffffdad5</color>
     <!-- Text/icons placed on event_accent_container; event_accent itself is too light there for small text. -->
     <color name="event_on_accent_container">#ff7a1c13</color>
+    <!-- New More Block screen: graphite surfaces with violet accents in the dark theme (values-night), a matching light set here. -->
+    <color name="mb_graphite_background">#FFFAF9FD</color>
+    <color name="mb_graphite_surface">#FFF1EFF6</color>
+    <color name="mb_graphite_surface_high">#FFE9E6F0</color>
+    <color name="mb_graphite_surface_highest">#FFE2DFEA</color>
+    <color name="mb_graphite_outline">#FFC9C5D3</color>
+    <color name="mb_graphite_on_surface">#FF1B1B20</color>
+    <color name="mb_graphite_on_surface_variant">#FF5F5E6A</color>
+    <color name="mb_violet">#FF6B4FD8</color>
+    <color name="mb_violet_on">#FFFFFFFF</color>
+    <color name="mb_violet_container">#FFE6DEFF</color>
+    <color name="mb_violet_on_container">#FF2A0F66</color>
 </resources>

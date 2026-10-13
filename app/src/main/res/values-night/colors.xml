@@ -32,4 +32,16 @@
     <color name="event_on_accent">#ff2a0b07</color>
     <color name="event_accent_container">#ff3a2220</color>
     <color name="event_on_accent_container">#ffff8f82</color>
+    <!-- New More Block screen: graphite surfaces with violet accents. -->
+    <color name="mb_graphite_background">#FF16171B</color>
+    <color name="mb_graphite_surface">#FF1E2025</color>
+    <color name="mb_graphite_surface_high">#FF272A31</color>
+    <color name="mb_graphite_surface_highest">#FF30343C</color>
+    <color name="mb_graphite_outline">#FF4A4F5A</color>
+    <color name="mb_graphite_on_surface">#FFE6E7EC</color>
+    <color name="mb_graphite_on_surface_variant">#FFA9ADB8</color>
+    <color name="mb_violet">#FFB69DFF</color>
+    <color name="mb_violet_on">#FF2A0F66</color>
+    <color name="mb_violet_container">#FF4A3A8A</color>
+    <color name="mb_violet_on_container">#FFE9DEFF</color>
 </resources>
