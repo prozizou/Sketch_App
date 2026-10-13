@@ -65,7 +65,24 @@ public class UnityAdsHelperSourceTest {
         assertTrue(source.contains("note(\"initialized\")"));
         assertTrue(source.contains("note(\"banner loaded\")"));
         assertTrue(source.contains("has not finished starting 20 seconds after the app opened"));
+        assertTrue("tells a network problem from a stuck SDK", source.contains("Connection test to gateway.unityads.unity3d.com"));
+        assertTrue(source.contains("Thread.getAllStackTraces()"));
+        assertTrue("includes the app's own log", source.contains("\"logcat\", \"-d\""));
+        assertTrue(source.contains("UnityAds.setDebugMode(true)"));
+        assertTrue("repeats the call whose exception the SDK swallows", source.contains("WorkManager.getInstance FAILS"));
+        assertTrue(source.contains("start-up steps run by the helper"));
         assertTrue("messages and the check only exist in test mode", source.contains("private static void note(final String message) {\n        Log.i(TAG, message);\n        if (!TEST_MODE) {"));
+    }
+
+    @Test
+    public void startsWorkManagerItselfWhenItsManifestEntryIsMissing() {
+        String source = UnityAdsHelperSource.generate("a.b", config());
+        assertTrue(source.contains("ensureWorkManager(starter);"));
+        assertTrue("WorkManager is reached by reflection so projects without it still compile",
+                source.contains("Class.forName(\"androidx.work.WorkManager\")") && !source.contains("import androidx.work"));
+        assertTrue("after the manifest's own initializers, before Unity starts",
+                source.indexOf("startDeferredInitializers(starter);") < source.indexOf("ensureWorkManager(starter);")
+                        && source.indexOf("ensureWorkManager(starter);") < source.indexOf("initialize(starter);"));
     }
 
     @Test
