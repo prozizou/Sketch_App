@@ -3,7 +3,6 @@ package com.besome.sketch.editor;
 import static pro.sketchware.utility.SketchwareUtil.getDip;
 
 import android.content.Context;
-import android.content.Intent;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 
 import a.a.a.Us;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.AppSettings;
 import pro.sketchware.R;
 import pro.sketchware.databinding.LogicEditorDrawerBinding;
 
@@ -49,12 +47,6 @@ public class LogicEditorDrawer extends LinearLayout {
         binding.tvBlockCollection.setText(Helper.getResString(R.string.logic_editor_title_block_collection));
         favorite = binding.layoutFavorite;
         scrollView = binding.scv;
-
-        binding.newButton.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), AppSettings.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            getContext().startActivity(intent);
-        });
     }
 
     public void a() {
