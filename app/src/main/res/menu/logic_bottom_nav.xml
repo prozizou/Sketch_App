@@ -7,9 +7,9 @@
         android:id="@+id/nav_blocks"
         android:icon="@drawable/ic_mtrl_block"
         android:title="@string/logic_nav_blocks" />
-    <!-- Opens the user's favorite palette; long-press to choose it. Titled after that palette at runtime. -->
+    <!-- Not a palette: opens the Evolve sheet of blocks shared by the community. -->
     <item
-        android:id="@+id/nav_favorite"
-        android:icon="@drawable/ic_mtrl_star"
-        android:title="@string/logic_nav_components" />
+        android:id="@+id/nav_evolve"
+        android:icon="@drawable/ic_mtrl_public"
+        android:title="@string/logic_nav_evolve" />
 </menu>
