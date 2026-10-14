@@ -178,8 +178,10 @@ public class LoginActivity extends AppCompatActivity {
         } else if (e instanceof GetCredentialProviderConfigurationException) {
             fail(getString(R.string.auth_error_play_services));
         } else {
-            AppLog.e("Auth", "Credential Manager error " + e.getType());
-            fail(getString(R.string.auth_error_generic, e.getType()));
+            // getType() is reserved to the credentials library: the exception's class name says as much.
+            String kind = e.getClass().getSimpleName();
+            AppLog.e("Auth", "Credential Manager error " + kind);
+            fail(getString(R.string.auth_error_generic, kind));
         }
     }
 
