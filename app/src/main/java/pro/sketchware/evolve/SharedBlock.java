@@ -24,7 +24,10 @@ import java.util.Map;
  * @param opCodes     distinct opcodes used, in first-use order
  * @param usesRawCode whether it contains blocks that inject Java source ({@link SharedBlockRules#RAW_CODE_OPCODES})
  * @param downloads   how many times it was picked
- * @param blocksJson  the stack, as a JSON array of blocks
+ * @param blocksJson  the stack, as a JSON array of blocks ("" for a {@link SharedKind#VIEW})
+ * @param kind        what the entry holds
+ * @param spec        for a {@link SharedKind#MOREBLOCK}, the more block's spec ("" otherwise)
+ * @param xml         for a {@link SharedKind#VIEW}, the layout's XML ("" otherwise)
  */
 public record SharedBlock(
         String id,
@@ -38,7 +41,18 @@ public record SharedBlock(
         List<String> opCodes,
         boolean usesRawCode,
         long downloads,
-        String blocksJson) {
+        String blocksJson,
+        SharedKind kind,
+        String spec,
+        String xml) {
+
+    /** A plain block stack, which is what Evolve held before kinds existed. */
+    public SharedBlock(String id, String name, String description, String authorUid, String authorName, long createdAt,
+                       int appVersion, int blockCount, List<String> opCodes, boolean usesRawCode, long downloads,
+                       String blocksJson) {
+        this(id, name, description, authorUid, authorName, createdAt, appVersion, blockCount, opCodes, usesRawCode,
+                downloads, blocksJson, SharedKind.BLOCKS, "", "");
+    }
 
     /** Keys of a node, kept in one place so the code, the docs and the database rules agree. */
     public static final String NAME = "name";
@@ -52,6 +66,9 @@ public record SharedBlock(
     public static final String USES_RAW_CODE = "usesRawCode";
     public static final String DOWNLOADS = "downloads";
     public static final String BLOCKS_JSON = "blocksJson";
+    public static final String KIND = "kind";
+    public static final String SPEC = "spec";
+    public static final String XML = "xml";
 
     /**
      * @return the fields to write when publishing. {@code createdAt} is left out: the repository sets it to the
@@ -68,13 +85,21 @@ public record SharedBlock(
         map.put(OP_CODES, new ArrayList<>(opCodes));
         map.put(USES_RAW_CODE, usesRawCode);
         map.put(DOWNLOADS, 0L);
-        map.put(BLOCKS_JSON, blocksJson);
+        map.put(KIND, kind.key());
+        if (kind.hasBlocks()) {
+            map.put(BLOCKS_JSON, blocksJson);
+        } else {
+            map.put(XML, xml);
+        }
+        if (kind == SharedKind.MOREBLOCK) {
+            map.put(SPEC, spec);
+        }
         return map;
     }
 
     /**
-     * @return the entry stored under {@code id}, or null when the node lacks what a shared block needs (a name,
-     * an author and blocks): such nodes are skipped rather than shown half-empty. Numbers come back from the
+     * @return the entry stored under {@code id}, or null when the node lacks what a shared entry needs (a name,
+     * an author and its content: blocks, blocks and a spec, or XML): such nodes are skipped rather than shown half-empty. Numbers come back from the
      * database as Long or Double, text may be missing: nothing here throws.
      */
     public static SharedBlock fromMap(String id, Map<String, Object> map) {
@@ -84,7 +109,12 @@ public record SharedBlock(
         String name = text(map.get(NAME));
         String authorUid = text(map.get(AUTHOR_UID));
         String blocksJson = text(map.get(BLOCKS_JSON));
-        if (name.isEmpty() || authorUid.isEmpty() || blocksJson.isEmpty()) {
+        String xml = text(map.get(XML));
+        SharedKind kind = SharedKind.fromKey(text(map.get(KIND)));
+        String spec = text(map.get(SPEC));
+        if (name.isEmpty() || authorUid.isEmpty()
+                || (kind.hasBlocks() ? blocksJson.isEmpty() : xml.isEmpty())
+                || (kind == SharedKind.MOREBLOCK && spec.isEmpty())) {
             return null;
         }
         List<String> opCodes = new ArrayList<>();
@@ -97,7 +127,7 @@ public record SharedBlock(
         }
         return new SharedBlock(id, name, text(map.get(DESCRIPTION)), authorUid, text(map.get(AUTHOR_NAME)),
                 number(map.get(CREATED_AT)), (int) number(map.get(APP_VERSION)), (int) number(map.get(BLOCK_COUNT)),
-                opCodes, Boolean.TRUE.equals(map.get(USES_RAW_CODE)), number(map.get(DOWNLOADS)), blocksJson);
+                opCodes, Boolean.TRUE.equals(map.get(USES_RAW_CODE)), number(map.get(DOWNLOADS)), blocksJson, kind, spec, xml);
     }
 
     private static String text(Object value) {

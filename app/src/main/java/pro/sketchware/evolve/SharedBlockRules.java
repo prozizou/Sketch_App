@@ -32,7 +32,9 @@ public final class SharedBlockRules {
         DESCRIPTION_TOO_LONG,
         NO_BLOCKS,
         TOO_MANY_BLOCKS,
-        TOO_LARGE
+        TOO_LARGE,
+        XML_EMPTY,
+        XML_INVALID
     }
 
     private SharedBlockRules() {

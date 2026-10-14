@@ -65,6 +65,23 @@
             android:singleLine="true" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <HorizontalScrollView
+        android:id="@+id/evolve_kinds_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/evolve_kinds"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleLine="true"
+            app:singleSelection="true" />
+    </HorizontalScrollView>
+
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/evolve_progress"
         android:layout_width="match_parent"

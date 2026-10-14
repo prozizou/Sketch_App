@@ -127,4 +127,39 @@ public class SharedBlockRulesTest {
         assertTrue(read.opCodes().isEmpty());
         assertFalse(read.usesRawCode());
     }
+
+    @Test
+    public void kindsRoundTripAndOldNodesAreBlocks() {
+        assertEquals(SharedKind.BLOCKS, SharedKind.fromKey(null));
+        assertEquals(SharedKind.BLOCKS, SharedKind.fromKey("something new"));
+        assertEquals(SharedKind.MOREBLOCK, SharedKind.fromKey("moreblock"));
+        assertEquals(SharedKind.VIEW, SharedKind.fromKey("view"));
+        Map<String, Object> old = new java.util.HashMap<>(sample().toPublishMap());
+        old.remove(SharedBlock.KIND);
+        assertEquals(SharedKind.BLOCKS, SharedBlock.fromMap("k", old).kind());
+    }
+
+    @Test
+    public void aMoreBlockNeedsItsSpecAndAViewNeedsItsXml() {
+        SharedBlock moreBlock = new SharedBlock("", "calc", "", "uid1", "A", 0, 157, 2, List.of("definedFunc"), false, 0,
+                "[{\"id\":\"1\"}]", SharedKind.MOREBLOCK, "calc %d.a", "");
+        Map<String, Object> map = new java.util.HashMap<>(moreBlock.toPublishMap());
+        assertEquals("moreblock", map.get(SharedBlock.KIND));
+        assertEquals("calc %d.a", map.get(SharedBlock.SPEC));
+        assertEquals(SharedKind.MOREBLOCK, SharedBlock.fromMap("k", map).kind());
+        map.remove(SharedBlock.SPEC);
+        assertNull(SharedBlock.fromMap("k", map));
+
+        SharedBlock view = new SharedBlock("", "Login screen", "", "uid1", "A", 0, 157, 4, List.of(), false, 0, "",
+                SharedKind.VIEW, "", "<LinearLayout/>");
+        Map<String, Object> viewMap = new java.util.HashMap<>(view.toPublishMap());
+        assertEquals("view", viewMap.get(SharedBlock.KIND));
+        assertEquals("<LinearLayout/>", viewMap.get(SharedBlock.XML));
+        assertFalse("a view carries no block JSON", viewMap.containsKey(SharedBlock.BLOCKS_JSON));
+        SharedBlock back = SharedBlock.fromMap("k", viewMap);
+        assertEquals(SharedKind.VIEW, back.kind());
+        assertEquals("<LinearLayout/>", back.xml());
+        viewMap.remove(SharedBlock.XML);
+        assertNull(SharedBlock.fromMap("k", viewMap));
+    }
 }

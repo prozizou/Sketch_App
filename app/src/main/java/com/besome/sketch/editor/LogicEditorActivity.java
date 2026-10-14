@@ -2270,18 +2270,66 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     @Override
-    public List<BlockCollectionBean> collection() {
-        return Mp.h().f();
+    public java.util.EnumSet<pro.sketchware.evolve.SharedKind> kinds() {
+        return java.util.EnumSet.of(pro.sketchware.evolve.SharedKind.BLOCKS, pro.sketchware.evolve.SharedKind.MOREBLOCK);
+    }
+
+    /** Everything of this screen that can go on Evolve: saved blocks, any stack on the canvas, and its more blocks. */
+    @Override
+    public List<pro.sketchware.evolve.ShareSource> shareSources() {
+        List<pro.sketchware.evolve.ShareSource> sources = new ArrayList<>();
+        try {
+            for (BlockCollectionBean saved : Mp.h().f()) {
+                if (saved.blocks != null && !saved.blocks.isEmpty()) {
+                    sources.add(pro.sketchware.evolve.ShareSource.ofBlocks(getString(R.string.evolve_origin_collection), saved.name, saved.blocks));
+                }
+            }
+            for (pro.sketchware.evolve.BlockStacks.Stack stack : pro.sketchware.evolve.BlockStacks.split(o.getBlocks())) {
+                String label = stack.root().spec == null || stack.root().spec.isBlank() ? stack.root().opCode : stack.root().spec.trim();
+                if (label.length() > pro.sketchware.evolve.SharedBlockRules.MAX_NAME_LENGTH) {
+                    label = label.substring(0, pro.sketchware.evolve.SharedBlockRules.MAX_NAME_LENGTH);
+                }
+                sources.add(pro.sketchware.evolve.ShareSource.ofBlocks(getString(R.string.evolve_origin_canvas), label, stack.blocks()));
+            }
+            String javaName = M.getJavaName();
+            for (Pair<String, String> moreBlock : jC.a(scId).i(javaName)) {
+                ArrayList<BlockBean> body = jC.a(scId).a(javaName, moreBlock.first + "_moreBlock");
+                if (body == null || body.isEmpty()) continue;
+                ArrayList<BlockBean> copy = new ArrayList<>();
+                for (BlockBean bean : body) {
+                    copy.add(bean.clone());
+                }
+                sources.add(pro.sketchware.evolve.ShareSource.ofMoreBlock(getString(R.string.evolve_origin_moreblock),
+                        ReturnMoreblockManager.getMbName(moreBlock.second), moreBlock.second, copy));
+            }
+        } catch (RuntimeException e) {
+            crashlytics.recordException(e);
+        }
+        return sources;
     }
 
     @Override
-    public void addToCollection(String name, ArrayList<BlockBean> blocks) {
+    public List<String> takenNames(pro.sketchware.evolve.SharedKind kind) {
+        List<String> names = new ArrayList<>();
+        for (BlockCollectionBean saved : Mp.h().f()) {
+            names.add(saved.name);
+        }
+        return names;
+    }
+
+    @Override
+    public void pickBlocks(String name, ArrayList<BlockBean> blocks) {
         try {
             Mp.h().a(name, blocks, true);
             O.a(name, blocks).setOnTouchListener(this);
         } catch (Exception e) {
             crashlytics.recordException(e);
         }
+    }
+
+    @Override
+    public void pickMoreBlock(String name, String spec, ArrayList<BlockBean> blocks) {
+        new MoreblockImporter(this, scId, M).importMoreblock(new MoreBlockCollectionBean(name, spec, blocks), () -> a(8, 0xff8a55d7));
     }
 
     /** Simulates the blocks of the open event step by step, starting from the values the screen starts with. */

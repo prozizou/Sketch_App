@@ -1653,12 +1653,12 @@ ACTION_VIEW
     <!-- Evolve: blocks shared by the community -->
     <string name="logic_nav_evolve">Evolve</string>
     <string name="evolve_title">Evolve</string>
-    <string name="evolve_subtitle">Blocks shared by the community. Pick one to add it to My Block Collection.</string>
+    <string name="evolve_subtitle">Blocks, more blocks and layouts (XML) shared by the community. Pick one to use it in your project.</string>
     <string name="evolve_share">Share</string>
-    <string name="evolve_search_hint">Search blocks, authors, descriptions</string>
+    <string name="evolve_search_hint">Search names, authors, descriptions</string>
     <string name="evolve_refresh">Refresh</string>
     <string name="evolve_empty">Nothing shared yet. Be the first: tap Share.</string>
-    <string name="evolve_no_results">No shared block matches your search.</string>
+    <string name="evolve_no_results">Nothing shared matches your search.</string>
     <string name="evolve_error">Couldn\u2019t load the shared blocks: %1$s</string>
     <string name="evolve_timeout">no answer from the server, check your connection</string>
     <string name="evolve_unavailable">Evolve needs a signed-in Google account, in a build with Firebase set up.</string>
@@ -1678,7 +1678,6 @@ ACTION_VIEW
     <string name="evolve_delete_failed">Couldn\u2019t delete: %1$s</string>
     <string name="evolve_share_title">Share a block</string>
     <string name="evolve_share_choose">Choose a block from My Block Collection</string>
-    <string name="evolve_share_empty">Your collection is empty. Save a block to My Collection first (long-press a block on the canvas, then \u201cSave Block to My Collection\u201d).</string>
     <string name="evolve_share_name_hint">Name</string>
     <string name="evolve_share_description_hint">What does it do? (optional)</string>
     <string name="evolve_share_notice">Everybody using Evolve will see this block, your Google display name and your description.</string>
@@ -1692,5 +1691,28 @@ ACTION_VIEW
     <string name="evolve_problem_no_blocks">This block is empty</string>
     <string name="evolve_problem_too_many_blocks">Too many blocks to share (200 at most)</string>
     <string name="evolve_problem_too_large">This block is too large to share</string>
+    <string name="evolve_kind_all">All</string>
+    <string name="evolve_kind_blocks">Blocks</string>
+    <string name="evolve_kind_moreblock">More blocks</string>
+    <string name="evolve_kind_view">XML layouts</string>
+    <string name="evolve_origin_collection">My Block Collection</string>
+    <string name="evolve_origin_canvas">On this canvas</string>
+    <string name="evolve_origin_moreblock">This screen\u2019s more blocks</string>
+    <string name="evolve_origin_xml">This layout</string>
+    <string name="evolve_source_label">%1$s \u00b7 %2$s</string>
+    <string name="evolve_share_choose_any">Choose what to share</string>
+    <string name="evolve_share_nothing">There is nothing to share here yet. Put blocks on the canvas, define a more block, or save a block to My Collection.</string>
+    <string name="evolve_meta_xml">%1$d elements \u00b7 %2$d downloads \u00b7 %3$s</string>
+    <string name="evolve_xml_title">Use \u201c%1$s\u201d</string>
+    <string name="evolve_xml_replace">Replace this layout</string>
+    <string name="evolve_xml_insert">Insert at the cursor</string>
+    <string name="evolve_xml_copy">Copy the XML</string>
+    <string name="evolve_xml_copied">XML copied</string>
+    <string name="evolve_xml_applied">XML added to the editor. Review it, then Save.</string>
+    <string name="evolve_problem_xml_empty">The XML is empty</string>
+    <string name="evolve_problem_xml_invalid">The XML is not valid, fix it in the editor first</string>
+    <string name="evolve_xml_kind_badge">XML layout</string>
+    <string name="evolve_blocks_kind_badge">Blocks</string>
+    <string name="evolve_moreblock_kind_badge">More block</string>
     <string name="evolve_anonymous">Anonymous</string>
 </resources>

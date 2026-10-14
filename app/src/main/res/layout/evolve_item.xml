@@ -15,6 +15,13 @@
         android:padding="16dp">
 
         <TextView
+            android:id="@+id/item_kind"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorTertiary" />
+
+        <TextView
             android:id="@+id/item_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -60,6 +67,18 @@
                 android:layout_height="wrap_content"
                 android:minHeight="48dp" />
         </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/item_xml"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:maxLines="8"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurface"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/item_opcodes"

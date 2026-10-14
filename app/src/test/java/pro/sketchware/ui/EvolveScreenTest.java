@@ -136,4 +136,46 @@ public class EvolveScreenTest {
         ShadowLooper.idleMainLooper();
         assertTrue(true);
     }
+
+    @Test
+    public void everyKindOfStackCanBeSplitFromTheCanvas() {
+        // Stack A: if (nest holds setText) then toast. Stack B: a lone reporter plugged nowhere.
+        BlockBean ifBlock = block("10", "if");
+        ifBlock.subStack1 = 11;
+        ifBlock.nextBlock = 12;
+        ifBlock.parameters.add("@13");
+        BlockBean inner = block("11", "setText");
+        BlockBean after = block("12", "showToast");
+        BlockBean condition = block("13", "isEmpty");
+        BlockBean lone = block("20", "listGet");
+        List<BlockBean> canvas = List.of(ifBlock, inner, after, condition, lone);
+
+        List<pro.sketchware.evolve.BlockStacks.Stack> stacks = pro.sketchware.evolve.BlockStacks.split(canvas);
+
+        assertEquals(2, stacks.size());
+        assertEquals("10", stacks.get(0).root().id);
+        assertEquals(List.of("10", "11", "12", "13"), ids(stacks.get(0).blocks()));
+        assertEquals(List.of("20"), ids(stacks.get(1).blocks()));
+        assertTrue("copies, never the canvas beans", stacks.get(0).blocks().get(0) != ifBlock);
+    }
+
+    private static List<String> ids(List<BlockBean> blocks) {
+        List<String> ids = new ArrayList<>();
+        for (BlockBean bean : blocks) {
+            ids.add(bean.id);
+        }
+        return ids;
+    }
+
+    @Test
+    public void aLayoutIsCheckedBeforeItIsSharedOrPicked() {
+        pro.sketchware.evolve.SharedXml.Result ok = pro.sketchware.evolve.SharedXml.check(
+                "<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"><TextView/><Button/></LinearLayout>");
+        assertEquals(pro.sketchware.evolve.SharedBlockRules.Problem.NONE, ok.problem());
+        assertEquals(3, ok.elements());
+        assertEquals(pro.sketchware.evolve.SharedBlockRules.Problem.XML_EMPTY, pro.sketchware.evolve.SharedXml.check("  ").problem());
+        assertEquals(pro.sketchware.evolve.SharedBlockRules.Problem.XML_INVALID, pro.sketchware.evolve.SharedXml.check("<a><b></a>").problem());
+        assertEquals(pro.sketchware.evolve.SharedBlockRules.Problem.TOO_LARGE,
+                pro.sketchware.evolve.SharedXml.check("<a>" + "x".repeat(pro.sketchware.evolve.SharedBlockRules.MAX_JSON_LENGTH) + "</a>").problem());
+    }
 }
