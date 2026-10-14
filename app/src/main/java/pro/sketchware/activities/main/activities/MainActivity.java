@@ -137,6 +137,13 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
+        // Google sign-in comes first: nothing else of the app starts until someone is signed in. The launch
+        // intent goes along, so a project file opened with the app is still imported afterwards.
+        if (pro.sketchware.auth.AuthGate.isRequired(this)) {
+            startActivity(pro.sketchware.auth.LoginActivity.intent(this, getIntent()));
+            finish();
+            return;
+        }
         enableEdgeToEdgeNoContrast();
 
         binding = MainBinding.inflate(getLayoutInflater());
@@ -255,6 +262,15 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private void showActionsMenu(View anchor) {
         androidx.appcompat.widget.PopupMenu popup = new androidx.appcompat.widget.PopupMenu(this, anchor);
         popup.getMenuInflater().inflate(R.menu.main_actions_menu, popup.getMenu());
+        var account = pro.sketchware.auth.AuthGate.currentUser(this);
+        var signOut = popup.getMenu().findItem(R.id.sign_out);
+        signOut.setVisible(account != null);
+        if (account != null) {
+            String who = account.getEmail() != null ? account.getEmail() : account.getDisplayName();
+            if (who != null && !who.isEmpty()) {
+                signOut.setTitle(getString(R.string.auth_sign_out_account, who));
+            }
+        }
         popup.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             Intent intent = null;
@@ -265,6 +281,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 return true;
             } else if (id == R.id.community_telegram) {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(pro.sketchware.activities.onboarding.OnboardingActivity.TELEGRAM_URL)));
+                return true;
+            } else if (id == R.id.sign_out) {
+                pro.sketchware.auth.AuthGate.signOut(this, new Intent(this, MainActivity.class));
+                finish();
                 return true;
             } else if (id == R.id.create_release_keystore) {
                 intent = new Intent(this, com.besome.sketch.tools.NewKeyStoreActivity.class);
