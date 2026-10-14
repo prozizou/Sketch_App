@@ -1347,9 +1347,6 @@ ACTION_VIEW
 
     <string name="logic_nav_blocks">Blocks</string>
     <string name="logic_nav_variables">My Variables</string>
-    <string name="logic_nav_components">Components</string>
-    <string name="logic_nav_favorite_choose">Favorite palette</string>
-    <string name="logic_nav_favorite_hint">Long-press this tab to choose your favorite palette</string>
     <string name="logic_canvas_fit">Fit</string>
     <string name="logic_code_show">Code</string>
     <string name="logic_code_hide">Blocks</string>
@@ -1652,4 +1649,48 @@ ACTION_VIEW
     <string name="auth_error_generic">Sign-in failed (%1$s). Try again; if it keeps failing, this build\u2019s signing key may not be registered in Firebase.</string>
     <string name="auth_sign_out">Sign out</string>
     <string name="auth_sign_out_account">Sign out (%1$s)</string>
+
+    <!-- Evolve: blocks shared by the community -->
+    <string name="logic_nav_evolve">Evolve</string>
+    <string name="evolve_title">Evolve</string>
+    <string name="evolve_subtitle">Blocks shared by the community. Pick one to add it to My Block Collection.</string>
+    <string name="evolve_share">Share</string>
+    <string name="evolve_search_hint">Search blocks, authors, descriptions</string>
+    <string name="evolve_refresh">Refresh</string>
+    <string name="evolve_empty">Nothing shared yet. Be the first: tap Share.</string>
+    <string name="evolve_no_results">No shared block matches your search.</string>
+    <string name="evolve_error">Couldn\u2019t load the shared blocks: %1$s</string>
+    <string name="evolve_timeout">no answer from the server, check your connection</string>
+    <string name="evolve_unavailable">Evolve needs a signed-in Google account, in a build with Firebase set up.</string>
+    <string name="evolve_pick">Pick</string>
+    <string name="evolve_delete">Delete</string>
+    <string name="evolve_by">by %1$s</string>
+    <string name="evolve_meta">%1$d blocks \u00b7 %2$d downloads \u00b7 %3$s</string>
+    <string name="evolve_raw_badge">Contains raw Java code</string>
+    <string name="evolve_raw_title">Raw Java code inside</string>
+    <string name="evolve_raw_message">This block can write Java code straight into your app (it uses \u201cAdd source directly\u201d or a custom import). Only pick it if you trust %1$s and have read what it does.</string>
+    <string name="evolve_raw_pick">Pick anyway</string>
+    <string name="evolve_picked">Added \u201c%1$s\u201d to My Block Collection</string>
+    <string name="evolve_corrupt">This shared block is damaged and can\u2019t be picked.</string>
+    <string name="evolve_delete_title">Delete your shared block?</string>
+    <string name="evolve_delete_message">\u201c%1$s\u201d disappears from Evolve for everybody. Copies already picked stay with their owners.</string>
+    <string name="evolve_deleted">Removed from Evolve</string>
+    <string name="evolve_delete_failed">Couldn\u2019t delete: %1$s</string>
+    <string name="evolve_share_title">Share a block</string>
+    <string name="evolve_share_choose">Choose a block from My Block Collection</string>
+    <string name="evolve_share_empty">Your collection is empty. Save a block to My Collection first (long-press a block on the canvas, then \u201cSave Block to My Collection\u201d).</string>
+    <string name="evolve_share_name_hint">Name</string>
+    <string name="evolve_share_description_hint">What does it do? (optional)</string>
+    <string name="evolve_share_notice">Everybody using Evolve will see this block, your Google display name and your description.</string>
+    <string name="evolve_share_publish">Share</string>
+    <string name="evolve_share_done">Shared \u201c%1$s\u201d on Evolve</string>
+    <string name="evolve_share_failed">Couldn\u2019t share: %1$s</string>
+    <string name="evolve_problem_name_empty">Give the block a name</string>
+    <string name="evolve_problem_name_too_long">The name is too long (60 characters at most)</string>
+    <string name="evolve_problem_name_invalid">The name can\u2019t contain line breaks or control characters</string>
+    <string name="evolve_problem_description_too_long">The description is too long (300 characters at most)</string>
+    <string name="evolve_problem_no_blocks">This block is empty</string>
+    <string name="evolve_problem_too_many_blocks">Too many blocks to share (200 at most)</string>
+    <string name="evolve_problem_too_large">This block is too large to share</string>
+    <string name="evolve_anonymous">Anonymous</string>
 </resources>
