@@ -29,7 +29,6 @@ import androidx.credentials.exceptions.NoCredentialException;
 
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
-import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuth;
@@ -145,9 +144,10 @@ public class LoginActivity extends AppCompatActivity {
         String idToken;
         try {
             idToken = GoogleIdTokenCredential.createFrom(custom.getData()).getIdToken();
-        } catch (GoogleIdTokenParsingException e) {
-            AppLog.e("Auth", "Could not read the Google ID token: " + e);
-            fail(getString(R.string.auth_error_generic, "GoogleIdTokenParsingException"));
+        } catch (Exception e) {
+            // createFrom throws GoogleIdTokenParsingException, which Kotlin doesn't declare, so Java can't name it.
+            AppLog.e("Auth", "Could not read the Google ID token: " + e.getClass().getSimpleName());
+            fail(getString(R.string.auth_error_generic, e.getClass().getSimpleName()));
             return;
         }
         FirebaseAuth.getInstance().signInWithCredential(GoogleAuthProvider.getCredential(idToken, null))
