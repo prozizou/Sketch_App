@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Evolve: neutral surfaces with one coral accent. The night variants are the anthracite look. -->
+    <color name="evolve_bg">#F4F4F6</color>
+    <color name="evolve_card">#FFFFFF</color>
+    <color name="evolve_stroke">#E1E1E6</color>
+    <color name="evolve_skeleton">#E4E4E9</color>
+    <color name="evolve_accent">#C8432E</color>
+    <color name="evolve_on_accent">#FFFFFF</color>
+</resources>

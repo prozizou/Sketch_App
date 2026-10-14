@@ -1,6 +1,9 @@
 package pro.sketchware.activities.editor.view;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -12,6 +15,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 
+
 import com.besome.sketch.beans.HistoryViewBean;
 import com.besome.sketch.beans.ProjectFileBean;
 import com.besome.sketch.beans.ProjectLibraryBean;
@@ -21,6 +25,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import a.a.a.cC;
 import a.a.a.jC;
+import io.github.rosemoe.sora.text.Content;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
@@ -28,13 +33,16 @@ import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
 import pro.sketchware.code.CodeColorPicker;
 import pro.sketchware.databinding.ViewCodeEditorBinding;
+import pro.sketchware.evolve.EvolveSheet;
+import pro.sketchware.evolve.ShareSource;
+import pro.sketchware.evolve.SharedKind;
 import pro.sketchware.managers.inject.InjectRootLayoutManager;
 import pro.sketchware.tools.ViewBeanParser;
 import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.relativelayout.CircularDependencyDetector;
 
-public class ViewCodeEditorActivity extends BaseAppCompatActivity {
+public class ViewCodeEditorActivity extends BaseAppCompatActivity implements EvolveSheet.Host {
     private ViewCodeEditorBinding binding;
     private CodeEditor editor;
 
@@ -152,6 +160,7 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         menu.add(Menu.NONE, 4, Menu.NONE, "Reload color schemes");
         menu.add(Menu.NONE, 5, Menu.NONE, "Layout Preview");
+        menu.add(Menu.NONE, 7, Menu.NONE, "Evolve");
         return true;
     }
 
@@ -186,10 +195,64 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
                 CodeColorPicker.show(this, editor, false, sc_id);
                 return true;
             }
+            case 7 -> {
+                if (getSupportFragmentManager().findFragmentByTag("evolve") == null) {
+                    EvolveSheet.newInstance().show(getSupportFragmentManager(), "evolve");
+                }
+                return true;
+            }
             default -> {
                 return super.onOptionsItemSelected(item);
             }
         }
+    }
+
+    @Override
+    public java.util.EnumSet<SharedKind> kinds() {
+        return java.util.EnumSet.of(SharedKind.VIEW);
+    }
+
+    /** The layout as it is in the editor right now, saved or not. */
+    @Override
+    public java.util.List<ShareSource> shareSources() {
+        java.util.List<ShareSource> sources = new java.util.ArrayList<>();
+        String xml = editor.getText().toString();
+        if (!xml.isBlank()) {
+            String title = getIntent().getStringExtra("title");
+            sources.add(ShareSource.ofXml(getString(R.string.evolve_origin_xml), title == null ? "layout" : title, xml));
+        }
+        return sources;
+    }
+
+    /** Never changes the layout without asking: replace, insert at the cursor (both undoable), or just copy. */
+    @Override
+    public void pickXml(String name, String xml) {
+        String[] choices = {
+                getString(R.string.evolve_xml_replace),
+                getString(R.string.evolve_xml_insert),
+                getString(R.string.evolve_xml_copy)
+        };
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.evolve_xml_title, name))
+                .setItems(choices, (dialog, which) -> {
+                    Content text = editor.getText();
+                    if (which == 0) {
+                        int lastLine = text.getLineCount() - 1;
+                        text.replace(0, 0, lastLine, text.getColumnCount(lastLine), xml);
+                        SketchwareUtil.toast(getString(R.string.evolve_xml_applied));
+                    } else if (which == 1) {
+                        int line = editor.getCursor().getLeftLine();
+                        int column = editor.getCursor().getLeftColumn();
+                        text.replace(line, column, line, column, xml);
+                        SketchwareUtil.toast(getString(R.string.evolve_xml_applied));
+                    } else {
+                        ((ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE))
+                                .setPrimaryClip(ClipData.newPlainText(name, xml));
+                        SketchwareUtil.toast(getString(R.string.evolve_xml_copied));
+                    }
+                })
+                .setNegativeButton(R.string.common_word_cancel, null)
+                .show();
     }
 
     private void toAppCompat() {

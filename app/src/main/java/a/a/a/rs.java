@@ -247,6 +247,27 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         editMoreBlockLauncher.launch(intent);
     }
 
+    /** The "Evolve" option of a more block: straight to the share form, there is nothing to save first. */
+    private void shareMoreBlockOnEvolve(EventBean moreBlock) {
+        String javaName = currentActivity.getJavaName();
+        String spec = jC.a(sc_id).b(javaName, moreBlock.targetId);
+        ArrayList<BlockBean> body = jC.a(sc_id).a(javaName, moreBlock.targetId + "_" + moreBlock.eventName);
+        if (!pro.sketchware.evolve.EvolveShare.available(requireContext())) {
+            bB.b(requireContext(), getString(R.string.evolve_unavailable), 0).show();
+            return;
+        }
+        if (spec == null || body == null || body.isEmpty()) {
+            bB.b(requireContext(), getString(R.string.evolve_problem_no_blocks), 0).show();
+            return;
+        }
+        ArrayList<BlockBean> copy = new ArrayList<>();
+        for (BlockBean bean : body) {
+            copy.add(bean.clone());
+        }
+        pro.sketchware.evolve.EvolveShare.share(requireActivity(), pro.sketchware.evolve.ShareSource.ofMoreBlock(
+                getString(R.string.evolve_origin_moreblock), ReturnMoreblockManager.getMbName(spec), spec, copy), null);
+    }
+
     private void deleteMoreBlock(EventBean moreBlock, int position) {
         if (jC.a(sc_id).f(currentActivity.getJavaName(), moreBlock.targetId)) {
             bB.b(requireContext(), getString(R.string.logic_editor_message_currently_used_block), 0).show();
@@ -520,9 +541,11 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
             if (eventBean.eventType == EventBean.EVENT_TYPE_ETC) {
                 holder.optionsLayout.showAddToCollection();
                 holder.optionsLayout.showEdit();
+                holder.optionsLayout.showEvolve();
             } else {
                 holder.optionsLayout.hideAddToCollection();
                 holder.optionsLayout.hideEdit();
+                holder.optionsLayout.hideEvolve();
             }
             if (eventBean.eventType == EventBean.EVENT_TYPE_ACTIVITY) {
                 if (eventBean.eventName.equals("initializeLogic")) {
@@ -705,6 +728,8 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                             int id = button.getButtonId();
                             if (id == 3) {
                                 editMoreBlock(eventBean);
+                            } else if (id == 4) {
+                                shareMoreBlockOnEvolve(eventBean);
                             } else if (id == 2) {
                                 eventBean.buttonPressed = id;
                                 eventBean.isConfirmation = false;

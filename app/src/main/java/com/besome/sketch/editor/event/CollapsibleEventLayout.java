@@ -20,6 +20,7 @@ public class CollapsibleEventLayout extends CollapsibleLayout<CollapsibleButton>
     private CollapsibleButton delete;
     private CollapsibleButton addToCollection;
     private CollapsibleButton edit;
+    private CollapsibleButton evolve;
 
     public CollapsibleEventLayout(Context context) {
         super(context);
@@ -44,7 +45,9 @@ public class CollapsibleEventLayout extends CollapsibleLayout<CollapsibleButton>
 
         edit = CollapsibleButton.create(context, 3, R.drawable.ic_mtrl_edit, R.string.logic_list_menu_edit);
         edit.setVisibility(GONE);
-        return List.of(edit, reset, delete, addToCollection);
+        evolve = CollapsibleButton.create(context, 4, R.drawable.ic_mtrl_public, R.string.evolve_option_share);
+        evolve.setVisibility(GONE);
+        return List.of(edit, reset, delete, addToCollection, evolve);
     }
 
     @Override
@@ -84,5 +87,13 @@ public class CollapsibleEventLayout extends CollapsibleLayout<CollapsibleButton>
 
     public void showEdit() {
         edit.setVisibility(VISIBLE);
+    }
+
+    public void hideEvolve() {
+        evolve.setVisibility(GONE);
+    }
+
+    public void showEvolve() {
+        evolve.setVisibility(VISIBLE);
     }
 }
