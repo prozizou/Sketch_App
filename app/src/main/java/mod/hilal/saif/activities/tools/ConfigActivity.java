@@ -898,11 +898,13 @@ public class ConfigActivity extends BaseAppCompatActivity implements PreferenceF
 
         private void refreshCacheSummary() {
             Preference clearCache = find("clear-cache");
-            if (clearCache == null) {
+            // Also called when a cleanup ends: the screen may have been left meanwhile.
+            Context context = getContext();
+            if (clearCache == null || !isAdded() || context == null) {
                 return;
             }
             clearCache.setSummary("Calculating…");
-            var appContext = requireContext().getApplicationContext();
+            var appContext = context.getApplicationContext();
             new Thread(() -> {
                 long size = StorageTools.cacheSize(appContext);
                 var activity = getActivity();
