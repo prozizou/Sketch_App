@@ -95,7 +95,7 @@ public final class AuthGate {
 
                         @Override
                         public void onError(@NonNull ClearCredentialException e) {
-                            AppLog.w("Auth", "Clearing the Google credential failed: " + e.getType());
+                            AppLog.w("Auth", "Clearing the Google credential failed: " + e.getClass().getSimpleName());
                             showLogin.run();
                         }
                     });
