@@ -1640,4 +1640,16 @@ ACTION_VIEW
     <string name="make_block_move_down">Move down</string>
     <string name="make_block_parameters_count">Parameters (%1$d)</string>
     <string name="make_block_invalid_form">Fix the highlighted fields first</string>
+
+    <!-- Google sign-in at launch -->
+    <string name="auth_title">Sign in to continue</string>
+    <string name="auth_subtitle">Use your Google account to open Sketchware Pro. You stay signed in until you sign out.</string>
+    <string name="auth_button">Sign in with Google</string>
+    <string name="auth_error_no_account">No Google account found on this device. Add one in the system settings, then try again.</string>
+    <string name="auth_error_play_services">Google Play services is missing or out of date on this device, so Google sign-in is unavailable.</string>
+    <string name="auth_error_network">No internet connection. Connect and try again.</string>
+    <string name="auth_error_not_configured">Google sign-in is not set up in this build.</string>
+    <string name="auth_error_generic">Sign-in failed (%1$s). Try again; if it keeps failing, this build\u2019s signing key may not be registered in Firebase.</string>
+    <string name="auth_sign_out">Sign out</string>
+    <string name="auth_sign_out_account">Sign out (%1$s)</string>
 </resources>

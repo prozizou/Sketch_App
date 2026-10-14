@@ -8,6 +8,8 @@ appcompat = "1.8.0"
 dalvikDx = "16.0.1"
 desugar_jdk_libs_nio = "2.1.5"
 firebaseBom = "34.19.0"
+credentials = "1.6.0"
+googleid = "1.2.1"
 sora-editor = "0.23.6"
 bundletool = "1.18.3"
 cardview = "1.0.0"
@@ -77,6 +79,10 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-auth = { module = "com.google.firebase:firebase-auth" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
 lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
@@ -147,4 +153,5 @@ bundletool = ["bundletool", "protobuf-java"]
 shrinker = ["r8", "proguard-core"]
 kotlin_compiler = ["kotlinc-for1-sketchware", "woodstox-core"]
 editor_and_lang = ["editor", "language-java", "language-textmate"]
-firebase = ["firebase-analytics", "firebase-crashlytics", "firebase-messaging"]
+firebase = ["firebase-analytics", "firebase-crashlytics", "firebase-messaging", "firebase-auth"]
+google_sign_in = ["androidx-credentials", "androidx-credentials-play-services-auth", "googleid"]

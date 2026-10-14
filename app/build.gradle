@@ -203,6 +203,7 @@ dependencies {
 
     implementation platform(libs.firebase.bom)
     implementation libs.bundles.firebase
+    implementation libs.bundles.google.sign.in
 
     coreLibraryDesugaring libs.desugar.jdk.libs.nio
 }
