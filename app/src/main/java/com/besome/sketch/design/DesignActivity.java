@@ -69,6 +69,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import pro.sketchware.settings.AppLog;
+import pro.sketchware.utility.RetryOnConcurrentChange;
 import pro.sketchware.settings.AutoBackup;
 import pro.sketchware.settings.BuildHistory;
 import pro.sketchware.utility.AnalyticsHelper;
@@ -1933,8 +1934,15 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             DesignActivity activity = getActivity();
             if (activity != null) {
                 eC ecInstance = jC.a(sc_id);
-                synchronized (ecInstance) {
-                    ecInstance.k();
+                // The editor keeps changing the project data on the UI thread while this walks it: when it moves
+                // under the save, wait a moment and save again instead of killing the app.
+                boolean saved = RetryOnConcurrentChange.run(() -> {
+                    synchronized (ecInstance) {
+                        ecInstance.k();
+                    }
+                }, 5, 200, SystemClock::sleep);
+                if (!saved) {
+                    AppLog.w("AutoSave", "Skipped a save: the project kept changing while it was written");
                 }
             }
         }
