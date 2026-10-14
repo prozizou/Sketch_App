@@ -31,6 +31,8 @@ import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.widgets.WidgetsCreatorManager;
+import pro.sketchware.widgets.registry.WidgetRegistry;
+import pro.sketchware.widgets.registry.WidgetSpec;
 
 public class ViewEditorFragment extends qA {
 
@@ -294,8 +296,33 @@ public class ViewEditorFragment extends qA {
         viewEditor.extraWidget("", "DatePicker", "DatePicker");
         viewEditor.addWidget(PaletteWidget.b.k, "", "CalendarView", "CalendarView");
         widgetsCreatorManager.addWidgetsByTitle("Date & Time");
+        addRegistryWidgets();
         widgetsCreatorManager.addExtraClasses();
         viewEditor.paletteWidget.refreshSections();
+    }
+
+    /**
+     * Adds the registry's integrated components, in sections named after their category. A component the palette
+     * already has, or that one of the user's own widgets already offers, is skipped rather than shown twice.
+     */
+    private void addRegistryWidgets() {
+        java.util.Set<String> userClasses = widgetsCreatorManager.getCustomWidgetClassNames();
+        java.util.Set<String> sections = new java.util.HashSet<>();
+        for (WidgetSpec spec : WidgetRegistry.integrated()) {
+            if (WidgetRegistry.isAlreadyOffered(spec, userClasses)) {
+                continue;
+            }
+            boolean container = spec.kind() == WidgetSpec.Kind.VIEW_GROUP;
+            String title = switch (spec.category()) {
+                case LAYOUTS -> "More layouts";
+                case MATERIAL -> container ? "Material containers" : "Material";
+                default -> spec.category().label;
+            };
+            if (sections.add(container + title)) {
+                viewEditor.paletteWidget.extraTitle(title, container ? 0 : 1);
+            }
+            viewEditor.addRegistryWidget(spec, container);
+        }
     }
 
     private void startAnimation() {

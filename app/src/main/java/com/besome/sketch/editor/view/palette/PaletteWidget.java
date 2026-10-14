@@ -49,6 +49,8 @@ import mod.agus.jcoderz.editor.view.palette.IconVideoView;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.widgets.IconCustomWidget;
+import pro.sketchware.widgets.registry.IconRegistryWidget;
+import pro.sketchware.widgets.registry.WidgetSpec;
 
 public class PaletteWidget extends LinearLayout {
 
@@ -192,13 +194,15 @@ public class PaletteWidget extends LinearLayout {
     private static final class SectionHeader {
         final String title;
         boolean collapsed;
+        /** Widgets in the section, refreshed whenever the palette is laid out again. */
+        int count;
 
         SectionHeader(String title) {
             this.title = title;
         }
 
         String label() {
-            return (collapsed ? "\u25B8  " : "\u25BE  ") + title;
+            return (collapsed ? "\u25B8  " : "\u25BE  ") + title + " (" + count + ")";
         }
     }
 
@@ -207,6 +211,7 @@ public class PaletteWidget extends LinearLayout {
      * collapsed state of the sub-section header preceding it. While searching, sections are ignored.
      */
     private void applySectionState(LinearLayout container) {
+        updateSectionCounts(container);
         boolean collapsed = false;
         for (int i = 0; i < container.getChildCount(); i++) {
             View child = container.getChildAt(i);
@@ -220,6 +225,40 @@ public class PaletteWidget extends LinearLayout {
                 child.setVisibility(visible ? View.VISIBLE : View.GONE);
             }
         }
+    }
+
+    /** Counts the widgets under each sub-section header, and shows the count on the header. */
+    private void updateSectionCounts(LinearLayout container) {
+        TextView headerView = null;
+        SectionHeader header = null;
+        int count = 0;
+        for (int i = 0; i <= container.getChildCount(); i++) {
+            View child = i < container.getChildCount() ? container.getChildAt(i) : null;
+            if (child == null || child.getTag() instanceof SectionHeader) {
+                if (header != null) {
+                    header.count = count;
+                    headerView.setText(header.label());
+                }
+                if (child != null) {
+                    headerView = (TextView) child;
+                    header = (SectionHeader) child.getTag();
+                    count = 0;
+                }
+            } else if (child instanceof com.besome.sketch.lib.base.BaseWidget) {
+                count++;
+            }
+        }
+    }
+
+    /**
+     * Adds the tile of a registry component, at the end of the layouts or of the widgets.
+     *
+     * @param intoLayouts whether the component is a container (shown with the layouts)
+     */
+    public View addRegistryWidget(WidgetSpec spec, boolean intoLayouts) {
+        IconBase tile = IconRegistryWidget.create(getContext(), spec);
+        (intoLayouts ? layoutContainer : widgetsContainer).addView(tile);
+        return tile;
     }
 
     /** Re-applies the collapsed state of every sub-section; call once the palette is populated. */

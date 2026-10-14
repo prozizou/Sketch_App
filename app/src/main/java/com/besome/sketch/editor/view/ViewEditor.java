@@ -1519,6 +1519,12 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         extraWidget.setOnTouchListener(this);
     }
 
+    public void addRegistryWidget(pro.sketchware.widgets.registry.WidgetSpec spec, boolean intoLayouts) {
+        View tile = paletteWidget.addRegistryWidget(spec, intoLayouts);
+        tile.setClickable(true);
+        tile.setOnTouchListener(this);
+    }
+
     private boolean isViewAnIconBase(View view) {
         return view instanceof IconBase;
     }
