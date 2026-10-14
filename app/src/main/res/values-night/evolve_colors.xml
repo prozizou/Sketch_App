@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="evolve_bg">#1C1D20</color>
+    <color name="evolve_card">#2A2B2F</color>
+    <color name="evolve_stroke">#3A3B41</color>
+    <color name="evolve_skeleton">#35363B</color>
+    <color name="evolve_accent">#FF8A75</color>
+    <color name="evolve_on_accent">#3A130B</color>
+</resources>

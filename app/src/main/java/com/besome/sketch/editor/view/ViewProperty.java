@@ -34,15 +34,22 @@ import a.a.a.Jw;
 import a.a.a.Kw;
 import a.a.a.Lw;
 import a.a.a.NB;
+import a.a.a.Ox;
 import a.a.a.Op;
 import a.a.a.Qs;
 import a.a.a.Rp;
 import a.a.a.bB;
+import a.a.a.eC;
 import a.a.a.jC;
+import a.a.a.jq;
 import a.a.a.mB;
 import a.a.a.wB;
 import mod.hey.studios.project.ProjectSettings;
 import mod.hey.studios.util.Helper;
+import pro.sketchware.evolve.EvolveShare;
+import pro.sketchware.evolve.ShareSource;
+import pro.sketchware.evolve.SharedBlockRules;
+import pro.sketchware.evolve.SharedXml;
 import pro.sketchware.R;
 import pro.sketchware.databinding.PropertyGridItemBinding;
 import pro.sketchware.databinding.PropertyGroupItemBinding;
@@ -228,10 +235,39 @@ public class ViewProperty extends LinearLayout implements Kw {
                 }
                 bB.a(getContext(), Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
                 v.dismiss();
+                offerWidgetOnEvolve(widgetName, viewBeans);
             }
         });
         dialog.setNegativeButton(Helper.getResString(R.string.common_word_cancel), null);
         dialog.show();
+    }
+
+    /** Saved to My Collection: offers the same widget, as XML, to the community on Evolve. */
+    private void offerWidgetOnEvolve(String widgetName, ArrayList<ViewBean> widget) {
+        if (widget.isEmpty() || !EvolveShare.available(getContext())) {
+            return;
+        }
+        try {
+            ArrayList<ViewBean> copy = new ArrayList<>();
+            for (ViewBean viewBean : widget) {
+                copy.add(viewBean.clone());
+            }
+            // The widget's first view becomes the root of its own little layout.
+            ViewBean first = copy.get(0);
+            first.parent = "root";
+            first.parentType = 0;
+            first.preParent = null;
+            first.preParentType = -1;
+            Ox generator = new Ox(new jq(), projectFile);
+            generator.setExcludeAppCompat(true);
+            generator.a(eC.a(copy), null);
+            String xml = generator.b();
+            if (SharedXml.check(xml).problem() == SharedBlockRules.Problem.NONE) {
+                EvolveShare.offer(getContext(), ShareSource.ofXml(getContext().getString(R.string.evolve_origin_widget), widgetName, xml));
+            }
+        } catch (RuntimeException ignored) {
+            // No XML to offer: the widget itself is already saved.
+        }
     }
 
     private void showDeleteViewBeanWidget() {

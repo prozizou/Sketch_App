@@ -162,4 +162,57 @@ public class SharedBlockRulesTest {
         viewMap.remove(SharedBlock.XML);
         assertNull(SharedBlock.fromMap("k", viewMap));
     }
+
+    private static SharedBlock entry(String id, String name, String author, String uid, long createdAt, long downloads, SharedKind kind) {
+        return new SharedBlock(id, name, "desc of " + name, uid, author, createdAt, 157, 2, List.of("if"), false, downloads,
+                kind == SharedKind.VIEW ? "" : "[{}]", kind, kind == SharedKind.MOREBLOCK ? "spec" : "",
+                kind == SharedKind.VIEW ? "<LinearLayout/>" : "");
+    }
+
+    @Test
+    public void theListIsFilteredAndOrderedByTheChips() {
+        long now = 100L * 24 * 60 * 60 * 1000;
+        long day = 24L * 60 * 60 * 1000;
+        SharedBlock fresh = entry("a", "Login", "Aminata", "u1", now - day, 3, SharedKind.BLOCKS);
+        SharedBlock old = entry("b", "Calculator", "Moussa", "u2", now - 30 * day, 50, SharedKind.MOREBLOCK);
+        SharedBlock layout = entry("c", "Profile", "Aminata", "u1", now - 2 * day, 9, SharedKind.VIEW);
+        List<SharedBlock> all = List.of(old, layout, fresh);
+        java.util.EnumSet<SharedKind> every = java.util.EnumSet.allOf(SharedKind.class);
+
+        assertEquals(List.of(fresh, layout, old), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.ALL, "", "u1", now));
+        assertEquals("most picked first", List.of(old, layout, fresh), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.POPULAR, "", "u1", now));
+        assertEquals("last 7 days only", List.of(fresh, layout), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.RECENT, "", "u1", now));
+        assertEquals("mine", List.of(fresh, layout), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.MINE, "", "u1", now));
+        assertEquals("nobody signed in: nothing is mine", List.of(), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.MINE, "", "", now));
+        assertEquals("one kind", List.of(old), EvolveFilter.apply(all, every, SharedKind.MOREBLOCK, EvolveFilter.Mode.ALL, "", "u1", now));
+        assertEquals("the screen only offers blocks", List.of(fresh),
+                EvolveFilter.apply(all, java.util.EnumSet.of(SharedKind.BLOCKS), null, EvolveFilter.Mode.ALL, "", "u1", now));
+    }
+
+    @Test
+    public void searchMatchesTitleAuthorDescriptionIdentifierAndXml() {
+        long now = 1_000_000L;
+        SharedBlock block = entry("-Nabc123", "Login", "Aminata", "u1", now, 0, SharedKind.BLOCKS);
+        SharedBlock layout = entry("-Nxyz", "Profile", "Moussa", "u2", now, 0, SharedKind.VIEW);
+        List<SharedBlock> all = List.of(block, layout);
+        java.util.EnumSet<SharedKind> every = java.util.EnumSet.allOf(SharedKind.class);
+        for (String query : new String[]{"logi", "AMINATA", "desc of login", "nabc123", "if"}) {
+            assertEquals(query, List.of(block), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.ALL, query, "", now).stream()
+                    .filter(b -> b.id().equals(block.id())).toList());
+        }
+        assertEquals(List.of(layout), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.ALL, "linearlayout", "", now));
+        assertEquals(List.of(), EvolveFilter.apply(all, every, null, EvolveFilter.Mode.ALL, "zzz", "", now));
+    }
+
+    @Test
+    public void theCacheKeepsPagesForAWhileOnly() {
+        EvolveCache.clear();
+        SharedBlock block = entry("a", "Login", "A", "u1", 5, 0, SharedKind.BLOCKS);
+        EvolveCache.store(List.of(block), true, 1_000);
+        assertEquals(List.of(block), EvolveCache.items(1_000 + 60_000));
+        assertTrue(EvolveCache.hasMore());
+        assertEquals("too old", List.of(), EvolveCache.items(1_000 + EvolveCache.MAX_AGE_MS + 1));
+        EvolveCache.clear();
+        assertEquals(List.of(), EvolveCache.items(1_001));
+    }
 }

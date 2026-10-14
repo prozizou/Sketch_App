@@ -1,20 +1,32 @@
 package pro.sketchware.evolve;
 
+import android.animation.ObjectAnimator;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
+import android.widget.PopupMenu;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.beans.BlockBean;
@@ -22,6 +34,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -31,7 +44,6 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import a.a.a.Us;
@@ -40,19 +52,18 @@ import pro.sketchware.R;
 import pro.sketchware.auth.AuthGate;
 import pro.sketchware.databinding.EvolveItemBinding;
 import pro.sketchware.databinding.EvolveSheetBinding;
-import pro.sketchware.databinding.EvolveShareDialogBinding;
-import pro.sketchware.evolve.SharedBlockRules.Problem;
+import pro.sketchware.evolve.EvolveFilter.Mode;
 import pro.sketchware.lib.base.BaseTextWatcher;
 import pro.sketchware.utility.SketchwareUtil;
 
 /**
- * Evolve: what other users shared. Lists it from the {@code Blocks_share} node, lets the user pick an entry into the
- * screen that opened the sheet, and share something of their own. Entries are block stacks, more blocks or the XML of
- * a layout ({@link SharedKind}); each screen offers the kinds it can use.
+ * Evolve: what other users shared. Lists it from the {@code Blocks_share} node page by page, lets the user inspect and
+ * pick an entry into the screen that opened the sheet, report it, and share something of their own. Entries are block
+ * stacks, more blocks or the XML of a layout ({@link SharedKind}); each screen offers the kinds it can use.
  */
 public class EvolveSheet extends BottomSheetDialogFragment {
 
-    /** What the sheet needs from the Logic editor that opened it. */
+    /** What the sheet needs from the screen that opened it. */
     public interface Host {
         /** @return the kinds this screen can pick and share (the sheet lists only these) */
         EnumSet<SharedKind> kinds();
@@ -62,6 +73,11 @@ public class EvolveSheet extends BottomSheetDialogFragment {
 
         /** @return names already used for {@code kind} here, so a picked entry never overwrites one of the user's own */
         default List<String> takenNames(SharedKind kind) {
+            return new ArrayList<>();
+        }
+
+        /** @return the blocks the user already has for {@code kind}, encoded as shared, to spot a copy of what is picked */
+        default List<String> existingJson(SharedKind kind) {
             return new ArrayList<>();
         }
 
@@ -78,18 +94,26 @@ public class EvolveSheet extends BottomSheetDialogFragment {
         }
     }
 
-    private static final int LOAD_LIMIT = 100;
+    private static final int PAGE_SIZE = 30;
+    /** When a filter leaves few rows, pages are fetched on its own, at most this many in a row. */
+    private static final int MAX_AUTO_PAGES = 10;
+    private static final int FEW_ROWS = 6;
 
     private final List<SharedBlock> all = new ArrayList<>();
     private final Map<String, ArrayList<BlockBean>> decoded = new HashMap<>();
     private EvolveSheetBinding binding;
     private ItemAdapter adapter;
+    private GridLayoutManager layoutManager;
+    private ObjectAnimator skeletonPulse;
     private boolean loading;
-    /** The last load failed: the error text stays up instead of "nothing shared yet". */
+    /** The last load failed: the error text and Retry stay up instead of "nothing shared yet". */
     private boolean loadFailed;
-    /** The kind the chips selected, or null for all the kinds the host offers. */
+    private boolean hasMore;
+    private int autoPages;
+    private boolean moderator;
     @Nullable
     private SharedKind kindFilter;
+    private Mode mode = Mode.ALL;
 
     public static EvolveSheet newInstance() {
         return new EvolveSheet();
@@ -111,7 +135,13 @@ public class EvolveSheet extends BottomSheetDialogFragment {
     }
 
     private boolean available() {
-        return alive() && AuthGate.isFirebaseReady(requireContext()) && AuthGate.currentUser(requireContext()) != null;
+        return alive() && EvolveShare.available(requireContext());
+    }
+
+    private String myUid() {
+        if (!alive()) return "";
+        FirebaseUser user = AuthGate.currentUser(requireContext());
+        return user == null ? "" : user.getUid();
     }
 
     @Nullable
@@ -124,60 +154,140 @@ public class EvolveSheet extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // A tall sheet even with a short list, so the search field and the list don't jump around.
-        binding.evolveRoot.setMinimumHeight((int) (getResources().getDisplayMetrics().heightPixels * 0.78f));
+        // A tall sheet even with a short list, so the controls don't jump around.
+        binding.evolveRoot.setMinimumHeight((int) (getResources().getDisplayMetrics().heightPixels * 0.95f));
         adapter = new ItemAdapter();
-        binding.evolveList.setLayoutManager(new LinearLayoutManager(requireContext()));
+        layoutManager = new GridLayoutManager(requireContext(), spanCount());
+        binding.evolveList.setLayoutManager(layoutManager);
         binding.evolveList.setAdapter(adapter);
+        binding.evolveList.setItemAnimator(null);
+        binding.evolveList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView list, int dx, int dy) {
+                if (dy > 0 && layoutManager.findLastVisibleItemPosition() >= adapter.getItemCount() - 5) {
+                    loadMore();
+                }
+            }
+        });
+        // Keep the last card clear of the navigation bar.
+        int basePadding = binding.evolveList.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (root, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            binding.evolveList.setPadding(binding.evolveList.getPaddingLeft(), binding.evolveList.getPaddingTop(),
+                    binding.evolveList.getPaddingRight(), basePadding + bars.bottom);
+            return insets;
+        });
         binding.evolveSearch.addTextChangedListener(new BaseTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
+                binding.evolveSearchClear.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+                autoPages = 0;
                 applyFilter();
             }
         });
-        setupKindChips();
+        binding.evolveSearch.setOnEditorActionListener((v, actionId, event) -> actionId == EditorInfo.IME_ACTION_SEARCH && hideKeyboard());
+        binding.evolveSearchClear.setOnClickListener(v -> binding.evolveSearch.setText(""));
         binding.evolveRefresh.setOnClickListener(v -> reload());
+        binding.evolveRetry.setOnClickListener(v -> reload());
         binding.evolveShare.setOnClickListener(v -> startShare());
+        setupChips();
         if (!available()) {
             binding.evolveRefresh.setEnabled(false);
             binding.evolveShare.setEnabled(false);
-            binding.evolveSearchLayout.setEnabled(false);
-            showState(getString(R.string.evolve_unavailable));
+            binding.evolveSearch.setEnabled(false);
+            showState(getString(R.string.evolve_unavailable), false);
             return;
+        }
+        EvolveRepository.isModerator(myUid(), new EvolveRepository.Callback<>() {
+            @Override
+            public void onSuccess(Boolean value) {
+                if (!alive()) return;
+                moderator = value;
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(@NonNull String message) {
+            }
+        });
+        // What was loaded a moment ago shows at once; the refresh behind it replaces it.
+        List<SharedBlock> cached = EvolveCache.items(System.currentTimeMillis());
+        if (!cached.isEmpty()) {
+            all.addAll(cached);
+            hasMore = EvolveCache.hasMore();
+            applyFilter();
         }
         reload();
     }
 
-    /** With more than one kind on offer, chips narrow the list to one of them. */
-    private void setupKindChips() {
-        EnumSet<SharedKind> kinds = kinds();
-        if (kinds.size() < 2) {
-            return;
-        }
-        binding.evolveKindsScroll.setVisibility(View.VISIBLE);
-        addKindChip(null, R.string.evolve_kind_all, true);
-        for (SharedKind kind : kinds) {
-            addKindChip(kind, kindName(kind), false);
-        }
-        binding.evolveKinds.setOnCheckedStateChangeListener((group, ids) -> {
-            kindFilter = null;
-            if (!ids.isEmpty()) {
-                Chip chip = group.findViewById(ids.get(0));
-                if (chip != null && chip.getTag() instanceof SharedKind kind) {
-                    kindFilter = kind;
-                }
-            }
-            applyFilter();
-        });
+    private boolean hideKeyboard() {
+        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
+                requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(binding.evolveSearch.getWindowToken(), 0);
+        return true;
     }
 
-    private void addKindChip(@Nullable SharedKind kind, @StringRes int label, boolean checked) {
-        Chip chip = (Chip) getLayoutInflater().inflate(R.layout.evolve_kind_chip, binding.evolveKinds, false);
+    /** One column on a phone, more on wider screens. */
+    private int spanCount() {
+        int width = getResources().getConfiguration().screenWidthDp;
+        return width >= 840 ? 3 : width >= 600 ? 2 : 1;
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (layoutManager != null) {
+            layoutManager.setSpanCount(spanCount());
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Chips
+    // ---------------------------------------------------------------------------------------------------------
+
+    private void setupChips() {
+        addChip(binding.evolveModes, Mode.ALL, R.string.evolve_filter_all, true);
+        addChip(binding.evolveModes, Mode.POPULAR, R.string.evolve_filter_popular, false);
+        addChip(binding.evolveModes, Mode.RECENT, R.string.evolve_filter_recent, false);
+        addChip(binding.evolveModes, Mode.MINE, R.string.evolve_filter_mine, false);
+        binding.evolveModes.setOnCheckedStateChangeListener((group, ids) -> {
+            mode = chosen(group, ids, Mode.class, Mode.ALL);
+            autoPages = 0;
+            applyFilter();
+        });
+        EnumSet<SharedKind> kinds = kinds();
+        if (kinds.size() > 1) {
+            binding.evolveKinds.setVisibility(View.VISIBLE);
+            binding.evolveKindsDivider.setVisibility(View.VISIBLE);
+            addChip(binding.evolveKinds, null, R.string.evolve_kind_all, true);
+            for (SharedKind kind : kinds) {
+                addChip(binding.evolveKinds, kind, kindName(kind), false);
+            }
+            binding.evolveKinds.setOnCheckedStateChangeListener((group, ids) -> {
+                kindFilter = chosen(group, ids, SharedKind.class, null);
+                autoPages = 0;
+                applyFilter();
+            });
+        }
+    }
+
+    private void addChip(ChipGroup group, @Nullable Object tag, @StringRes int label, boolean checked) {
+        Chip chip = (Chip) getLayoutInflater().inflate(R.layout.evolve_kind_chip, group, false);
         chip.setId(View.generateViewId());
         chip.setText(label);
-        chip.setTag(kind);
+        chip.setTag(tag);
         chip.setChecked(checked);
-        binding.evolveKinds.addView(chip);
+        group.addView(chip);
+    }
+
+    private static <T> T chosen(ChipGroup group, List<Integer> ids, Class<T> type, T fallback) {
+        if (!ids.isEmpty()) {
+            Chip chip = group.findViewById(ids.get(0));
+            if (chip != null && type.isInstance(chip.getTag())) {
+                return type.cast(chip.getTag());
+            }
+        }
+        return fallback;
     }
 
     @StringRes
@@ -211,23 +321,44 @@ public class EvolveSheet extends BottomSheetDialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (skeletonPulse != null) {
+            skeletonPulse.cancel();
+            skeletonPulse = null;
+        }
         binding = null;
     }
 
     // ---------------------------------------------------------------------------------------------------------
-    // Loading and filtering
+    // Loading, paging and filtering
     // ---------------------------------------------------------------------------------------------------------
 
     private void setLoading(boolean loading) {
         this.loading = loading;
         if (binding != null) {
-            binding.evolveProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
+            binding.evolveProgress.setVisibility(loading ? View.VISIBLE : View.INVISIBLE);
         }
     }
 
-    private void showState(@Nullable String text) {
+    /** Shows the empty or error text (with Retry on errors) over the list, or hides it when {@code text} is null. */
+    private void showState(@Nullable String text, boolean retry) {
         binding.evolveState.setText(text);
-        binding.evolveState.setVisibility(text == null ? View.GONE : View.VISIBLE);
+        binding.evolveStateLayout.setVisibility(text == null ? View.GONE : View.VISIBLE);
+        binding.evolveRetry.setVisibility(retry ? View.VISIBLE : View.GONE);
+    }
+
+    private void showSkeleton(boolean show) {
+        binding.evolveSkeleton.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show && skeletonPulse == null) {
+            skeletonPulse = ObjectAnimator.ofFloat(binding.evolveSkeleton, View.ALPHA, 1f, 0.45f);
+            skeletonPulse.setDuration(700);
+            skeletonPulse.setRepeatMode(ObjectAnimator.REVERSE);
+            skeletonPulse.setRepeatCount(ObjectAnimator.INFINITE);
+            skeletonPulse.start();
+        } else if (!show && skeletonPulse != null) {
+            skeletonPulse.cancel();
+            skeletonPulse = null;
+            binding.evolveSkeleton.setAlpha(1f);
+        }
     }
 
     private void reload() {
@@ -236,15 +367,19 @@ public class EvolveSheet extends BottomSheetDialogFragment {
         }
         setLoading(true);
         loadFailed = false;
-        showState(null);
-        EvolveRepository.load(LOAD_LIMIT, getString(R.string.evolve_timeout), new EvolveRepository.Callback<>() {
+        autoPages = 0;
+        showState(null, false);
+        applyFilter();
+        EvolveRepository.load(PAGE_SIZE, 0, getString(R.string.evolve_timeout), new EvolveRepository.Callback<>() {
             @Override
-            public void onSuccess(List<SharedBlock> value) {
+            public void onSuccess(EvolveRepository.Page page) {
                 if (!alive()) return;
                 setLoading(false);
                 all.clear();
-                all.addAll(value);
+                all.addAll(page.items());
+                hasMore = page.rawCount() >= PAGE_SIZE;
                 decoded.clear();
+                EvolveCache.store(all, hasMore, System.currentTimeMillis());
                 applyFilter();
             }
 
@@ -253,47 +388,78 @@ public class EvolveSheet extends BottomSheetDialogFragment {
                 if (!alive()) return;
                 setLoading(false);
                 loadFailed = true;
-                all.clear();
+                if (all.isEmpty()) {
+                    applyFilter();
+                    showState(getString(R.string.evolve_error, message), true);
+                } else {
+                    SketchwareUtil.toastError(getString(R.string.evolve_error, message));
+                }
+            }
+        });
+    }
+
+    /** Appends the next, older page. */
+    private void loadMore() {
+        if (!available() || loading || !hasMore || all.isEmpty()) {
+            return;
+        }
+        long oldest = all.get(all.size() - 1).createdAt();
+        for (SharedBlock block : all) {
+            oldest = Math.min(oldest, block.createdAt());
+        }
+        setLoading(true);
+        EvolveRepository.load(PAGE_SIZE, oldest, getString(R.string.evolve_timeout), new EvolveRepository.Callback<>() {
+            @Override
+            public void onSuccess(EvolveRepository.Page page) {
+                if (!alive()) return;
+                setLoading(false);
+                for (SharedBlock block : page.items()) {
+                    if (all.stream().noneMatch(known -> known.id().equals(block.id()))) {
+                        all.add(block);
+                    }
+                }
+                hasMore = page.rawCount() >= PAGE_SIZE;
+                EvolveCache.store(all, hasMore, System.currentTimeMillis());
                 applyFilter();
-                showState(getString(R.string.evolve_error, message));
+            }
+
+            @Override
+            public void onError(@NonNull String message) {
+                if (!alive()) return;
+                setLoading(false);
+                hasMore = false;
+                SketchwareUtil.toastError(getString(R.string.evolve_error, message));
             }
         });
     }
 
     private void applyFilter() {
         if (!alive()) return;
-        String query = String.valueOf(binding.evolveSearch.getText()).trim().toLowerCase(Locale.ROOT);
-        EnumSet<SharedKind> offered = kinds();
-        List<SharedBlock> shown = new ArrayList<>();
-        List<SharedBlock> usable = new ArrayList<>();
-        for (SharedBlock block : all) {
-            if (!offered.contains(block.kind()) || kindFilter != null && block.kind() != kindFilter) {
-                continue;
-            }
-            usable.add(block);
-            if (query.isEmpty() || matches(block, query)) {
-                shown.add(block);
-            }
-        }
-        adapter.submit(shown);
-        if (loading) {
+        List<SharedBlock> shown = EvolveFilter.apply(all, kinds(), kindFilter, mode,
+                String.valueOf(binding.evolveSearch.getText()), myUid(), System.currentTimeMillis());
+        adapter.submitList(shown);
+        showSkeleton(loading && all.isEmpty());
+        if (loading && all.isEmpty()) {
+            showState(null, false);
             return;
         }
-        if (usable.isEmpty()) {
+        if (shown.isEmpty()) {
+            if (hasMore && autoPages < MAX_AUTO_PAGES) {
+                // Nothing matches yet: look further back before saying so.
+                autoPages++;
+                loadMore();
+                return;
+            }
             if (!loadFailed) {
-                showState(getString(R.string.evolve_empty));
+                showState(getString(all.isEmpty() ? R.string.evolve_empty : R.string.evolve_no_results), false);
             }
         } else {
-            showState(shown.isEmpty() ? getString(R.string.evolve_no_results) : null);
+            showState(null, false);
+            if (shown.size() < FEW_ROWS && hasMore && autoPages < MAX_AUTO_PAGES) {
+                autoPages++;
+                loadMore();
+            }
         }
-    }
-
-    private static boolean matches(SharedBlock block, String query) {
-        return block.name().toLowerCase(Locale.ROOT).contains(query)
-                || block.authorName().toLowerCase(Locale.ROOT).contains(query)
-                || block.description().toLowerCase(Locale.ROOT).contains(query)
-                || String.join(" ", block.opCodes()).toLowerCase(Locale.ROOT).contains(query)
-                || block.kind() == SharedKind.VIEW && block.xml().toLowerCase(Locale.ROOT).contains(query);
     }
 
     @Nullable
@@ -311,31 +477,77 @@ public class EvolveSheet extends BottomSheetDialogFragment {
         return block.authorName().isEmpty() ? getString(R.string.evolve_anonymous) : block.authorName();
     }
 
-    @StringRes
-    private static int problemText(Problem problem) {
-        return switch (problem) {
-            case NAME_EMPTY -> R.string.evolve_problem_name_empty;
-            case NAME_TOO_LONG -> R.string.evolve_problem_name_too_long;
-            case NAME_INVALID -> R.string.evolve_problem_name_invalid;
-            case DESCRIPTION_TOO_LONG -> R.string.evolve_problem_description_too_long;
-            case NO_BLOCKS -> R.string.evolve_problem_no_blocks;
-            case XML_EMPTY -> R.string.evolve_problem_xml_empty;
-            case XML_INVALID -> R.string.evolve_problem_xml_invalid;
-            case TOO_MANY_BLOCKS -> R.string.evolve_problem_too_many_blocks;
-            case TOO_LARGE, NONE -> R.string.evolve_problem_too_large;
-        };
+    // ---------------------------------------------------------------------------------------------------------
+    // Inspecting and picking
+    // ---------------------------------------------------------------------------------------------------------
+
+    /** The text of the inspection dialog: everything the entry would bring in, shown before anything is added. */
+    private String inspection(SharedBlock block, @Nullable ArrayList<BlockBean> blocks) {
+        StringBuilder text = new StringBuilder();
+        if (!block.description().isEmpty()) {
+            text.append(block.description()).append("\n\n");
+        }
+        if (EvolveChecks.madeWithNewerApp(block.appVersion(), BuildConfig.VERSION_CODE)) {
+            text.append(getString(R.string.evolve_preview_newer, block.appVersion(), BuildConfig.VERSION_CODE)).append("\n\n");
+        }
+        if (block.kind() == SharedKind.VIEW) {
+            text.append(getString(R.string.evolve_preview_xml_header)).append('\n').append(block.xml());
+            return text.toString();
+        }
+        if (blocks == null) {
+            return text.append(getString(R.string.evolve_corrupt)).toString();
+        }
+        List<String> variables = EvolveChecks.variables(blocks);
+        if (!variables.isEmpty()) {
+            text.append(getString(R.string.evolve_preview_needs, String.join(", ", variables))).append("\n\n");
+        }
+        List<EvolveChecks.RawSnippet> raw = EvolveChecks.rawCode(blocks);
+        if (!raw.isEmpty()) {
+            text.append(getString(R.string.evolve_preview_raw_header)).append('\n');
+            for (EvolveChecks.RawSnippet snippet : raw) {
+                text.append("// ").append(snippet.opCode()).append('\n').append(snippet.code()).append("\n\n");
+            }
+        }
+        text.append(getString(R.string.evolve_preview_blocks_header)).append('\n');
+        for (BlockBean bean : blocks) {
+            text.append("• ").append(bean.opCode);
+            if (bean.spec != null && !bean.spec.isBlank()) {
+                text.append(": ").append(bean.spec);
+            }
+            text.append('\n');
+        }
+        return text.toString();
     }
 
-    // ---------------------------------------------------------------------------------------------------------
-    // Picking
-    // ---------------------------------------------------------------------------------------------------------
+    /** Shows {@link #inspection}; with {@code onConfirm} it also offers to go on and pick. */
+    private void showInspection(SharedBlock block, @Nullable ArrayList<BlockBean> blocks, @Nullable Runnable onConfirm) {
+        if (!alive()) return;
+        Context context = requireContext();
+        TextView body = new TextView(context);
+        body.setText(inspection(block, blocks));
+        body.setTextIsSelectable(true);
+        body.setTypeface(android.graphics.Typeface.MONOSPACE);
+        body.setTextSize(12);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        body.setPadding(pad, pad / 2, pad, pad / 2);
+        ScrollView scroll = new ScrollView(context);
+        scroll.addView(body);
+        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(getString(R.string.evolve_preview_title, block.name()))
+                .setView(scroll)
+                .setNegativeButton(onConfirm == null ? R.string.evolve_preview_close : R.string.common_word_cancel, null);
+        if (onConfirm != null) {
+            dialog.setPositiveButton(R.string.evolve_raw_pick, (d, w) -> onConfirm.run());
+        }
+        dialog.show();
+    }
 
     private void pick(SharedBlock block) {
         if (!alive()) return;
         Host host = host();
         if (host == null) return;
         if (block.kind() == SharedKind.VIEW) {
-            if (SharedXml.check(block.xml()).problem() != Problem.NONE) {
+            if (SharedXml.check(block.xml()).problem() != SharedBlockRules.Problem.NONE) {
                 SketchwareUtil.toastError(getString(R.string.evolve_corrupt));
                 return;
             }
@@ -351,16 +563,34 @@ public class EvolveSheet extends BottomSheetDialogFragment {
         }
         // The stored flag is the author's word; what the stack really contains decides.
         boolean rawCode = block.usesRawCode() || SharedBlockRules.usesRawCode(SharedBlockCodec.opCodes(blocks));
-        if (!rawCode) {
-            addPicked(host, block, blocks);
-            return;
+        boolean newer = EvolveChecks.madeWithNewerApp(block.appVersion(), BuildConfig.VERSION_CODE);
+        Runnable checkDuplicates = () -> {
+            if (block.kind() == SharedKind.BLOCKS && isDuplicate(host, block)) {
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.evolve_duplicate_title)
+                        .setMessage(R.string.evolve_duplicate_message)
+                        .setNegativeButton(R.string.common_word_cancel, null)
+                        .setPositiveButton(R.string.evolve_duplicate_add, (d, w) -> addPicked(host, block, blocks))
+                        .show();
+            } else {
+                addPicked(host, block, blocks);
+            }
+        };
+        if (rawCode || newer) {
+            // Nothing is added before the user has read the code (and the warnings) in the inspection dialog.
+            showInspection(block, blocks, checkDuplicates);
+        } else {
+            checkDuplicates.run();
         }
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.evolve_raw_title)
-                .setMessage(getString(R.string.evolve_raw_message, authorLabel(block)))
-                .setNegativeButton(R.string.common_word_cancel, null)
-                .setPositiveButton(R.string.evolve_raw_pick, (d, w) -> addPicked(host, block, blocks))
-                .show();
+    }
+
+    private boolean isDuplicate(Host host, SharedBlock block) {
+        for (String name : host.takenNames(SharedKind.BLOCKS)) {
+            if (name.equalsIgnoreCase(block.name())) {
+                return true;
+            }
+        }
+        return EvolveChecks.alreadyHave(block.blocksJson(), host.existingJson(SharedKind.BLOCKS));
     }
 
     private void addPicked(Host host, SharedBlock block, ArrayList<BlockBean> blocks) {
@@ -378,7 +608,7 @@ public class EvolveSheet extends BottomSheetDialogFragment {
     }
 
     // ---------------------------------------------------------------------------------------------------------
-    // Sharing and deleting
+    // Sharing, reporting, deleting
     // ---------------------------------------------------------------------------------------------------------
 
     private void startShare() {
@@ -405,102 +635,47 @@ public class EvolveSheet extends BottomSheetDialogFragment {
         }
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.evolve_share_choose_any)
-                .setItems(labels, (d, which) -> showShareDetails(sources.get(which)))
+                .setItems(labels, (d, which) -> EvolveShare.share(requireActivity(), sources.get(which), () -> {
+                    if (alive()) reload();
+                }))
                 .setNegativeButton(R.string.common_word_cancel, null)
                 .show();
     }
 
-    private void showShareDetails(ShareSource source) {
+    private void shareEntry(SharedBlock block) {
+        Intent send = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, getString(R.string.evolve_share_text, block.name(), getString(kindBadge(block.kind())), authorLabel(block)));
+        startActivity(Intent.createChooser(send, getString(R.string.evolve_menu_share)));
+    }
+
+    private void confirmReport(SharedBlock block) {
         if (!alive()) return;
-        EvolveShareDialogBinding form = EvolveShareDialogBinding.inflate(getLayoutInflater());
-        form.shareName.setText(source.name());
-        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.evolve_share_title)
-                .setView(form.getRoot())
-                .setPositiveButton(R.string.evolve_share_publish, null)
+        String[] reasons = {
+                getString(R.string.evolve_report_inappropriate),
+                getString(R.string.evolve_report_malicious),
+                getString(R.string.evolve_report_spam),
+                getString(R.string.evolve_report_other)
+        };
+        String[] keys = {"inappropriate", "malicious", "spam", "other"};
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.evolve_report_title)
+                .setItems(reasons, (d, which) -> {
+                    Context app = requireContext().getApplicationContext();
+                    EvolveRepository.report(block.id(), myUid(), keys[which], getString(R.string.evolve_timeout), new EvolveRepository.Callback<>() {
+                        @Override
+                        public void onSuccess(Void value) {
+                            SketchwareUtil.toast(app.getString(R.string.evolve_report_done));
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            SketchwareUtil.toastError(app.getString(R.string.evolve_report_failed, message));
+                        }
+                    });
+                })
                 .setNegativeButton(R.string.common_word_cancel, null)
-                .create();
-        dialog.show();
-        Button publish = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        Runnable validate = () -> {
-            Problem name = SharedBlockRules.checkName(String.valueOf(form.shareName.getText()));
-            Problem description = SharedBlockRules.checkDescription(String.valueOf(form.shareDescription.getText()));
-            form.shareNameLayout.setError(name == Problem.NONE ? null : getString(problemText(name)));
-            form.shareDescriptionLayout.setError(description == Problem.NONE ? null : getString(problemText(description)));
-            publish.setEnabled(name == Problem.NONE && description == Problem.NONE);
-        };
-        BaseTextWatcher watcher = new BaseTextWatcher() {
-            @Override
-            public void afterTextChanged(Editable s) {
-                validate.run();
-            }
-        };
-        form.shareName.addTextChangedListener(watcher);
-        form.shareDescription.addTextChangedListener(watcher);
-        validate.run();
-        publish.setOnClickListener(v -> publish(dialog, publish, source, String.valueOf(form.shareName.getText()).trim(),
-                String.valueOf(form.shareDescription.getText()).trim()));
-    }
-
-    /** @return the entry to publish for {@code source}, or null after telling the user why it can't be shared */
-    @Nullable
-    private SharedBlock build(ShareSource source, String name, String description, FirebaseUser user) {
-        String author = user.getDisplayName() == null || user.getDisplayName().isBlank()
-                ? getString(R.string.evolve_anonymous) : user.getDisplayName();
-        if (source.kind() == SharedKind.VIEW) {
-            SharedXml.Result result = SharedXml.check(source.xml());
-            if (result.problem() != Problem.NONE) {
-                SketchwareUtil.toastError(getString(problemText(result.problem())));
-                return null;
-            }
-            return new SharedBlock("", name, description, user.getUid(), author, 0, BuildConfig.VERSION_CODE,
-                    result.elements(), List.of(), false, 0, "", SharedKind.VIEW, "", source.xml());
-        }
-        ArrayList<BlockBean> blocks = source.blocks();
-        String json = SharedBlockCodec.encode(blocks);
-        Problem problem = SharedBlockRules.checkStack(blocks.size(), json);
-        if (problem != Problem.NONE) {
-            SketchwareUtil.toastError(getString(problemText(problem)));
-            return null;
-        }
-        List<String> opCodes = SharedBlockRules.distinctOpCodes(SharedBlockCodec.opCodes(blocks));
-        return new SharedBlock("", name, description, user.getUid(), author, 0, BuildConfig.VERSION_CODE,
-                blocks.size(), opCodes, SharedBlockRules.usesRawCode(opCodes), 0, json, source.kind(), source.spec(), "");
-    }
-
-    private void publish(AlertDialog dialog, Button publishButton, ShareSource source, String name, String description) {
-        if (!alive()) return;
-        FirebaseUser user = AuthGate.currentUser(requireContext());
-        if (user == null) {
-            SketchwareUtil.toastError(getString(R.string.evolve_unavailable));
-            return;
-        }
-        SharedBlock block = build(source, name, description, user);
-        if (block == null) {
-            return;
-        }
-        publishButton.setEnabled(false);
-        setLoading(true);
-        EvolveRepository.publish(block, getString(R.string.evolve_timeout), new EvolveRepository.Callback<>() {
-            @Override
-            public void onSuccess(String id) {
-                dialog.dismiss();
-                if (!alive()) return;
-                setLoading(false);
-                SketchwareUtil.toast(getString(R.string.evolve_share_done, name));
-                reload();
-            }
-
-            @Override
-            public void onError(@NonNull String message) {
-                if (dialog.isShowing()) {
-                    publishButton.setEnabled(true);
-                }
-                if (!alive()) return;
-                setLoading(false);
-                SketchwareUtil.toastError(getString(R.string.evolve_share_failed, message));
-            }
-        });
+                .show();
     }
 
     private void confirmDelete(SharedBlock block) {
@@ -514,6 +689,7 @@ public class EvolveSheet extends BottomSheetDialogFragment {
                     EvolveRepository.delete(block.id(), getString(R.string.evolve_timeout), new EvolveRepository.Callback<>() {
                         @Override
                         public void onSuccess(Void value) {
+                            EvolveCache.clear();
                             if (!alive()) return;
                             setLoading(false);
                             SketchwareUtil.toast(getString(R.string.evolve_deleted));
@@ -532,17 +708,49 @@ public class EvolveSheet extends BottomSheetDialogFragment {
                 .show();
     }
 
+    private void showMenu(View anchor, SharedBlock block) {
+        PopupMenu menu = new PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(Menu.NONE, 1, 1, R.string.evolve_menu_preview);
+        menu.getMenu().add(Menu.NONE, 2, 2, R.string.evolve_menu_share);
+        menu.getMenu().add(Menu.NONE, 3, 3, R.string.evolve_menu_report);
+        // Only the owner, or a moderator listed in the database, may delete (the rules enforce it as well).
+        if (block.authorUid().equals(myUid()) || moderator) {
+            menu.getMenu().add(Menu.NONE, 4, 4, R.string.evolve_menu_delete);
+        }
+        menu.setOnMenuItemClickListener((MenuItem item) -> {
+            switch (item.getItemId()) {
+                case 1 -> showInspection(block, SharedBlockCodec.decode(block.blocksJson()), null);
+                case 2 -> shareEntry(block);
+                case 3 -> confirmReport(block);
+                case 4 -> confirmDelete(block);
+                default -> {
+                    return false;
+                }
+            }
+            return true;
+        });
+        menu.show();
+    }
+
     // ---------------------------------------------------------------------------------------------------------
     // The list
     // ---------------------------------------------------------------------------------------------------------
 
-    private class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
-        private List<SharedBlock> items = new ArrayList<>();
+    private static final DiffUtil.ItemCallback<SharedBlock> DIFF = new DiffUtil.ItemCallback<>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull SharedBlock a, @NonNull SharedBlock b) {
+            return a.id().equals(b.id());
+        }
 
-        @SuppressWarnings("NotifyDataSetChanged")
-        void submit(List<SharedBlock> shown) {
-            items = shown;
-            notifyDataSetChanged();
+        @Override
+        public boolean areContentsTheSame(@NonNull SharedBlock a, @NonNull SharedBlock b) {
+            return a.equals(b);
+        }
+    };
+
+    private class ItemAdapter extends ListAdapter<SharedBlock, ItemAdapter.ViewHolder> {
+        ItemAdapter() {
+            super(DIFF);
         }
 
         @NonNull
@@ -553,12 +761,7 @@ public class EvolveSheet extends BottomSheetDialogFragment {
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            holder.bind(items.get(position));
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
+            holder.bind(getItem(position));
         }
 
         private class ViewHolder extends RecyclerView.ViewHolder {
@@ -574,39 +777,39 @@ public class EvolveSheet extends BottomSheetDialogFragment {
                 boolean isXml = block.kind() == SharedKind.VIEW;
                 item.itemKind.setText(kindBadge(block.kind()));
                 item.itemName.setText(block.name());
-                item.itemAuthor.setText(context.getString(R.string.evolve_by, authorLabel(block)));
                 String date = block.createdAt() > 0 ? DateFormat.getDateInstance(DateFormat.MEDIUM).format(new Date(block.createdAt())) : "";
+                item.itemAuthor.setText(date.isEmpty() ? context.getString(R.string.evolve_by, authorLabel(block))
+                        : context.getString(R.string.evolve_by, authorLabel(block)) + " · " + date);
                 item.itemMeta.setText(context.getString(isXml ? R.string.evolve_meta_xml : R.string.evolve_meta,
-                        block.blockCount(), block.downloads(), date));
+                        block.blockCount(), block.downloads()));
                 item.itemDescription.setText(block.description());
                 item.itemDescription.setVisibility(block.description().isEmpty() ? View.GONE : View.VISIBLE);
-                item.itemOpcodes.setText(String.join(" \u00b7 ", block.opCodes()));
-                item.itemOpcodes.setVisibility(isXml ? View.GONE : View.VISIBLE);
+                item.itemOpcodes.setText(String.join(" · ", block.opCodes()));
+                item.itemOpcodes.setVisibility(isXml || block.opCodes().isEmpty() ? View.GONE : View.VISIBLE);
                 item.itemXml.setText(isXml ? block.xml() : "");
                 item.itemXml.setVisibility(isXml ? View.VISIBLE : View.GONE);
                 ArrayList<BlockBean> blocks = decodeCached(block);
                 boolean rawCode = block.usesRawCode() || blocks != null && SharedBlockRules.usesRawCode(SharedBlockCodec.opCodes(blocks));
                 item.itemRawBadge.setVisibility(rawCode ? View.VISIBLE : View.GONE);
-                bindPreview(item.itemPreview, block, blocks);
+                bindPreview(item.itemPreview, item.itemPreviewScroll, block, blocks);
                 item.itemPick.setEnabled(isXml || blocks != null);
                 item.itemPick.setOnClickListener(v -> pick(block));
-                FirebaseUser user = AuthGate.currentUser(context);
-                boolean mine = user != null && user.getUid().equals(block.authorUid());
-                item.itemDelete.setVisibility(mine ? View.VISIBLE : View.GONE);
-                item.itemDelete.setOnClickListener(v -> confirmDelete(block));
+                item.itemMenu.setOnClickListener(v -> showMenu(v, block));
             }
         }
     }
 
     /** Draws the stack like the drawer does; if the editor can't draw it, the opcode line under it still says what it is. */
-    private static void bindPreview(FrameLayout holder, SharedBlock block, @Nullable ArrayList<BlockBean> blocks) {
+    private static void bindPreview(FrameLayout holder, View scroll, SharedBlock block, @Nullable ArrayList<BlockBean> blocks) {
         holder.removeAllViews();
+        scroll.setVisibility(View.GONE);
         if (blocks == null) {
             return;
         }
         try {
             BlockBean first = blocks.get(0);
             holder.addView(new Us(holder.getContext(), first.type, first.typeName, first.opCode, block.name(), blocks));
+            scroll.setVisibility(View.VISIBLE);
         } catch (RuntimeException e) {
             holder.removeAllViews();
         }

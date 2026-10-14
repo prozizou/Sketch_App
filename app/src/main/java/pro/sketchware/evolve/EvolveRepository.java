@@ -11,6 +11,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
@@ -31,6 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class EvolveRepository {
 
     public static final String NODE = "Blocks_share";
+    /** Reports, one child per entry and reporter. Nobody reads them from the app: they are for the console. */
+    public static final String REPORTS = "Blocks_share_reports";
+    /** Uids that may delete any entry, set by hand in the console: {@code Evolve_moderators/<uid>: true}. */
+    public static final String MODERATORS = "Evolve_moderators";
     private static final long TIMEOUT_MS = 15_000;
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
@@ -84,23 +89,35 @@ public final class EvolveRepository {
         return error.getCode() == DatabaseError.PERMISSION_DENIED ? "permission denied by the database rules" : error.getMessage();
     }
 
+    /** @param items the valid entries of one page, newest first; @param rawCount nodes the page held, valid or not */
+    public record Page(List<SharedBlock> items, int rawCount) {
+    }
+
     /**
-     * Loads the most recent shared blocks, newest first.
+     * Loads one page of shared entries, newest first.
      *
-     * @param timeoutMessage what to report when the server doesn't answer
+     * @param limit            page size
+     * @param beforeCreatedAt  0 for the newest page, else only entries older than this time (the oldest one already shown)
+     * @param timeoutMessage   what to report when the server doesn't answer
      */
-    public static void load(int limit, String timeoutMessage, Callback<List<SharedBlock>> callback) {
-        Once<List<SharedBlock>> once = new Once<>(callback, timeoutMessage);
+    public static void load(int limit, long beforeCreatedAt, String timeoutMessage, Callback<Page> callback) {
+        Once<Page> once = new Once<>(callback, timeoutMessage);
         try {
-            node().orderByChild(SharedBlock.CREATED_AT).limitToLast(limit).addListenerForSingleValueEvent(new ValueEventListener() {
+            Query query = node().orderByChild(SharedBlock.CREATED_AT);
+            if (beforeCreatedAt > 0) {
+                query = query.endBefore((double) beforeCreatedAt);
+            }
+            query.limitToLast(limit).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     List<SharedBlock> blocks = new ArrayList<>();
+                    int raw = 0;
                     for (DataSnapshot child : snapshot.getChildren()) {
+                        raw++;
                         Object value = child.getValue();
-                        if (value instanceof Map<?, ?> raw) {
+                        if (value instanceof Map<?, ?> fields) {
                             Map<String, Object> map = new HashMap<>();
-                            for (Map.Entry<?, ?> entry : raw.entrySet()) {
+                            for (Map.Entry<?, ?> entry : fields.entrySet()) {
                                 map.put(String.valueOf(entry.getKey()), entry.getValue());
                             }
                             SharedBlock block = SharedBlock.fromMap(child.getKey(), map);
@@ -110,12 +127,52 @@ public final class EvolveRepository {
                         }
                     }
                     blocks.sort(Comparator.comparingLong(SharedBlock::createdAt).reversed());
-                    once.success(blocks);
+                    once.success(new Page(blocks, raw));
                 }
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
                     once.error(describe(error));
+                }
+            });
+        } catch (RuntimeException e) {
+            once.error(e.getClass().getSimpleName());
+        }
+    }
+
+    /** Tells whether {@code uid} is listed under {@code Evolve_moderators}: moderators may delete any entry. */
+    public static void isModerator(String uid, Callback<Boolean> callback) {
+        Once<Boolean> once = new Once<>(callback, "");
+        try {
+            FirebaseDatabase.getInstance().getReference(MODERATORS).child(uid)
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            once.success(Boolean.TRUE.equals(snapshot.getValue(Boolean.class)));
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            once.success(false);
+                        }
+                    });
+        } catch (RuntimeException e) {
+            once.success(false);
+        }
+    }
+
+    /** Files a report on entry {@code id}; one per user and entry (reporting again replaces the reason). */
+    public static void report(String id, String uid, String reason, String timeoutMessage, Callback<Void> callback) {
+        Once<Void> once = new Once<>(callback, timeoutMessage);
+        try {
+            Map<String, Object> map = new HashMap<>();
+            map.put("reason", reason);
+            map.put(SharedBlock.CREATED_AT, ServerValue.TIMESTAMP);
+            FirebaseDatabase.getInstance().getReference(REPORTS).child(id).child(uid).setValue(map, (error, ref) -> {
+                if (error != null) {
+                    once.error(describe(error));
+                } else {
+                    once.success(null);
                 }
             });
         } catch (RuntimeException e) {

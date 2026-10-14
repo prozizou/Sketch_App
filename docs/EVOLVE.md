@@ -59,7 +59,7 @@ loading and sharing fail with "permission denied by the database rules". Try the
       ".indexOn": ["createdAt"],
       ".read": "auth != null",
       "$id": {
-        ".write": "auth != null && (!data.exists() ? newData.child('authorUid').val() === auth.uid : (!newData.exists() && data.child('authorUid').val() === auth.uid))",
+        ".write": "auth != null && (!data.exists() ? newData.child('authorUid').val() === auth.uid : (!newData.exists() && (data.child('authorUid').val() === auth.uid || root.child('Evolve_moderators').child(auth.uid).val() === true)))",
         ".validate": "newData.hasChildren(['name', 'authorUid', 'createdAt']) && (newData.hasChild('blocksJson') || newData.hasChild('xml'))",
         "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
         "description": { ".validate": "newData.isString() && newData.val().length <= 300" },
@@ -80,13 +80,57 @@ loading and sharing fail with "permission denied by the database rules". Try the
         "blocksJson": { ".validate": "newData.isString() && newData.val().length <= 200000" },
         "$other": { ".validate": false }
       }
+    },
+    "Blocks_share_reports": {
+      "$id": {
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid",
+          ".validate": "newData.hasChildren(['reason', 'createdAt']) && newData.child('reason').isString() && newData.child('reason').val().length <= 40 && newData.child('createdAt').val() === now",
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "Evolve_moderators": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid"
+      }
     }
   }
 }
 ```
 
-What they do: any signed-in user reads; a user can create entries only as themselves and delete only their own; entries
-can't be edited; the only change anyone else may make is `downloads` going up by one; unknown fields are refused.
+What they do: any signed-in user reads; a user can create entries only as themselves and delete only their own (or any,
+if listed as a moderator); entries can't be edited; the only change anyone else may make is `downloads` going up by one;
+unknown fields are refused. Reports are write-only for users (one per user and entry, read them in the console), and a
+user can read only their own line of `Evolve_moderators`.
+
+## The Evolve page
+
+- **Header**: title, refresh, Share. **Search** (instant) matches title, author, description, identifier and opcodes (and
+  the XML of layouts). **Chips**: All (newest first), Popular (most picked first), Recent (last 7 days), My uploads, and,
+  where the screen offers several kinds, All types / Blocks / More blocks / XML layouts.
+- **Cards**: title, author and date, blocks (or elements) and downloads, description, the blocks drawn like the drawer
+  draws them (or the first lines of the XML), the opcodes line. One column on a phone, two or three on a tablet.
+- **Pick** is the main action. The **menu** has Preview (an inspection of everything the entry would bring in), Share
+  (a text to send to somebody), Report (inappropriate, malicious, spam, other: written to `Blocks_share_reports`) and
+  Delete (the owner, or a moderator; always confirmed).
+- **Before adding** anything: an entry with raw Java code, or made with a newer version of the app, opens the inspection
+  (the Java it would write, the variables it uses, the blocks) and adds nothing until you confirm. A name or content you
+  already have asks before adding another copy. Nothing is ever run automatically.
+- **Loading**: 30 entries at a time, the next page when you scroll to the end (or when a filter leaves few rows),
+  skeleton cards on the first load, the last list kept for 5 minutes so reopening is instant, and an error text with
+  **Retry**. Search and chips work on what is loaded.
+
+## Offers to share
+
+Evolve is also offered right after you save something: when you save a widget to your collection (as XML), when you
+drop a block on the collection area, and, for a more block, through the **Evolve** option of its menu in the Events list
+(next to Edit, Reset and Delete).
+
+## Moderators
+
+A moderator is a uid set by hand in the console: `Evolve_moderators/<uid>: true`. The app shows Delete on every entry to
+them and the rules let the delete through.
 
 ## Not covered yet
 

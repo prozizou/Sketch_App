@@ -132,6 +132,11 @@ public class EvolveScreenTest {
         assertEquals(activity.getString(R.string.evolve_unavailable), state.getText().toString());
         assertFalse(root.findViewById(R.id.evolve_share).isEnabled());
         assertFalse(root.findViewById(R.id.evolve_refresh).isEnabled());
+        assertFalse("nothing to retry when Evolve simply isn't available", root.findViewById(R.id.evolve_retry).getVisibility() == View.VISIBLE);
+        assertEquals(View.GONE, root.findViewById(R.id.evolve_skeleton).getVisibility());
+        com.google.android.material.chip.ChipGroup modes = root.findViewById(R.id.evolve_modes);
+        assertEquals("All, Popular, Recent, My uploads", 4, modes.getChildCount());
+        assertEquals("one kind offered: no kind chips", View.GONE, root.findViewById(R.id.evolve_kinds).getVisibility());
         sheet.dismissAllowingStateLoss();
         ShadowLooper.idleMainLooper();
         assertTrue(true);
@@ -177,5 +182,24 @@ public class EvolveScreenTest {
         assertEquals(pro.sketchware.evolve.SharedBlockRules.Problem.XML_INVALID, pro.sketchware.evolve.SharedXml.check("<a><b></a>").problem());
         assertEquals(pro.sketchware.evolve.SharedBlockRules.Problem.TOO_LARGE,
                 pro.sketchware.evolve.SharedXml.check("<a>" + "x".repeat(pro.sketchware.evolve.SharedBlockRules.MAX_JSON_LENGTH) + "</a>").problem());
+    }
+
+    @Test
+    public void whatThePickerShowsBeforeAddingIsReal() {
+        BlockBean raw = block("1", "addSourceDirectly", "System.out.println(1);");
+        BlockBean variable = new BlockBean("2", "counter", " ", "getVar");
+        BlockBean other = block("3", "showToast", "@2");
+        List<BlockBean> stack = List.of(raw, variable, other);
+
+        assertEquals(List.of("counter"), pro.sketchware.evolve.EvolveChecks.variables(stack));
+        List<pro.sketchware.evolve.EvolveChecks.RawSnippet> snippets = pro.sketchware.evolve.EvolveChecks.rawCode(stack);
+        assertEquals(1, snippets.size());
+        assertEquals("addSourceDirectly", snippets.get(0).opCode());
+        assertEquals("System.out.println(1);", snippets.get(0).code());
+        assertTrue(pro.sketchware.evolve.EvolveChecks.madeWithNewerApp(200, 157));
+        assertFalse(pro.sketchware.evolve.EvolveChecks.madeWithNewerApp(157, 157));
+        String json = SharedBlockCodec.encode(stack);
+        assertTrue(pro.sketchware.evolve.EvolveChecks.alreadyHave(json, List.of("[]", json)));
+        assertFalse(pro.sketchware.evolve.EvolveChecks.alreadyHave(json, List.of("[]")));
     }
 }

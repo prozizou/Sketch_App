@@ -1398,7 +1398,11 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             O.a(str, arrayList2).setOnTouchListener(this);
         } catch (Exception e) {
             crashlytics.recordException(e);
+            return;
         }
+        // Saved: now offer the same blocks to the community.
+        pro.sketchware.evolve.EvolveShare.offer(this,
+                pro.sketchware.evolve.ShareSource.ofBlocks(getString(R.string.evolve_origin_collection), str, arrayList2));
     }
 
     public void a(boolean z) {
@@ -2315,6 +2319,17 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             names.add(saved.name);
         }
         return names;
+    }
+
+    @Override
+    public List<String> existingJson(pro.sketchware.evolve.SharedKind kind) {
+        List<String> encoded = new ArrayList<>();
+        for (BlockCollectionBean saved : Mp.h().f()) {
+            if (saved.blocks != null) {
+                encoded.add(pro.sketchware.evolve.SharedBlockCodec.encode(saved.blocks));
+            }
+        }
+        return encoded;
     }
 
     @Override
