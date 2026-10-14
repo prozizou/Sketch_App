@@ -11,6 +11,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -79,8 +80,7 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
         finish();
     }
 
-    @Override
-    public void onBackPressed() {
+    private void handleBackPressed() {
         if (submitted) {
             return;
         }
@@ -95,6 +95,12 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackPressed();
+            }
+        });
         if (!isStoragePermissionGranted()) {
             finish();
         }

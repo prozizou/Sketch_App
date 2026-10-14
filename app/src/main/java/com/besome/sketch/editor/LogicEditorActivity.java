@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Rect;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.AudioAttributes;
@@ -201,6 +202,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private int T = -30;
     private View currentTouchedView;
     private boolean G, isDragged, W, X, da, ea, ha, ia;
+    /** A touch started on the canvas while the blocks collection is open: it closes it if it ends as a short tap. */
+    private boolean drawerTapPending;
+    private float drawerTapX, drawerTapY;
     private ArrayList<BlockBean> savedBlockBean = new ArrayList<>();
     private final Runnable longPressed = this::r;
     private Boolean isViewBindingEnabled;
@@ -2440,6 +2444,43 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         new MoreblockImporter(this, scId, M).importMoreblock(moreBlockCollectionBean, () -> a(8, 0xff8a55d7));
     }
 
+    /**
+     * A tap on the canvas, beside the open blocks collection, closes it. The touch is only watched: the canvas still
+     * gets it, so panning, selecting and dragging blocks work as before.
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            drawerTapPending = ia && isOnCanvasOutsideDrawer(event.getRawX(), event.getRawY());
+            drawerTapX = event.getRawX();
+            drawerTapY = event.getRawY();
+        } else if (drawerTapPending) {
+            int slop = ViewConfiguration.get(this).getScaledTouchSlop();
+            if (action == MotionEvent.ACTION_MOVE
+                    && (Math.abs(event.getRawX() - drawerTapX) > slop || Math.abs(event.getRawY() - drawerTapY) > slop)
+                    || action == MotionEvent.ACTION_POINTER_DOWN || action == MotionEvent.ACTION_CANCEL) {
+                drawerTapPending = false;
+            }
+        }
+        boolean handled = super.dispatchTouchEvent(event);
+        if (action == MotionEvent.ACTION_UP && drawerTapPending) {
+            drawerTapPending = false;
+            boolean shortPress = event.getEventTime() - event.getDownTime() < ViewConfiguration.getLongPressTimeout();
+            if (shortPress && ia) {
+                g(false);
+            }
+        }
+        return handled;
+    }
+
+    private boolean isOnCanvasOutsideDrawer(float rawX, float rawY) {
+        Rect canvas = new Rect();
+        Rect drawer = new Rect();
+        return binding.editor.getGlobalVisibleRect(canvas) && canvas.contains((int) rawX, (int) rawY)
+                && !(O.getGlobalVisibleRect(drawer) && drawer.contains((int) rawX, (int) rawY));
+    }
+
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         int actionMasked = event.getActionMasked();
@@ -2985,7 +3026,6 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     public void z() {
         O.a();
-        O.a(MultiBranchChain.NAME, MultiBranchChain.create()).setOnTouchListener(this);
         Executors.newSingleThreadExecutor().execute(() -> {
             ArrayList<BlockCollectionBean> collections = Mp.h().f();
             runOnUiThread(() -> {

@@ -1625,7 +1625,7 @@ ACTION_VIEW
     <string name="make_block_label_title">Label</string>
     <string name="make_block_label_subtitle">Plain text shown in the block</string>
     <string name="make_block_advanced">Advanced Parameters</string>
-    <string name="make_block_advanced_help">Type a custom parameter type without the % sign: m.view, m.textview, l.listName, d.name or b.name. A custom return type goes in the block name, e.g. name[a|Map] or name[type|typeName|typeCode].</string>
+    <string name="make_block_advanced_help">Type a custom parameter type without the %% sign: m.view, m.textview, l.listName, d.name or b.name. A custom return type goes in the block name, e.g. name[a|Map] or name[type|typeName|typeCode].</string>
     <string name="make_block_custom_type">Custom type</string>
     <string name="make_block_custom_type_invalid">Use m., l., d. or b. followed by letters, e.g. m.view</string>
     <string name="make_block_custom_will_add">Adds: %1$s</string>
