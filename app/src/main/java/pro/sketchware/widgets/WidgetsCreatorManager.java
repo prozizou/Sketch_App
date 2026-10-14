@@ -454,6 +454,18 @@ public class WidgetsCreatorManager {
         }
     }
 
+    /** @return the classes the user's own widgets already offer, so built-in presets don't duplicate them. */
+    public java.util.Set<String> getCustomWidgetClassNames() {
+        java.util.Set<String> classes = new java.util.HashSet<>();
+        for (HashMap<String, Object> map : widgetConfigurationsList) {
+            Object name = map.get("name");
+            if (name != null) {
+                classes.add(name.toString());
+            }
+        }
+        return classes;
+    }
+
     public void addExtraClasses() {
         ArrayList<String> myArrayListCopy = new ArrayList<>(allCategories);
         myArrayListCopy.removeAll(mainCategories);
