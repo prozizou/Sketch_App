@@ -177,34 +177,10 @@ public class PaletteWidget extends LinearLayout {
         updateSection(titleWidgets, widgetsContainer, R.string.view_panel_title_widgets, false);
     }
 
-    /** Accordion header: the section title, with a chevron on the right; collapsing only hides the section's container. */
+    /** Accordion header: a chevron plus the section title; collapsing only hides the section's container. */
     private void updateSection(TextView title, LinearLayout container, int titleRes, boolean collapsed) {
-        title.setText(Helper.getResString(titleRes));
-        styleHeader(title, title == titleLayouts ? R.drawable.ic_palette_layouts : R.drawable.ic_palette_widgets, collapsed);
+        title.setText((collapsed ? "\u25B8  " : "\u25BE  ") + Helper.getResString(titleRes));
         container.setVisibility(collapsed ? View.GONE : View.VISIBLE);
-    }
-
-    /** Section header look: an accent icon, the bold title and an up/down chevron at the end. */
-    private static void styleHeader(TextView title, int iconRes, boolean collapsed) {
-        Context context = title.getContext();
-        int size = dpToPx(20);
-        android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(context, iconRes).mutate();
-        icon.setTint(androidx.core.content.ContextCompat.getColor(context, R.color.event_accent));
-        icon.setBounds(0, 0, size, size);
-        android.graphics.drawable.Drawable chevron = androidx.core.content.ContextCompat.getDrawable(context,
-                collapsed ? R.drawable.ic_palette_chevron_down : R.drawable.ic_palette_chevron_up).mutate();
-        chevron.setTint(MaterialColors.getColor(title, R.attr.colorOnSurfaceVariant));
-        chevron.setBounds(0, 0, size, size);
-        title.setCompoundDrawablesRelative(icon, null, chevron, null);
-        title.setCompoundDrawablePadding(dpToPx(10));
-        title.setTextSize(15);
-        title.setTypeface(null, android.graphics.Typeface.BOLD);
-        title.setTextColor(MaterialColors.getColor(title, R.attr.colorOnSurface));
-        title.setMinHeight(dpToPx(44));
-        title.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        title.setPaddingRelative(dpToPx(10), 0, dpToPx(10), 0);
-        title.setSingleLine(true);
-        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
     }
 
     /** Shows only the widgets whose name contains the query (case-insensitive). Purely visual. */
@@ -226,16 +202,7 @@ public class PaletteWidget extends LinearLayout {
         }
 
         String label() {
-            return title;
-        }
-
-        /** The count stays off the header (it would not fit) but is read out by screen readers. */
-        String description() {
-            return title + " (" + count + ")";
-        }
-
-        int icon(boolean inLayouts) {
-            return inLayouts ? R.drawable.ic_palette_layers : R.drawable.ic_mtrl_category;
+            return (collapsed ? "\u25B8  " : "\u25BE  ") + title + " (" + count + ")";
         }
     }
 
@@ -260,7 +227,7 @@ public class PaletteWidget extends LinearLayout {
         }
     }
 
-    /** Counts the widgets under each sub-section header, and puts the count in the header's description. */
+    /** Counts the widgets under each sub-section header, and shows the count on the header. */
     private void updateSectionCounts(LinearLayout container) {
         TextView headerView = null;
         SectionHeader header = null;
@@ -271,8 +238,6 @@ public class PaletteWidget extends LinearLayout {
                 if (header != null) {
                     header.count = count;
                     headerView.setText(header.label());
-                    headerView.setContentDescription(header.description());
-                    styleHeader(headerView, header.icon(container == layoutContainer), header.collapsed);
                 }
                 if (child != null) {
                     headerView = (TextView) child;
@@ -311,17 +276,20 @@ public class PaletteWidget extends LinearLayout {
 
         TextView titleView = new TextView(getContext());
         LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(0, dpToPx(4), 0, 0);
+        layoutParams.setMargins(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(2));
         titleView.setLayoutParams(layoutParams);
         var header = new SectionHeader(title);
         header.collapsed = true;
         titleView.setTag(header);
         titleView.setText(header.label());
-        styleHeader(titleView, header.icon(targetType == 0), header.collapsed);
+        titleView.setTextSize(12);
+        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+        titleView.setTextColor(MaterialColors.getColor(titleView, R.attr.colorOnSurfaceVariant));
+        titleView.setMinHeight(dpToPx(32));
+        titleView.setGravity(android.view.Gravity.CENTER_VERTICAL);
         titleView.setOnClickListener(v -> {
             header.collapsed = !header.collapsed;
             titleView.setText(header.label());
-            styleHeader(titleView, header.icon(targetType == 0), header.collapsed);
             applySectionState(target);
         });
         target.addView(titleView);

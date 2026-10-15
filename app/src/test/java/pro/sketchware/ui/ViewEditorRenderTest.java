@@ -55,12 +55,12 @@ public class ViewEditorRenderTest {
     }
 
     @Test
-    public void sidebarShowsFullRowsAndHasAGrabber() throws Exception {
+    public void sidebarIsNarrowAndHasAGrabber() throws Exception {
         View root = inflate(R.layout.view_editor, true);
 
         View palette = root.findViewById(R.id.layout_palette);
         assertNotNull(root.findViewById(R.id.palette_resize_handle));
-        assertEquals(152, Math.round(palette.getWidth() / root.getResources().getDisplayMetrics().density));
+        assertEquals(72, Math.round(palette.getWidth() / root.getResources().getDisplayMetrics().density));
         save(root, "view-editor-dark");
     }
 

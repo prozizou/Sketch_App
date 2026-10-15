@@ -539,7 +539,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         previewSafeAreas = prefs.getBoolean("preview_safe_areas", false);
         // The palette's close button was removed, so a palette hidden in an older version is shown again.
         paletteExpanded = true;
-        paletteWidthDp = SidebarWidth.clampDp(prefs.getFloat(SidebarWidth.PREF_KEY, SidebarWidth.DEFAULT_DP));
+        paletteWidthDp = SidebarWidth.clampDp(prefs.getFloat("palette_width_dp", SidebarWidth.DEFAULT_DP));
         applyPaletteWidth();
         applyPaletteExpanded();
         setupPaletteResize(prefs);
@@ -583,7 +583,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
                     return true;
                 }
                 case MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    prefs.edit().putFloat(SidebarWidth.PREF_KEY, paletteWidthDp).apply();
+                    prefs.edit().putFloat("palette_width_dp", paletteWidthDp).apply();
                     return true;
                 }
                 default -> {
@@ -659,10 +659,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         dropHint.setVisibility(empty ? View.VISIBLE : View.GONE);
         if (!empty) return;
 
-        // A dashed outline over the whole empty screen, inset a little from its edges.
-        int inset = (int) (12 * dip);
-        int w = Math.max(0, (int) (viewPane.getWidth() * viewPane.getScaleX()) - 2 * inset);
-        int h = Math.max(0, (int) (viewPane.getHeight() * viewPane.getScaleY()) - 2 * inset);
+        int w = (int) (viewPane.getWidth() * viewPane.getScaleX() * 0.8f);
+        int h = (int) (96 * dip);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) dropHint.getLayoutParams();
         if (params.width != w || params.height != h) {
             params.width = w;
@@ -802,8 +800,9 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         dropHint = new TextView(context);
         dropHint.setText(R.string.view_drop_components_here);
         dropHint.setGravity(Gravity.CENTER);
-        dropHint.setTextSize(14f);
-        dropHint.setTextColor(0xff8a93a3);
+        dropHint.setTextSize(13f);
+        dropHint.setTypeface(null, Typeface.BOLD);
+        dropHint.setTextColor(0xff5a626e);
         dropHint.setBackgroundResource(R.drawable.bg_drop_zone);
         dropHint.setClickable(false);
         dropHint.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
