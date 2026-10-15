@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder with the shape of an Evolve card (evolve_item): header, facts, preview, description, footer. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
+    android:importantForAccessibility="noHideDescendants"
     app:cardBackgroundColor="@color/evolve_card"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
@@ -16,27 +18,77 @@
         android:orientation="vertical"
         android:padding="12dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="52dp"
+                android:layout_height="18dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/evolve_skeleton_bar" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/evolve_skeleton_bar" />
+        </LinearLayout>
+
         <View
-            android:layout_width="160dp"
-            android:layout_height="16dp"
-            android:background="@color/evolve_skeleton" />
+            android:layout_width="150dp"
+            android:layout_height="11dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/evolve_skeleton_bar" />
 
         <View
             android:layout_width="110dp"
-            android:layout_height="12dp"
+            android:layout_height="11dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/evolve_skeleton_bar" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
             android:layout_marginTop="8dp"
-            android:background="@color/evolve_skeleton" />
+            android:background="@drawable/evolve_preview_bg" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="12dp"
-            android:layout_marginTop="12dp"
-            android:background="@color/evolve_skeleton" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
             android:layout_marginTop="8dp"
-            android:background="@color/evolve_skeleton" />
+            android:background="@drawable/evolve_skeleton_bar" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="56dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/evolve_skeleton_bar" />
+
+            <View
+                android:layout_width="44dp"
+                android:layout_height="20dp"
+                android:background="@drawable/evolve_skeleton_bar" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <View
+                android:layout_width="88dp"
+                android:layout_height="36dp"
+                android:background="@drawable/evolve_skeleton_bar" />
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

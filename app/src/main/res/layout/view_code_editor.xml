@@ -1,61 +1,201 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- XML editor: toolbar (+ tip), find and replace, the editor, quick-insert keys, status bar. The editor takes
+     whatever height is left, so nothing is fixed except the bars themselves. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/coordinator"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical"
+    tools:ignore="Overdraw">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
-        android:fitsSystemWindows="true"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$Behavior">
+        android:fitsSystemWindows="true">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="?attr/homeAsUpIndicator" />
+            app:navigationIcon="?attr/homeAsUpIndicator"
+            app:subtitleTextAppearance="?attr/textAppearanceBodySmall"
+            app:titleTextAppearance="?attr/textAppearanceTitleMedium" />
 
-        <com.google.android.material.card.MaterialCardView
+        <!-- One-time tip, tappable -->
+        <LinearLayout
             android:id="@+id/note_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/xml_note_bg"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
             android:visibility="gone"
-            android:layout_margin="8dp"
-            app:cardUseCompatPadding="true"
-            app:contentPadding="8dp"
-            style="@style/Widget.Material3.CardView.Outlined">
+            tools:visibility="visible">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_evolve_notice"
+                app:tint="@color/evolve_accent" />
 
-                <TextView
-                    android:id="@+id/note"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-                <ImageView
-                    android:id="@+id/close"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="8dp"
-                    android:src="@drawable/ic_mtrl_close" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            <TextView
+                android:id="@+id/note"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="10dp"
+                android:layout_weight="1"
+                android:ellipsize="marquee"
+                android:maxLines="2"
+                android:paddingVertical="6dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="Use AppCompat Manager to modify attributes for CoordinatorLayout, Toolbar, and other appcompat layout/widget." />
+
+            <ImageButton
+                android:id="@+id/close"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/xml_note_dismiss"
+                android:padding="14dp"
+                android:src="@drawable/ic_mtrl_close"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
+
+    <include
+        android:id="@+id/find_panel"
+        layout="@layout/xml_find_panel" />
 
     <io.github.rosemoe.sora.widget.CodeEditor
         android:id="@+id/editor"
         style="@style/AppTheme.Et"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorOutlineVariant" />
+
+    <!-- Quick actions and quick-insert keys: shown while the editor has the focus -->
+    <LinearLayout
+        android:id="@+id/symbol_row"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="?attr/colorSurfaceContainer"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/quick_find"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/xml_menu_find"
+            android:focusable="false"
+            android:src="@drawable/ic_mtrl_search"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <ImageButton
+            android:id="@+id/quick_format"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/xml_menu_format"
+            android:focusable="false"
+            android:src="@drawable/ic_mtrl_formattext"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginHorizontal="4dp"
+            android:background="?attr/colorOutlineVariant" />
+
+        <HorizontalScrollView
+            android:id="@+id/symbol_scroll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@string/xml_symbols_bar"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/symbol_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="2dp" />
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <!-- Status: is the XML valid (tap an error to go to it), and where the caret is -->
+    <LinearLayout
+        android:id="@+id/status_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainerHigh"
+        android:gravity="center_vertical"
+        android:minHeight="36dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/status_validity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="36dp"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:id="@+id/status_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_mtrl_check" />
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:accessibilityLiveRegion="polite"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:paddingVertical="4dp"
+                android:textSize="12sp"
+                tools:text="Valid XML · 12 elements" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/status_position"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:fontFamily="monospace"
+            android:maxLines="1"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            tools:text="Ln 12, Col 5" />
+    </LinearLayout>
+</LinearLayout>

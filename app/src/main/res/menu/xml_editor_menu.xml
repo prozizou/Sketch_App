@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/xml_undo"
+        android:icon="@drawable/ic_mtrl_undo"
+        android:title="@string/common_word_undo"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/xml_redo"
+        android:icon="@drawable/ic_mtrl_redo"
+        android:title="@string/common_word_redo"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/xml_find"
+        android:icon="@drawable/ic_mtrl_search"
+        android:title="@string/xml_menu_find"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/xml_save"
+        android:icon="@drawable/ic_mtrl_save"
+        android:title="@string/common_word_save"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/xml_color"
+        android:icon="@drawable/ic_mtrl_palette"
+        android:title="@string/xml_menu_color"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/xml_format"
+        android:title="@string/xml_menu_format"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/xml_preview"
+        android:title="@string/xml_menu_preview"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/xml_appcompat"
+        android:title="@string/xml_menu_appcompat"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/xml_wrap"
+        android:checkable="true"
+        android:title="@string/xml_menu_wrap"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/xml_reload_colors"
+        android:title="@string/xml_menu_reload_colors"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/xml_evolve"
+        android:title="@string/evolve_title"
+        app:showAsAction="never" />
+</menu>
