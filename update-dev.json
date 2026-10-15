@@ -1,10 +1,10 @@
 {
   "versionCode": 157,
-  "versionName": "v7.2.4-dev (24c124a)",
-  "commit": "24c124aa04f42bd277465227915e8a9bbad3bf78",
+  "versionName": "v7.2.4-dev (f95e2d3)",
+  "commit": "f95e2d3e53061961d2387d813ccdd241e3ee0f02",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-348",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-348/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "dc0e17b93a019f64f5ceed6c7fda813ffe41894f2858bb46b4fa292782d1bd32",
-  "notes": "Dev build (arm64): Merge pull request #78 from prozizou/ccr-0214dd0d-o1lkwb"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-359",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-359/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "dfbf67947578e6950970e505c17635cfb96076844b9258b6340ce47a07e75e9b",
+  "notes": "Dev build (arm64): Smart Resource Resolver in the compile log (#80)"
 }
