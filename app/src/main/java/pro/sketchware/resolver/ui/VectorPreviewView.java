@@ -31,6 +31,9 @@ public class VectorPreviewView extends View {
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
+    private final RectF inner = new RectF();
+    private final RectF target = new RectF();
+    private final android.graphics.DashPathEffect dashed = new android.graphics.DashPathEffect(new float[]{8, 6}, 0);
     @Nullable
     private VectorModel model;
     private final List<Path> paths = new ArrayList<>();
@@ -123,12 +126,12 @@ public class VectorPreviewView extends View {
         tile.setColor(darkTile ? DARK_TILE : LIGHT_TILE);
         canvas.drawRoundRect(rect, radius, radius, tile);
         float pad = Math.min(getWidth(), getHeight()) * 0.16f;
-        RectF inner = new RectF(pad, pad, getWidth() - pad, getHeight() - pad);
+        inner.set(pad, pad, getWidth() - pad, getHeight() - pad);
         if (bitmap != null) {
             float scale = Math.min(inner.width() / bitmap.getWidth(), inner.height() / bitmap.getHeight());
             float w = bitmap.getWidth() * scale;
             float h = bitmap.getHeight() * scale;
-            RectF target = new RectF(inner.centerX() - w / 2, inner.centerY() - h / 2, inner.centerX() + w / 2, inner.centerY() + h / 2);
+            target.set(inner.centerX() - w / 2, inner.centerY() - h / 2, inner.centerX() + w / 2, inner.centerY() + h / 2);
             canvas.drawBitmap(bitmap, null, target, null);
         } else if (model != null) {
             float scale = Math.min(inner.width() / model.viewportWidth(), inner.height() / model.viewportHeight());
@@ -158,7 +161,7 @@ public class VectorPreviewView extends View {
             canvas.restore();
         } else {
             // nothing to show: a dashed outline of the tile says "no preview"
-            border.setPathEffect(new android.graphics.DashPathEffect(new float[]{8, 6}, 0));
+            border.setPathEffect(dashed);
             canvas.drawRoundRect(rect, radius, radius, border);
             border.setPathEffect(null);
         }

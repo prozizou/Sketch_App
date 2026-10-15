@@ -221,7 +221,7 @@ public final class ProblemAdapter extends RecyclerView.Adapter<ProblemAdapter.Ho
             card.itemStatus.setText(text);
             card.itemStatus.setTextColor(color);
             if (icon != 0) {
-                android.graphics.drawable.Drawable drawable = context.getDrawable(icon).mutate();
+                android.graphics.drawable.Drawable drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, icon).mutate();
                 int size = (int) (14 * context.getResources().getDisplayMetrics().density);
                 drawable.setBounds(0, 0, size, size);
                 drawable.setTintList(ColorStateList.valueOf(color));

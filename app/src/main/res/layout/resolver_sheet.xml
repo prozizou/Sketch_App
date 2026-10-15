@@ -6,7 +6,6 @@
     android:id="@+id/resolver_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/colorSurface"
     android:orientation="vertical">
 
     <LinearLayout

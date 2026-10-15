@@ -147,7 +147,7 @@ public final class FileInspector {
     private static Inspection inspectXml(String type, byte[] bytes, String svgColour) {
         if (bytes.length > MAX_XML_BYTES) return Inspection.invalid("The XML file is larger than 512 KB");
         String xml = new String(bytes, StandardCharsets.UTF_8);
-        if (xml.startsWith("﻿")) xml = xml.substring(1);
+        if (xml.startsWith("\uFEFF")) xml = xml.substring(1);
         Root root = new Root();
         try {
             SafeXml.parse(xml, root);

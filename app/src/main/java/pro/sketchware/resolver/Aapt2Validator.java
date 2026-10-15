@@ -64,7 +64,13 @@ public final class Aapt2Validator implements ResourceValidator {
             List<String> command = new ArrayList<>(List.of(aapt2.getAbsolutePath(), "compile", "--dir", res.getAbsolutePath(), "-o", new File(scratch, "out.zip").getAbsolutePath()));
             ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true);
             Process process = builder.start();
-            byte[] output = process.getInputStream().readAllBytes();
+            java.io.ByteArrayOutputStream captured = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[4096];
+            try (java.io.InputStream in = process.getInputStream()) {
+                int read;
+                while ((read = in.read(chunk)) != -1) captured.write(chunk, 0, read);
+            }
+            byte[] output = captured.toByteArray();
             if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 process.destroyForcibly();
                 return Result.fail("AAPT2 took too long to check the file");
