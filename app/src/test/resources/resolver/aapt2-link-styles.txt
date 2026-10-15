@@ -1,0 +1,5 @@
+res7/values/styles.xml:3: error: resource color/brand (aka com.my.app:color/brand) not found.
+res7/values/styles.xml:4: error: resource color/brand (aka com.my.app:color/brand) not found.
+res7/values/styles.xml:3: error: resource color/brand (aka com.my.app:color/brand) not found.
+res7/values/styles.xml:4: error: style attribute 'attr/colorAccentX (aka com.my.app:attr/colorAccentX)' not found.
+error: failed linking references.

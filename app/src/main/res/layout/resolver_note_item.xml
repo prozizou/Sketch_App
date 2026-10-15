@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A heading or a note between the cards of the review ("Not applied", "2 resources still need your input"). -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/note_text"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="4dp"
+    android:textColor="?attr/colorOnSurfaceVariant"
+    android:textSize="13sp" />

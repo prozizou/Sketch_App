@@ -1843,4 +1843,115 @@ ACTION_VIEW
     <string name="xml_symbol_app_ns">Insert app namespace prefix</string>
     <string name="xml_symbol_tools_ns">Insert tools namespace prefix</string>
     <string name="xml_symbol_tab">Insert indentation</string>
+
+    <!-- Resource resolver (compile log) -->
+    <string name="resolver_title">Fix missing resources</string>
+    <string name="resolver_subtitle">%1$d found \u00b7 %2$d can be fixed here</string>
+    <plurals name="resolver_banner">
+        <item quantity="one">%d missing resource can be fixed here</item>
+        <item quantity="other">%d missing resources can be fixed here</item>
+    </plurals>
+    <string name="resolver_banner_preparing">Preparing the resource fixer\u2026</string>
+    <string name="resolver_banner_open">Fix</string>
+    <string name="resolver_fix_all">Fix all</string>
+    <string name="resolver_review_count">Review (%d)</string>
+    <string name="resolver_history">History</string>
+    <string name="resolver_close">Close</string>
+    <string name="resolver_back">Back</string>
+    <string name="resolver_status_chosen">Chosen</string>
+    <string name="resolver_status_suggested">Suggestion</string>
+    <string name="resolver_status_needs">Needs you</string>
+    <string name="resolver_status_applied">Added</string>
+    <string name="resolver_status_unfixable">Not fixable here</string>
+    <string name="resolver_reason_framework">An Android system resource: check its name and the API level the project builds for.</string>
+    <string name="resolver_reason_unsupported">The resolver doesn\u2019t fix %1$s resources: add it to the project\u2019s resources, or enable the library that provides it.</string>
+    <string name="resolver_reason_invalid_name">AAPT2 doesn\u2019t accept this name for a file resource.</string>
+    <string name="resolver_location">%1$s:%2$d</string>
+    <plurals name="resolver_location_more">
+        <item quantity="one">%1$s \u00b7 %2$d more place</item>
+        <item quantity="other">%1$s \u00b7 %2$d more places</item>
+    </plurals>
+    <string name="resolver_open_file">Open %1$s</string>
+    <string name="resolver_local">Local</string>
+    <string name="resolver_online">Online</string>
+    <string name="resolver_import_files">Import files\u2026</string>
+    <string name="resolver_use">Use</string>
+    <string name="resolver_choice_remove_description">Remove the choice for %1$s</string>
+    <string name="resolver_value_hint_color">Color, like #FF5722</string>
+    <string name="resolver_value_hint_string">Text</string>
+    <string name="resolver_value_hint_dimen">Size, like 16dp or 14sp</string>
+    <string name="resolver_value_hint_integer">Number</string>
+    <string name="resolver_value_hint_bool">true or false</string>
+    <string name="resolver_suggestion_copy_file">Copy of %1$s</string>
+    <string name="resolver_suggestion_copy_value">Copy of the %1$s value</string>
+    <string name="resolver_suggestion_alias">Same as @%1$s/%2$s</string>
+    <string name="resolver_suggestion_material">Material icon \u201c%1$s\u201d (%2$s)</string>
+    <string name="resolver_suggestion_in_project">In your project</string>
+    <string name="resolver_suggestion_offline">Offline library</string>
+    <string name="resolver_review_title">Review the changes</string>
+    <plurals name="resolver_review_intro">
+        <item quantity="one">%d change will be made to the project\u2019s resources.</item>
+        <item quantity="other">%d changes will be made to the project\u2019s resources.</item>
+    </plurals>
+    <string name="resolver_review_goes_to">Goes to res/%1$s</string>
+    <string name="resolver_review_not_applied">Not applied</string>
+    <plurals name="resolver_review_unresolved">
+        <item quantity="one">%d resource still needs your input and stays unresolved.</item>
+        <item quantity="other">%d resources still need your input and stay unresolved.</item>
+    </plurals>
+    <plurals name="resolver_review_selected">
+        <item quantity="one">%d change selected</item>
+        <item quantity="other">%d changes selected</item>
+    </plurals>
+    <string name="resolver_apply">Apply (%d)</string>
+    <string name="resolver_working">Writing the changes\u2026</string>
+    <plurals name="resolver_done_title">
+        <item quantity="one">%d resource added</item>
+        <item quantity="other">%d resources added</item>
+    </plurals>
+    <string name="resolver_done_rebuild">Building again in %1$d s\u2026</string>
+    <string name="resolver_undo">Undo</string>
+    <string name="resolver_rebuild_now">Build now</string>
+    <string name="resolver_failed_title">Nothing was changed</string>
+    <string name="resolver_local_failed">Couldn\u2019t read %1$s</string>
+    <string name="resolver_batch_title">Imported files</string>
+    <string name="resolver_batch_matched">Matched to missing resources</string>
+    <string name="resolver_batch_unmatched">No missing resource has that name</string>
+    <string name="resolver_batch_refused">Not accepted</string>
+    <string name="resolver_picker_title">Choose an icon for %1$s</string>
+    <string name="resolver_tab_online">Online</string>
+    <string name="resolver_tab_offline">Material (offline)</string>
+    <string name="resolver_search_hint">Search icons</string>
+    <string name="resolver_picker_loading">Searching\u2026</string>
+    <string name="resolver_picker_empty">No icons found. Try another word.</string>
+    <string name="resolver_picker_start">Type a word to search, like \u201chome\u201d or \u201carrow\u201d.</string>
+    <string name="resolver_picker_error">Couldn\u2019t reach the icon service: %1$s</string>
+    <string name="resolver_picker_use_offline">Use the offline library</string>
+    <string name="resolver_picker_retry">Try again</string>
+    <string name="resolver_picker_license_online">Icons from Iconify \u00b7 Apache-2.0, MIT and ISC sets only</string>
+    <string name="resolver_picker_offline_missing">The offline icons aren\u2019t available on this device.</string>
+    <string name="resolver_picker_license_offline">Material Icons \u00b7 Apache-2.0 license</string>
+    <string name="resolver_picker_unusable">This icon can\u2019t be used: %1$s</string>
+    <string name="resolver_color_black">Black</string>
+    <string name="resolver_color_white">White</string>
+    <string name="resolver_color_gray">Gray</string>
+    <string name="resolver_style_baseline">Filled</string>
+    <string name="resolver_style_outline">Outline</string>
+    <string name="resolver_style_round">Round</string>
+    <string name="resolver_style_sharp">Sharp</string>
+    <string name="resolver_style_twotone">Two-tone</string>
+    <string name="resolver_history_title">Changes made by the resolver</string>
+    <string name="resolver_history_empty">Nothing yet: changes you apply here are listed so you can take them back.</string>
+    <plurals name="resolver_history_item">
+        <item quantity="one">%1$s \u00b7 %2$d change</item>
+        <item quantity="other">%1$s \u00b7 %2$d changes</item>
+    </plurals>
+    <string name="resolver_history_undone">%1$s (taken back)</string>
+    <string name="resolver_history_interrupted">%1$s (interrupted)</string>
+    <string name="resolver_history_undo_title">Take these changes back?</string>
+    <string name="resolver_history_undo_message">The files and entries the resolver added at %1$s are removed. Anything you changed since is kept.</string>
+    <string name="resolver_history_undo_action">Take back</string>
+    <string name="resolver_report">Built again: %1$d fixed \u00b7 %2$d still missing \u00b7 %3$d new</string>
+    <string name="resolver_report_clean">All the missing resources were found. The remaining errors are of another kind.</string>
+    <string name="resolver_unavailable">The resource fixer isn\u2019t available for this log.</string>
 </resources>

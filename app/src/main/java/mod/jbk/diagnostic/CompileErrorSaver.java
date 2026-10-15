@@ -39,11 +39,16 @@ public class CompileErrorSaver {
      * Opens {@link CompileLogActivity} and shows the user the last compile error.
      */
     public void showLastErrors(Context context) {
+        context.startActivity(lastErrorsIntent(context));
+    }
+
+    /** The intent {@link #showLastErrors(Context)} starts, for a caller that wants the log's result (a rebuild request). */
+    public Intent lastErrorsIntent(Context context) {
         Intent intent = new Intent(context, CompileLogActivity.class);
         intent.putExtra("sc_id", sc_id);
         intent.putExtra("showingLastError", true);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        context.startActivity(intent);
+        return intent;
     }
 
     /**

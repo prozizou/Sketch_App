@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One icon of the picker -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_horizontal"
+    android:minHeight="88dp"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <pro.sketchware.resolver.ui.VectorPreviewView
+        android:id="@+id/cell_preview"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/cell_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="11sp"
+        tools:text="arrow_back" />
+</LinearLayout>

@@ -23,7 +23,10 @@ import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import mod.hey.studios.code.SrcCodeEditor;
 import pro.sketchware.R;
@@ -39,9 +42,18 @@ import mod.jbk.diagnostic.CompileDiagnosticParser.Severity;
 import mod.jbk.diagnostic.CompileErrorSaver;
 import mod.jbk.util.AddMarginOnApplyWindowInsetsListener;
 import pro.sketchware.databinding.CompileLogBinding;
+import pro.sketchware.resolver.IconLibrary;
+import pro.sketchware.resolver.MissingResource;
+import pro.sketchware.resolver.MissingResourceParser;
+import pro.sketchware.resolver.RebuildReport;
+import pro.sketchware.resolver.RebuildRequest;
+import pro.sketchware.resolver.ResolverFlow;
+import pro.sketchware.resolver.ResolverSession;
+import pro.sketchware.resolver.ui.ResolverEnvironment;
+import pro.sketchware.resolver.ui.ResourceResolverSheet;
 import pro.sketchware.utility.SketchwareUtil;
 
-public class CompileLogActivity extends BaseAppCompatActivity {
+public class CompileLogActivity extends BaseAppCompatActivity implements ResourceResolverSheet.Host {
 
     private static final String PREFERENCE_WRAPPED_TEXT = "wrapped_text";
     private static final String PREFERENCE_USE_MONOSPACED_FONT = "use_monospaced_font";
@@ -50,6 +62,15 @@ public class CompileLogActivity extends BaseAppCompatActivity {
     private SharedPreferences logViewerPreferences;
 
     private CompileLogBinding binding;
+
+    private String scId;
+    private final ExecutorService resolverWork = Executors.newSingleThreadExecutor();
+    private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private List<MissingResource> missing = new ArrayList<>();
+    private ResolverFlow resolverFlow;
+    private IconLibrary resolverIcons;
+    /** Bumped for each log read, so a slow preparation of an older log is ignored. */
+    private int resolverGeneration;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -78,6 +99,7 @@ public class CompileLogActivity extends BaseAppCompatActivity {
             return;
         }
 
+        scId = sc_id;
         compileErrorSaver = new CompileErrorSaver(sc_id);
 
         if (compileErrorSaver.logFileExists()) {
@@ -153,9 +175,96 @@ public class CompileLogActivity extends BaseAppCompatActivity {
         int warnings = CompileDiagnosticParser.count(diagnostics, Severity.WARNING);
         binding.topAppBar.setSubtitle(diagnostics.isEmpty() ? null : errors + " errors, " + warnings + " warnings");
 
-        binding.tvCompileLog.setText(CompileLogHelper.getColoredLogs(this, error, diagnostics, this::openDiagnostic));
+        missing = MissingResourceParser.parse(error);
+        binding.tvCompileLog.setText(CompileLogHelper.getColoredLogs(this, error, diagnostics, this::openDiagnostic, missing, this::openResolver));
         // Selecting text and tapping links can't both be on, so "Copy log" is in the options menu.
         binding.tvCompileLog.setMovementMethod(LinkMovementMethod.getInstance());
+        prepareResolver();
+    }
+
+    // ---- the resource fixer ----
+
+    /** Builds the resolver for the missing resources in the log, off the main thread, and shows the banner. */
+    private void prepareResolver() {
+        resolverFlow = null;
+        int generation = ++resolverGeneration;
+        List<MissingResource> found = missing;
+        if (found.isEmpty()) {
+            binding.resolverBanner.setVisibility(View.GONE);
+            return;
+        }
+        binding.resolverBanner.setVisibility(View.VISIBLE);
+        binding.resolverBannerText.setText(R.string.resolver_banner_preparing);
+        binding.resolverBannerAction.setEnabled(false);
+        resolverWork.execute(() -> {
+            IconLibrary icons = ResolverEnvironment.openIcons(getApplicationContext());
+            ResolverSession session = ResolverEnvironment.open(getApplicationContext(), scId, found, icons);
+            mainHandler.post(() -> {
+                if (isDestroyed() || generation != resolverGeneration) return;
+                resolverIcons = icons;
+                resolverFlow = new ResolverFlow(session, resolverWork, mainHandler::post);
+                showResolverBanner();
+            });
+        });
+    }
+
+    private void showResolverBanner() {
+        int fixable = resolverFlow.session().fixable().size();
+        RebuildReport report = rebuildReport();
+        if (report != null) {
+            binding.resolverBannerText.setText(report.allGone() ? getString(R.string.resolver_report_clean)
+                    : getString(R.string.resolver_report, report.fixed().size(), report.stillMissing().size(), report.newlyMissing().size()));
+        } else if (fixable > 0) {
+            binding.resolverBannerText.setText(getResources().getQuantityString(R.plurals.resolver_banner, fixable, fixable));
+        } else {
+            binding.resolverBannerText.setText(R.string.resolver_unavailable);
+        }
+        binding.resolverBannerAction.setEnabled(true);
+        binding.resolverBannerAction.setOnClickListener(v -> openResolver(null));
+    }
+
+    /** What the build the resolver asked for changed, when this log follows one. */
+    private RebuildReport rebuildReport() {
+        if (!RebuildRequest.isAfterRebuild(getIntent())) return null;
+        return RebuildReport.compare(RebuildRequest.keysBefore(getIntent()), missing);
+    }
+
+    private void openResolver(MissingResource focus) {
+        if (resolverFlow == null) {
+            SketchwareUtil.toast(getString(R.string.resolver_banner_preparing));
+            return;
+        }
+        if (getSupportFragmentManager().findFragmentByTag("resolver") != null) return;
+        ResourceResolverSheet.newInstance(focus == null ? null : focus.key()).show(getSupportFragmentManager(), "resolver");
+    }
+
+    @Override
+    public ResolverFlow resolverFlow() {
+        return resolverFlow;
+    }
+
+    @Override
+    public IconLibrary resolverIcons() {
+        return resolverIcons;
+    }
+
+    @Override
+    public void onResolverFinished(boolean rebuild, List<String> keysBefore) {
+        if (!rebuild) return;
+        setResult(RESULT_OK, RebuildRequest.result(keysBefore));
+        finish();
+    }
+
+    @Override
+    public void onResolverOpenLocation(MissingResource problem, MissingResource.Occurrence occurrence) {
+        openDiagnostic(new Diagnostic(Severity.ERROR, occurrence.path(), occurrence.line(), occurrence.column(), occurrence.message(), occurrence.start(), occurrence.end()));
+    }
+
+    @Override
+    public void onDestroy() {
+        resolverGeneration++;
+        resolverWork.shutdown();
+        super.onDestroy();
     }
 
     private void openDiagnostic(Diagnostic diagnostic) {
