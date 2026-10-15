@@ -117,7 +117,7 @@ public class WidgetRegistryTilesTest {
     }
 
     @Test
-    public void paletteSectionsShowHowManyWidgetsTheyHold() {
+    public void paletteSectionsTellHowManyWidgetsTheyHold() {
         Activity activity = activity();
         PaletteWidget palette = new PaletteWidget(activity);
         palette.extraTitle("Forms", 1);
@@ -126,7 +126,8 @@ public class WidgetRegistryTilesTest {
         palette.refreshSections();
         TextView header = findText(palette, "Forms");
         assertNotNull(header);
-        assertTrue(header.getText().toString(), header.getText().toString().endsWith("Forms (2)"));
+        assertEquals("Forms", header.getText().toString());
+        assertEquals("Forms (2)", header.getContentDescription().toString());
     }
 
     @Test

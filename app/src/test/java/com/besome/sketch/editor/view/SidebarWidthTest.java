@@ -15,14 +15,15 @@ public class SidebarWidthTest {
     }
 
     @Test
-    public void defaultIsNarrowerThanTheOldFixedWidth() {
-        assertTrue(SidebarWidth.DEFAULT_DP < 88f);
+    public void defaultFitsTheWidgetNamesAndLeavesRoomForThePreview() {
+        assertTrue(SidebarWidth.DEFAULT_DP >= 140f);
+        assertTrue(SidebarWidth.DEFAULT_DP <= 160f);
         assertEquals(SidebarWidth.DEFAULT_DP, SidebarWidth.clampDp(SidebarWidth.DEFAULT_DP), 0f);
     }
 
     @Test
     public void narrowSidebarDropsTheLabelSoNothingIsCutOff() {
-        assertFalse(SidebarWidth.showsLabel(SidebarWidth.DEFAULT_DP));
-        assertTrue(SidebarWidth.showsLabel(100f));
+        assertFalse(SidebarWidth.showsLabel(SidebarWidth.MIN_DP));
+        assertTrue(SidebarWidth.showsLabel(SidebarWidth.DEFAULT_DP));
     }
 }

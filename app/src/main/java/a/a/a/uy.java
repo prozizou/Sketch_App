@@ -19,7 +19,7 @@ public class uy extends IconBase {
     }
 
     private void initialize() {
-        setWidgetNameTextSize(11);
+        setWidgetNameTextSize(13);
         setWidgetName(widgetName);
         setWidgetImage(ViewBean.getViewTypeResId(viewBeans.get(0).type));
     }
