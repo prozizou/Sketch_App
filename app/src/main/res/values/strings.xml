@@ -1662,11 +1662,11 @@ ACTION_VIEW
     <string name="evolve_error">Couldn\u2019t load the shared blocks: %1$s</string>
     <string name="evolve_timeout">no answer from the server, check your connection</string>
     <string name="evolve_unavailable">Evolve needs a signed-in Google account, in a build with Firebase set up.</string>
-    <string name="evolve_pick">Pick</string>
+    <string name="evolve_pick">Import</string>
+    <string name="evolve_pick_description">Import “%1$s”</string>
     <string name="evolve_delete">Delete</string>
     <string name="evolve_by">by %1$s</string>
-    <string name="evolve_meta">%1$d blocks \u00b7 %2$d downloads</string>
-    <string name="evolve_raw_badge">Contains raw Java code</string>
+    <string name="evolve_raw_badge">Raw Java code: read it before importing</string>
     <string name="evolve_raw_title">Raw Java code inside</string>
     <string name="evolve_raw_message">This block can write Java code straight into your app (it uses \u201cAdd source directly\u201d or a custom import). Only pick it if you trust %1$s and have read what it does.</string>
     <string name="evolve_raw_pick">Pick anyway</string>
@@ -1703,7 +1703,6 @@ ACTION_VIEW
     <string name="evolve_source_label">%1$s \u00b7 %2$s</string>
     <string name="evolve_share_choose_any">Choose what to share</string>
     <string name="evolve_share_nothing">There is nothing to share here yet. Put blocks on the canvas, define a more block, or save a block to My Collection.</string>
-    <string name="evolve_meta_xml">%1$d elements \u00b7 %2$d downloads</string>
     <string name="evolve_xml_title">Use \u201c%1$s\u201d</string>
     <string name="evolve_xml_replace">Replace this layout</string>
     <string name="evolve_xml_insert">Insert at the cursor</string>
@@ -1742,6 +1741,30 @@ ACTION_VIEW
     <string name="evolve_preview_raw_header">Java code that would be written into your app:</string>
     <string name="evolve_preview_xml_header">XML</string>
     <string name="evolve_preview_blocks_header">Blocks</string>
+    <!-- Evolve cards. "\u00b7" joins two short facts on one line. -->
+    <string name="evolve_meta_pair">%1$s \u00b7 %2$s</string>
+    <plurals name="evolve_count_blocks">
+        <item quantity="one">%s block</item>
+        <item quantity="other">%s blocks</item>
+    </plurals>
+    <plurals name="evolve_count_elements">
+        <item quantity="one">%s element</item>
+        <item quantity="other">%s elements</item>
+    </plurals>
+    <plurals name="evolve_count_downloads">
+        <item quantity="one">%s download</item>
+        <item quantity="other">%s downloads</item>
+    </plurals>
+    <plurals name="evolve_needs_variables">
+        <item quantity="one">Needs a variable or list: %2$s</item>
+        <item quantity="other">Needs %1$d variables or lists: %2$s</item>
+    </plurals>
+    <string name="evolve_newer_app">Made with a newer app version (%1$d): some blocks may be unknown here</string>
+    <string name="evolve_damaged">Damaged entry: it can\u2019t be imported</string>
+    <string name="evolve_preview_unavailable">No preview for this stack</string>
+    <string name="evolve_preview_description">Preview of %1$s</string>
+    <string name="evolve_tags_more">+%1$d</string>
+    <string name="evolve_card_description">%1$s: %2$s. %3$s. %4$s.</string>
     <string name="evolve_duplicate_title">Already in your collection</string>
     <string name="evolve_duplicate_message">You already have a block with this name or exactly this content. Add another copy?</string>
     <string name="evolve_duplicate_add">Add anyway</string>

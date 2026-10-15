@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- One Evolve entry. Order: header (kind, title, menu), facts, preview, description, checks, footer (tags, Import).
+     Every height wraps its content; long texts are capped in lines and ellipsized. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
@@ -16,68 +19,111 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <!-- Title row: kind, title, menu -->
+        <!-- Header: kind badge, title, menu -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="top"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/item_kind"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/evolve_badge_bg"
+                android:maxLines="1"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textColor="@color/evolve_badge_text"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="More block" />
+
+            <TextView
+                android:id="@+id/item_name"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:paddingTop="2dp">
-
-                <TextView
-                    android:id="@+id/item_kind"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/evolve_accent"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/item_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/item_author"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/item_meta"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                android:accessibilityHeading="true"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                tools:ignore="UnusedAttribute"
+                tools:text="Show a toast when the list is empty" />
 
             <ImageButton
                 android:id="@+id/item_menu"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_marginTop="-8dp"
-                android:layout_marginEnd="-8dp"
+                android:layout_marginVertical="-8dp"
+                android:layout_marginEnd="-12dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/evolve_more"
                 android:src="@drawable/ic_mtrl_more_vertical"
                 app:tint="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
+
+        <!-- Facts: author and date, then size and downloads -->
+        <TextView
+            android:id="@+id/item_author"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            tools:text="by Aziz · Oct 15, 2026" />
+
+        <TextView
+            android:id="@+id/item_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            tools:text="3 blocks · 1 download" />
+
+        <!-- Preview: the stack drawn by the editor, or the start of the XML -->
+        <pro.sketchware.evolve.PreviewFrame
+            android:id="@+id/item_preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/evolve_preview_bg"
+            android:padding="8dp" />
+
+        <TextView
+            android:id="@+id/item_xml"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/evolve_preview_bg"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:maxLines="6"
+            android:padding="8dp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/item_preview_missing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/evolve_preview_bg"
+            android:gravity="center"
+            android:minHeight="48dp"
+            android:padding="8dp"
+            android:text="@string/evolve_preview_unavailable"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/item_description"
@@ -85,74 +131,67 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:ellipsize="end"
-            android:maxLines="3"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp" />
-
-        <HorizontalScrollView
-            android:id="@+id/item_preview_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:scrollbars="none">
-
-            <FrameLayout
-                android:id="@+id/item_preview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </HorizontalScrollView>
-
-        <TextView
-            android:id="@+id/item_xml"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:ellipsize="end"
-            android:fontFamily="monospace"
-            android:maxLines="6"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/item_opcodes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:ellipsize="end"
-            android:fontFamily="monospace"
+            android:lineSpacingExtra="2dp"
             android:maxLines="2"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="13sp"
+            tools:text="Checks the list and shows a toast when it has no items, so the screen never looks broken." />
+
+        <!-- Checks: what the entry needs and what it would write into the app -->
+        <TextView
+            android:id="@+id/item_needs"
+            style="@style/EvolveCardNotice"
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="12sp" />
+            app:drawableStartCompat="@drawable/ic_evolve_notice"
+            app:drawableTint="?attr/colorOnSurfaceVariant"
+            tools:text="Needs a variable or list: counter"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/item_raw_badge"
-            android:layout_width="wrap_content"
+            style="@style/EvolveCardNotice"
+            android:background="@drawable/evolve_warning_bg"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="@string/evolve_raw_badge"
+            android:textColor="@color/evolve_warning"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_evolve_notice"
+            app:drawableTint="@color/evolve_warning"
+            tools:visibility="visible" />
+
+        <!-- Footer: technical tags, Import -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:drawablePadding="4dp"
             android:gravity="center_vertical"
-            android:text="@string/evolve_raw_badge"
-            android:textColor="?attr/colorError"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:visibility="gone"
-            app:drawableStartCompat="@drawable/ic_mtrl_warning"
-            app:drawableTint="?attr/colorError" />
+            android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/item_pick"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_gravity="end"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="@color/evolve_accent"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:text="@string/evolve_pick"
-            android:textColor="@color/evolve_on_accent"
-            android:textSize="14sp"
-            app:icon="@drawable/ic_mtrl_download"
-            app:iconTint="@color/evolve_on_accent" />
+            <pro.sketchware.evolve.TagRow
+                android:id="@+id/item_opcodes"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/item_pick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/evolve_button_bg"
+                android:insetTop="4dp"
+                android:insetBottom="4dp"
+                android:minWidth="0dp"
+                android:minHeight="48dp"
+                android:paddingHorizontal="14dp"
+                android:text="@string/evolve_pick"
+                android:textColor="@color/evolve_button_text"
+                android:textSize="13sp"
+                app:icon="@drawable/ic_mtrl_download"
+                app:iconPadding="6dp"
+                app:iconSize="18dp"
+                app:iconTint="@color/evolve_button_text" />
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

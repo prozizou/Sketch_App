@@ -13,7 +13,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.FrameLayout;
 import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -38,15 +37,12 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import a.a.a.Us;
 import pro.sketchware.BuildConfig;
 import pro.sketchware.R;
 import pro.sketchware.auth.AuthGate;
@@ -474,7 +470,7 @@ public class EvolveSheet extends BottomSheetDialogFragment {
     }
 
     private String authorLabel(SharedBlock block) {
-        return block.authorName().isEmpty() ? getString(R.string.evolve_anonymous) : block.authorName();
+        return EvolveCard.authorName(requireContext(), block);
     }
 
     // ---------------------------------------------------------------------------------------------------------
@@ -773,45 +769,9 @@ public class EvolveSheet extends BottomSheetDialogFragment {
             }
 
             void bind(SharedBlock block) {
-                Context context = itemView.getContext();
-                boolean isXml = block.kind() == SharedKind.VIEW;
-                item.itemKind.setText(kindBadge(block.kind()));
-                item.itemName.setText(block.name());
-                String date = block.createdAt() > 0 ? DateFormat.getDateInstance(DateFormat.MEDIUM).format(new Date(block.createdAt())) : "";
-                item.itemAuthor.setText(date.isEmpty() ? context.getString(R.string.evolve_by, authorLabel(block))
-                        : context.getString(R.string.evolve_by, authorLabel(block)) + " · " + date);
-                item.itemMeta.setText(context.getString(isXml ? R.string.evolve_meta_xml : R.string.evolve_meta,
-                        block.blockCount(), block.downloads()));
-                item.itemDescription.setText(block.description());
-                item.itemDescription.setVisibility(block.description().isEmpty() ? View.GONE : View.VISIBLE);
-                item.itemOpcodes.setText(String.join(" · ", block.opCodes()));
-                item.itemOpcodes.setVisibility(isXml || block.opCodes().isEmpty() ? View.GONE : View.VISIBLE);
-                item.itemXml.setText(isXml ? block.xml() : "");
-                item.itemXml.setVisibility(isXml ? View.VISIBLE : View.GONE);
-                ArrayList<BlockBean> blocks = decodeCached(block);
-                boolean rawCode = block.usesRawCode() || blocks != null && SharedBlockRules.usesRawCode(SharedBlockCodec.opCodes(blocks));
-                item.itemRawBadge.setVisibility(rawCode ? View.VISIBLE : View.GONE);
-                bindPreview(item.itemPreview, item.itemPreviewScroll, block, blocks);
-                item.itemPick.setEnabled(isXml || blocks != null);
-                item.itemPick.setOnClickListener(v -> pick(block));
-                item.itemMenu.setOnClickListener(v -> showMenu(v, block));
+                EvolveCard.bind(item, block, decodeCached(block), kindBadge(block.kind()),
+                        () -> pick(block), anchor -> showMenu(anchor, block));
             }
-        }
-    }
-
-    /** Draws the stack like the drawer does; if the editor can't draw it, the opcode line under it still says what it is. */
-    private static void bindPreview(FrameLayout holder, View scroll, SharedBlock block, @Nullable ArrayList<BlockBean> blocks) {
-        holder.removeAllViews();
-        scroll.setVisibility(View.GONE);
-        if (blocks == null) {
-            return;
-        }
-        try {
-            BlockBean first = blocks.get(0);
-            holder.addView(new Us(holder.getContext(), first.type, first.typeName, first.opCode, block.name(), blocks));
-            scroll.setVisibility(View.VISIBLE);
-        } catch (RuntimeException e) {
-            holder.removeAllViews();
         }
     }
 }

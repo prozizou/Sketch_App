@@ -6,4 +6,11 @@
     <color name="evolve_skeleton">#35363B</color>
     <color name="evolve_accent">#FF8A75</color>
     <color name="evolve_on_accent">#3A130B</color>
+    <color name="evolve_badge_bg">#4A2620</color>
+    <color name="evolve_badge_text">#FFB4A5</color>
+    <color name="evolve_preview_bg">#222327</color>
+    <color name="evolve_tag_bg">#34353A</color>
+    <color name="evolve_tag_text">#C6C7CE</color>
+    <color name="evolve_warning">#FFB4AB</color>
+    <color name="evolve_warning_bg">#3B1F1D</color>
 </resources>
