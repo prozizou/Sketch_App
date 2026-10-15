@@ -276,6 +276,17 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             refresh();
         }
     });
+    /**
+     * Keys of the missing resources the resolver was fixing when it asked for a build; set while that build runs, so a
+     * failure opens the compile log again to compare. Null for every other build.
+     */
+    private volatile java.util.List<String> resolverRebuildKeys;
+    private final ActivityResultLauncher<Intent> openCompileLog = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (pro.sketchware.resolver.RebuildRequest.wantsRebuild(result.getResultCode(), result.getData())) {
+            resolverRebuildKeys = pro.sketchware.resolver.RebuildRequest.keysBefore(result.getData());
+            startBuild();
+        }
+    });
     private BuildTask currentBuildTask;
     private final BroadcastReceiver buildCancelReceiver = new BroadcastReceiver() {
         @Override
@@ -391,6 +402,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
     }
 
+    /** Starts a debug build, unless one is running. */
+    private void startBuild() {
+        if (currentBuildTask != null && !currentBuildTask.canceled && !currentBuildTask.isBuildFinished) return;
+        BuildTask buildTask = new BuildTask(this);
+        currentBuildTask = buildTask;
+        buildTask.execute();
+    }
+
     /**
      * Shows a Snackbar indicating that a problem occurred while compiling. The user can click on "SHOW" to get to {@link CompileLogActivity}.
      *
@@ -398,6 +417,18 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
      */
     private void indicateCompileErrorOccurred(String error) {
         new CompileErrorSaver(sc_id).writeLogsToFile(error);
+        java.util.List<String> afterResolver = resolverRebuildKeys;
+        if (afterResolver != null) {
+            // The build the resource fixer asked for failed: show the log again, with what that build changed.
+            resolverRebuildKeys = null;
+            runOnUiThread(() -> {
+                if (isDestroyed()) return;
+                Intent intent = new CompileErrorSaver(sc_id).lastErrorsIntent(this);
+                pro.sketchware.resolver.RebuildRequest.markReopening(intent, afterResolver);
+                openCompileLog.launch(intent);
+            });
+            return;
+        }
         Snackbar snackbar = Snackbar.make(coordinatorLayout, "Show compile log", Snackbar.LENGTH_INDEFINITE);
         snackbar.setAction(Helper.getResString(R.string.common_word_show), v -> {
             if (!mB.a()) {
@@ -405,7 +436,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 Intent intent = new Intent(getApplicationContext(), CompileLogActivity.class);
                 intent.putExtra("sc_id", sc_id);
                 intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
+                openCompileLog.launch(intent);
             }
         });
         snackbar.show();
@@ -578,9 +609,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 return;
             }
 
-            BuildTask buildTask = new BuildTask(this);
-            currentBuildTask = buildTask;
-            buildTask.execute();
+            resolverRebuildKeys = null;
+            startBuild();
         });
 
         btnOptions = binding.btnOptions;
@@ -601,7 +631,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             return true;
         });
         bottomMenu.add(Menu.NONE, 3, Menu.NONE, "Show last compile error").setOnMenuItemClickListener(item -> {
-            new CompileErrorSaver(sc_id).showLastErrors(this);
+            openCompileLog.launch(new CompileErrorSaver(sc_id).lastErrorsIntent(this));
             return true;
         });
         bottomMenu.add(Menu.NONE, 5, Menu.NONE, "Show source code").setOnMenuItemClickListener(item -> {
@@ -1643,6 +1673,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         private void onPostExecute() {
             DesignActivity activity = getActivity();
             if (activity == null) return;
+            // a build that ended some other way than a compile error (success, missing file, cancel) ends the fix loop
+            activity.resolverRebuildKeys = null;
 
             activity.runOnUiThread(() -> {
                 if (!activity.isDestroyed()) {

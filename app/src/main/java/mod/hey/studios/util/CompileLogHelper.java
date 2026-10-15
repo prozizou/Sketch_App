@@ -17,11 +17,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import mod.jbk.diagnostic.CompileDiagnosticParser.Diagnostic;
+import pro.sketchware.resolver.MissingResource;
 import pro.sketchware.R;
 
 public class CompileLogHelper {
     public interface OnDiagnosticClickListener {
         void onDiagnosticClick(Diagnostic diagnostic);
+    }
+
+    public interface OnMissingResourceClickListener {
+        void onMissingResourceClick(MissingResource resource);
     }
 
     private static final String TAG = "CompileLogHelper";
@@ -66,6 +71,34 @@ public class CompileLogHelper {
                     ds.setUnderlineText(true);
                 }
             }, diagnostic.start(), diagnostic.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return spannable;
+    }
+
+    /**
+     * Same as the overload above, and also makes the message of each "resource not found" error tappable: it opens the
+     * resource fixer on that resource.
+     */
+    public static SpannableString getColoredLogs(Context context, String logs, List<Diagnostic> diagnostics, OnDiagnosticClickListener listener,
+                                                 List<MissingResource> missing, OnMissingResourceClickListener missingListener) {
+        SpannableString spannable = getColoredLogs(context, logs, diagnostics, listener);
+        int linkColor = MaterialColors.getColor(context, R.attr.colorPrimary, TAG);
+        for (MissingResource resource : missing) {
+            for (MissingResource.Occurrence occurrence : resource.occurrences()) {
+                if (occurrence.start() < 0 || occurrence.end() > logs.length() || occurrence.start() >= occurrence.end()) continue;
+                spannable.setSpan(new ClickableSpan() {
+                    @Override
+                    public void onClick(View widget) {
+                        missingListener.onMissingResourceClick(resource);
+                    }
+
+                    @Override
+                    public void updateDrawState(TextPaint ds) {
+                        ds.setUnderlineText(true);
+                        ds.setColor(linkColor);
+                    }
+                }, occurrence.start(), occurrence.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
         }
         return spannable;
     }
