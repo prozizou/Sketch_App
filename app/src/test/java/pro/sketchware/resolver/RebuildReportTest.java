@@ -25,7 +25,7 @@ public class RebuildReportTest {
 
     @Test
     public void theNextStageOfAaptShowsUpAsNew() {
-        String after = Fixtures.read("aapt2-link-layout.log");
+        String after = Fixtures.read("aapt2-link-layout.txt");
         RebuildReport report = RebuildReport.compare(List.of("mipmap/ic_launcher", "string/app_name"), log(after));
         assertEquals("the manifest's resources are no longer reported", List.of("mipmap/ic_launcher", "string/app_name"), report.fixed());
         assertTrue(report.stillMissing().isEmpty());

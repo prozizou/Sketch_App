@@ -21,7 +21,7 @@ public class MissingResourceParserTest {
 
     @Test
     public void findsEveryTypeInTheRealLayoutStageLog() {
-        List<MissingResource> found = MissingResourceParser.parse(Fixtures.read("aapt2-link-layout.log"));
+        List<MissingResource> found = MissingResourceParser.parse(Fixtures.read("aapt2-link-layout.txt"));
         Map<String, MissingResource> map = byKey(found);
 
         assertEquals(List.of("color/missing_bg", "drawable/ic_missing", "mipmap/ic_gone", "string/hello_missing",
@@ -41,19 +41,19 @@ public class MissingResourceParserTest {
 
     @Test
     public void theTappableRegionIsTheMessageNotThePath() {
-        String log = Fixtures.read("aapt2-link-layout.log");
+        String log = Fixtures.read("aapt2-link-layout.txt");
         Occurrence o = MissingResourceParser.parse(log).get(1).occurrences().get(0);
         assertEquals("error: resource drawable/ic_missing (aka com.my.app:drawable/ic_missing) not found.", log.substring(o.start(), o.end()));
     }
 
     @Test
     public void findsTheManifestAndStylesStages() {
-        List<MissingResource> manifest = MissingResourceParser.parse(Fixtures.read("aapt2-link-manifest.log"));
+        List<MissingResource> manifest = MissingResourceParser.parse(Fixtures.read("aapt2-link-manifest.txt"));
         assertEquals(List.of("mipmap/ic_launcher", "string/app_name"), manifest.stream().map(MissingResource::key).toList());
         assertEquals("AndroidManifest.xml", manifest.get(0).occurrences().get(0).path());
         assertEquals(3, manifest.get(0).occurrences().get(0).line());
 
-        List<MissingResource> styles = MissingResourceParser.parse(Fixtures.read("aapt2-link-styles.log"));
+        List<MissingResource> styles = MissingResourceParser.parse(Fixtures.read("aapt2-link-styles.txt"));
         assertEquals("a colour used by two lines, and an unknown attribute", List.of("color/brand", "attr/colorAccentX"),
                 styles.stream().map(MissingResource::key).toList());
         assertEquals("AAPT2 printed line 3 twice: both log lines stay tappable", 3, styles.get(0).occurrences().size());
@@ -75,7 +75,7 @@ public class MissingResourceParserTest {
 
     @Test
     public void supportedTypesAreFixableAndOthersAreOnlyReported() {
-        Map<String, MissingResource> map = byKey(MissingResourceParser.parse(Fixtures.read("aapt2-link-layout.log")));
+        Map<String, MissingResource> map = byKey(MissingResourceParser.parse(Fixtures.read("aapt2-link-layout.txt")));
         for (String key : new String[]{"color/missing_bg", "drawable/ic_missing", "mipmap/ic_gone", "string/hello_missing", "dimen/missing_size"}) {
             assertTrue(key, map.get(key).fixable());
             assertNull(key, map.get(key).unfixableReason());

@@ -1,0 +1,3 @@
+AndroidManifest.xml:3: error: resource mipmap/ic_launcher (aka com.my.app:mipmap/ic_launcher) not found.
+AndroidManifest.xml:3: error: resource string/app_name (aka com.my.app:string/app_name) not found.
+error: failed processing manifest.

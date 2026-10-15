@@ -1,0 +1,10 @@
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:2: error: resource color/missing_bg (aka com.my.app:color/missing_bg) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:6: error: resource drawable/ic_missing (aka com.my.app:drawable/ic_missing) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:10: error: resource mipmap/ic_gone (aka com.my.app:mipmap/ic_gone) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:10: error: resource string/hello_missing (aka com.my.app:string/hello_missing) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:10: error: resource color/missing_bg (aka com.my.app:color/missing_bg) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:16: error: resource android:drawable/nonexistent_framework not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:17: error: resource style/MissingStyle (aka com.my.app:style/MissingStyle) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:17: error: resource dimen/missing_size (aka com.my.app:dimen/missing_size) not found.
+/storage/emulated/0/.sketch_nws/data/605/files/resource/layout/main.xml:17: error: resource dimen/missing_size (aka com.my.app:dimen/missing_size) not found.
+error: failed linking file resources.
