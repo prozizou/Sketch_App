@@ -13,4 +13,5 @@
     <color name="evolve_tag_text">#C6C7CE</color>
     <color name="evolve_warning">#FFB4AB</color>
     <color name="evolve_warning_bg">#3B1F1D</color>
+    <color name="evolve_accent_tint">#2E2220</color>
 </resources>

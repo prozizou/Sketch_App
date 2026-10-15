@@ -1774,4 +1774,73 @@ ACTION_VIEW
     <string name="evolve_offer_no">Not now</string>
     <string name="evolve_option_share">Evolve</string>
     <string name="evolve_anonymous">Anonymous</string>
+
+    <!-- XML editor -->
+    <string name="xml_editor_title">XML Editor</string>
+    <string name="xml_editor_subtitle_modified">%1$s \u00b7 Unsaved</string>
+    <string name="xml_note_appcompat">Use AppCompat Manager to modify attributes for CoordinatorLayout, Toolbar, and other appcompat layout/widget.</string>
+    <string name="xml_note_dismiss">Dismiss this tip</string>
+    <string name="xml_menu_find">Find and replace</string>
+    <string name="xml_menu_format">Format XML</string>
+    <string name="xml_menu_wrap">Word wrap</string>
+    <string name="xml_menu_color">Insert color</string>
+    <string name="xml_menu_preview">Layout preview</string>
+    <string name="xml_menu_appcompat">Edit AppCompat</string>
+    <string name="xml_menu_reload_colors">Reload color schemes</string>
+    <string name="xml_saved">Saved</string>
+    <string name="xml_nothing_to_save">No changes to save</string>
+    <string name="xml_save_invalid">Can\u2019t save: line %1$d: %2$s</string>
+    <string name="xml_save_circular">Circular dependency found in \u201c%1$s\u201d\nPlease resolve the issue before saving</string>
+    <plurals name="xml_status_valid">
+        <item quantity="one">Valid XML \u00b7 %d element</item>
+        <item quantity="other">Valid XML \u00b7 %d elements</item>
+    </plurals>
+    <string name="xml_status_error">Line %1$d: %2$s</string>
+    <string name="xml_status_go_to_error">Go to the error</string>
+    <string name="xml_status_position">Ln %1$d, Col %2$d</string>
+    <plurals name="xml_status_position_selected">
+        <item quantity="one">Ln %1$d, Col %2$d \u00b7 %3$d character selected</item>
+        <item quantity="other">Ln %1$d, Col %2$d \u00b7 %3$d characters selected</item>
+    </plurals>
+    <string name="xml_format_done">Formatted</string>
+    <string name="xml_format_unchanged">Already formatted</string>
+    <string name="xml_format_invalid">Fix the XML error first: formatting needs a well-formed layout</string>
+    <string name="xml_find_hint">Find</string>
+    <string name="xml_replace_hint">Replace with</string>
+    <string name="xml_find_none">No results</string>
+    <string name="xml_find_count">%1$d of %2$d</string>
+    <plurals name="xml_find_matches">
+        <item quantity="one">%d match</item>
+        <item quantity="other">%d matches</item>
+    </plurals>
+    <string name="xml_find_prev">Previous match</string>
+    <string name="xml_find_next">Next match</string>
+    <string name="xml_find_replace">Replace</string>
+    <string name="xml_find_replace_all">All</string>
+    <string name="xml_find_replace_all_description">Replace all matches</string>
+    <string name="xml_find_close">Close search</string>
+    <string name="xml_find_case" translatable="false">Aa</string>
+    <string name="xml_find_case_description">Match case</string>
+    <string name="xml_find_regex" translatable="false">.*</string>
+    <string name="xml_find_regex_description">Regular expression</string>
+    <string name="xml_find_bad_regex">Not a valid regular expression</string>
+    <plurals name="xml_find_replaced">
+        <item quantity="one">Replaced %d match</item>
+        <item quantity="other">Replaced %d matches</item>
+    </plurals>
+    <string name="xml_symbols_bar">Quick insert keys</string>
+    <string name="xml_symbol_open_tag">Insert less-than sign</string>
+    <string name="xml_symbol_close_bracket">Insert greater-than sign</string>
+    <string name="xml_symbol_self_close">Insert self-closing end</string>
+    <string name="xml_symbol_end_tag">Insert closing tag start</string>
+    <string name="xml_symbol_quotes">Insert a pair of quotes</string>
+    <string name="xml_symbol_equals">Insert equals sign</string>
+    <string name="xml_symbol_new_id">Insert new id reference</string>
+    <string name="xml_symbol_string_ref">Insert string reference</string>
+    <string name="xml_symbol_color_ref">Insert color reference</string>
+    <string name="xml_symbol_drawable_ref">Insert drawable reference</string>
+    <string name="xml_symbol_android_ns">Insert android namespace prefix</string>
+    <string name="xml_symbol_app_ns">Insert app namespace prefix</string>
+    <string name="xml_symbol_tools_ns">Insert tools namespace prefix</string>
+    <string name="xml_symbol_tab">Insert indentation</string>
 </resources>

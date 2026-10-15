@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One quick-insert key. Not focusable: tapping it must leave the focus (and the keyboard) in the editor. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="36dp"
+    android:layout_marginHorizontal="2dp"
+    android:background="@drawable/xml_symbol_bg"
+    android:clickable="true"
+    android:focusable="false"
+    android:focusableInTouchMode="false"
+    android:fontFamily="monospace"
+    android:gravity="center"
+    android:minWidth="40dp"
+    android:paddingHorizontal="10dp"
+    android:maxLines="1"
+    android:textColor="?attr/colorOnSurface"
+    android:textSize="14sp" />
