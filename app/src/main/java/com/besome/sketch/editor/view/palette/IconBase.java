@@ -28,7 +28,7 @@ public class IconBase extends BaseWidget {
     }
 
     public void setText(String widgetName) {
-        setWidgetNameTextSize(13);
+        setWidgetNameTextSize(11);
         setWidgetName(widgetName);
     }
 }

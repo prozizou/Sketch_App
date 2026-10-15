@@ -1387,11 +1387,10 @@ ACTION_VIEW
     <string name="whats_new_got_it">Got it</string>
     <string name="whats_new_menu">What\'s new</string>
     <string-array name="whats_new_entries">
-        <item>none|Pick colors on a wheel|Every color picker opens a color wheel: drag the ball, set brightness and opacity, or type a hex code. Palettes still offers colors.xml and Material 3 colors.</item>
-        <item>none|A new Build Settings screen|Simple and Advanced tabs, Debug / Release profiles, D8 or Dx and the Java version, with a check that explains problems before you build.</item>
-        <item>none|Easier block editing|Copies made with Duplicate land on free space and copying stays on until you close it; the blocks button opens the collection, tapping the open tab closes the palette, and a MoreBlock\'s Edit shows its code.</item>
-        <item>none|Colors in the code editors|Insert or change a color from the code editors with the color picker.</item>
-        <item>none|Safer and steadier|Git push and pull always check the server\'s certificate, apps using RequestNetwork no longer trust any server, the View editor zooms with two fingers only, libraries are looked up in several places, and update downloads survive a dropped connection.</item>
+        <item>none|Fix missing resources from the compile log|Tap a "resource not found" error to see what is missing and fix it: reuse a resource you already have, pick an offline Material icon, import a PNG, WebP or vector file, or search icons online. Review before anything is written, undo later, and the project builds again on its own.</item>
+        <item>none|A better XML editor|A status bar with live validation, quick keys, find and replace, and Format.</item>
+        <item>none|Clearer Evolve cards|Denser cards with a scaled preview, what each entry needs, and a tag row that never overflows.</item>
+        <item>none|Compact View editor|The widget palette keeps its compact, organised layout.</item>
     </string-array>
     <string name="whats_new_open_in_project">Open in which project?</string>
     <string name="whats_new_no_project">Create a project first to try this.</string>

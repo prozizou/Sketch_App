@@ -26,7 +26,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:navigationIcon="?attr/homeAsUpIndicator"
-                    app:subtitleTextColor="@color/event_accent"
+                    app:subtitleTextColor="?attr/colorSecondary"
                     tools:menu="@menu/design_menu"
                     tools:subtitle="605"
                     tools:title="InternalDemo" />

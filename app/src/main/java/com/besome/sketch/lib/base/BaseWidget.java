@@ -31,8 +31,6 @@ public class BaseWidget extends LinearLayout {
 
     private void initialize() {
         setBackgroundResource(R.drawable.icon_bg);
-        // A palette row: icon, name and drag handle in an outlined card.
-        setMinimumHeight(Math.round(46 * getResources().getDisplayMetrics().density));
         setDrawingCacheEnabled(true);
     }
 
