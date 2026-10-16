@@ -83,6 +83,11 @@ public class ViewEditorFragment extends qA {
         });
         viewProperty.setOnEventClickListener(eventBean -> toLogicEditorActivity(eventBean.targetId, eventBean.eventName, eventBean.eventName));
         viewProperty.setOnPropertyTargetChangeListener(viewEditor::updateSelection);
+        viewEditor.setOnPropertiesToggleListener(() -> {
+            if (requireActivity() instanceof DesignActivity designActivity) {
+                designActivity.togglePropertyPanel();
+            }
+        });
         viewEditor.setOnFocusPreviewChangedListener(focus -> {
             if (requireActivity() instanceof DesignActivity designActivity) {
                 designActivity.setFocusPreviewUi(focus);
@@ -183,6 +188,11 @@ public class ViewEditorFragment extends qA {
     }
 
     public void a(boolean var1) {
+        if (viewProperty.isSidePanel()) {
+            // The docked column is always there: nothing slides, and Back has no sheet to close
+            isPropertyViewVisible = false;
+            return;
+        }
         startAnimation();
         if (!isPropertyViewVisible || !var1) {
             cancelAnimations();
@@ -220,6 +230,11 @@ public class ViewEditorFragment extends qA {
     }
 
     public void showHidePropertyView(boolean shouldShow) {
+        // Docked beside the preview (landscape workspace), the activity owns the column's visibility
+        if (viewProperty.isSidePanel() && requireActivity() instanceof DesignActivity designActivity
+                && designActivity.setPropertyDockTabVisible(shouldShow)) {
+            return;
+        }
         viewProperty.setVisibility(shouldShow ? View.VISIBLE : View.GONE);
     }
 

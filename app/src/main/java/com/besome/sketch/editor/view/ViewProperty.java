@@ -15,6 +15,7 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -81,6 +82,10 @@ public class ViewProperty extends LinearLayout implements Kw {
     private ObjectAnimator showAllShower;
     private ObjectAnimator showAllHider;
     private boolean showAllVisible = true;
+    private boolean sidePanel;
+    private LinearLayout propertyContentsRow;
+    private ScrollView sideScroll;
+    private LinearLayout sideContent;
 
     public ViewProperty(Context context) {
         super(context);
@@ -169,7 +174,7 @@ public class ViewProperty extends LinearLayout implements Kw {
             ViewBean viewBean = projectActivityViews.get(idsAdapter.getSelectedItemPosition());
             if (selectedGroupId == 0) {
                 propertyLayout.setVisibility(VISIBLE);
-                layoutPropertySeeAll.setVisibility(VISIBLE);
+                layoutPropertySeeAll.setVisibility(sidePanel ? GONE : VISIBLE);
                 viewPropertyItems.setProjectFileBean(projectFile);
                 viewPropertyItems.a(sc_id, viewBean);
                 a(viewBean);
@@ -290,6 +295,7 @@ public class ViewProperty extends LinearLayout implements Kw {
         CustomHorizontalScrollView hcvProperty = binding.hcvProperty;
         propertyLayout = binding.propertyLayout;
         LinearLayout propertyContents = binding.propertyContents;
+        propertyContentsRow = propertyContents;
         layoutPropertySeeAll = binding.layoutPropertySeeAll;
         viewEvent = binding.viewEvent;
         hcvProperty.setHorizontalScrollBarEnabled(false);
@@ -333,6 +339,12 @@ public class ViewProperty extends LinearLayout implements Kw {
             }
         });
         imgDelete = binding.imgDelete;
+        binding.imgSeeAll.setOnClickListener(v -> {
+            int position = idsAdapter.getSelectedItemPosition();
+            if (propertyListener != null && projectFile != null && position < projectActivityViews.size()) {
+                propertyListener.a(projectFile.getXmlName(), projectActivityViews.get(position));
+            }
+        });
         imgDelete.setOnClickListener(view -> showDeleteViewBeanWidget());
         spnWidget = binding.spnWidget;
         idsAdapter = new ViewIdsAdapter(context, projectActivityViews);
@@ -354,6 +366,47 @@ public class ViewProperty extends LinearLayout implements Kw {
         viewPropertyItems = new ViewPropertyItems(getContext());
         viewPropertyItems.setOrientation(HORIZONTAL);
         propertyContents.addView(viewPropertyItems);
+    }
+
+    /**
+     * Docked beside the preview in landscape the properties are a vertical list in a scrolling column, like the
+     * full properties screen; under the preview (portrait) they stay a row of cards. "See all" moves from the
+     * floating card to the header, since the column has no room for a floating one.
+     */
+    public void setSidePanel(boolean side) {
+        if (side == sidePanel) {
+            return;
+        }
+        sidePanel = side;
+        viewPropertyItems.setOrientation(side ? VERTICAL : HORIZONTAL);
+        if (side) {
+            if (sideScroll == null) {
+                sideScroll = new ScrollView(context);
+                sideScroll.setVerticalScrollBarEnabled(false);
+                sideScroll.setFillViewport(false);
+                sideContent = new LinearLayout(context);
+                sideContent.setOrientation(VERTICAL);
+                sideScroll.addView(sideContent, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                ((ViewGroup) propertyLayout).addView(sideScroll, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            }
+            propertyContentsRow.removeView(viewPropertyItems);
+            sideContent.addView(viewPropertyItems);
+            binding.hcvProperty.setVisibility(GONE);
+            sideScroll.setVisibility(VISIBLE);
+            binding.imgSeeAll.setVisibility(VISIBLE);
+            layoutPropertySeeAll.setVisibility(GONE);
+        } else {
+            sideContent.removeView(viewPropertyItems);
+            propertyContentsRow.addView(viewPropertyItems);
+            sideScroll.setVisibility(GONE);
+            binding.hcvProperty.setVisibility(VISIBLE);
+            binding.imgSeeAll.setVisibility(GONE);
+        }
+        e();
+    }
+
+    public boolean isSidePanel() {
+        return sidePanel;
     }
 
     private void selectView(ViewBean viewBean) {

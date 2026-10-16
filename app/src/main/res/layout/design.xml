@@ -48,17 +48,42 @@
                     app:dividerColor="?attr/colorSurfaceContainerHighest" />
             </com.google.android.material.appbar.AppBarLayout>
 
-            <androidx.coordinatorlayout.widget.CoordinatorLayout
-                android:id="@+id/layout_coordinator"
+            <LinearLayout
+                android:id="@+id/workspace_row"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1">
+                android:layout_weight="1"
+                android:orientation="horizontal">
 
-                <com.besome.sketch.lib.ui.CustomViewPager
-                    android:id="@+id/viewpager"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-            </androidx.coordinatorlayout.widget.CoordinatorLayout>
+                <androidx.coordinatorlayout.widget.CoordinatorLayout
+                    android:id="@+id/layout_coordinator"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+
+                    <com.besome.sketch.lib.ui.CustomViewPager
+                        android:id="@+id/viewpager"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+                </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+                <!-- Landscape workspace only: the grabber on the properties column's edge; the column itself is
+                     docked here by PropertyDock. -->
+                <FrameLayout
+                    android:id="@+id/properties_resize_handle"
+                    android:layout_width="14dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/colorSurfaceContainer"
+                    android:contentDescription="@string/view_properties_resize"
+                    android:visibility="gone">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_resize_grabber" />
+                </FrameLayout>
+            </LinearLayout>
 
             <com.google.android.material.divider.MaterialDivider
                 android:layout_width="match_parent"

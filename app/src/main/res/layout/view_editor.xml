@@ -96,6 +96,87 @@
         android:layout_marginRight="16dp"
         android:translationY="150dp" />
 
+    <LinearLayout
+        android:id="@+id/workspace_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/palette_search_bg"
+        android:elevation="3dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="4dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/btn_toggle_palette"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/view_workspace_toggle_widgets"
+            android:src="@drawable/ic_panel_left" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/zoom_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="4dp"
+            app:selectionRequired="false"
+            app:singleSelection="true">
+
+            <Button
+                android:id="@+id/zoom_fit"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="@string/view_zoom_fit"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/zoom_50"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="@string/view_zoom_50"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/zoom_75"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="@string/view_zoom_75"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/zoom_100"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="@string/view_zoom_100"
+                android:textSize="12sp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <ImageButton
+            android:id="@+id/btn_toggle_properties"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/view_workspace_toggle_properties"
+            android:src="@drawable/ic_panel_right" />
+    </LinearLayout>
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/delete_view"
         android:layout_width="wrap_content"

@@ -26,6 +26,15 @@
             android:spinnerMode="dropdown" />
 
         <ImageButton
+            android:id="@+id/img_see_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/view_properties_see_all"
+            android:src="@drawable/ic_mtrl_tune"
+            android:visibility="gone" />
+
+        <ImageButton
             android:id="@+id/img_delete"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -42,14 +51,22 @@
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/layout_property_group"
+    <HorizontalScrollView
+        android:id="@+id/group_scroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingTop="2dp" />
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/layout_property_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingTop="2dp" />
+    </HorizontalScrollView>
 
     <RelativeLayout
         android:id="@+id/property_layout"
