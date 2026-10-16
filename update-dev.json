@@ -1,10 +1,10 @@
 {
-  "versionCode": 158,
-  "versionName": "v7.2.5-dev (c71ba7b)",
-  "commit": "c71ba7bef34302f50cd810de2ce55bd2e348a06e",
+  "versionCode": 159,
+  "versionName": "v7.2.6-dev (c5c9a01)",
+  "commit": "c5c9a01a98aea7837f155d30b2c16553e1b24cb4",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-363",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-363/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "fc1fe3d1a9d30b284a2e97b4f3554d3b92b63c6af0cb90d7560da36785d7cf32",
-  "notes": "Dev build (arm64): Restore the compact View editor palette and release v7.2.5 (#81)"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-370",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-370/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "79eb9109d0f70ca78f75a2b00a780aa24440c303965ae7c99b9c5d42f2ff15d8",
+  "notes": "Dev build (arm64): Landscape View editor workspace + release v7.2.6 (#83)"
 }
