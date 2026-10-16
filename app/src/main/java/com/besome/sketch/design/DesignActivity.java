@@ -10,6 +10,7 @@ import android.content.ComponentCallbacks2;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -49,6 +50,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.besome.sketch.editor.view.LandscapeWorkspace;
 import com.besome.sketch.adapters.JavaFileAdapter;
 import com.besome.sketch.beans.ProjectFileBean;
 import com.besome.sketch.common.SrcViewerActivity;
@@ -186,6 +188,9 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private TextView fileName;
     private String currentJavaFileName;
     private ViewEditorFragment viewTabAdapter;
+    private PropertyDock propertyDock;
+    /** Toolbar minimum height, tab height and bottom bar padding of the portrait chrome, to restore it. */
+    private int[] portraitChrome;
     private final ActivityResultLauncher<Intent> openSnapshots = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == ProjectSnapshotsActivity.RESULT_RESTORED) { // also what the Git screen answers
             // The project on disk was just replaced: leave without saving what is still in memory
@@ -539,6 +544,50 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
     }
 
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (propertyDock != null) propertyDock.apply(newConfig);
+        applyWorkspaceChrome(newConfig);
+    }
+
+    /** The properties column belongs to the View tab only; a no-op under the preview, where the sheet handles it. */
+    public boolean setPropertyDockTabVisible(boolean visible) {
+        if (propertyDock == null || !propertyDock.isDocked()) return false;
+        propertyDock.setTabVisible(visible);
+        return true;
+    }
+
+    public void togglePropertyPanel() {
+        if (propertyDock != null) propertyDock.toggleCollapsed();
+    }
+
+    /** Landscape workspace: a slimmer toolbar, tab strip and footer, so the panels get the height. */
+    private void applyWorkspaceChrome(Configuration configuration) {
+        boolean compact = LandscapeWorkspace.isEnabled(configuration.orientation == Configuration.ORIENTATION_LANDSCAPE, configuration.screenWidthDp);
+        float dip = getResources().getDisplayMetrics().density;
+        Toolbar toolbar = binding.toolbar;
+        ViewGroup.LayoutParams toolbarParams = toolbar.getLayoutParams();
+        ViewGroup.LayoutParams tabParams = binding.tabLayout.getLayoutParams();
+        if (portraitChrome == null) {
+            portraitChrome = new int[]{toolbar.getMinimumHeight(), tabParams.height, binding.bottomBar.getPaddingTop(), btnRunMinHeight()};
+        }
+        toolbar.setMinimumHeight(compact ? Math.round(44 * dip) : portraitChrome[0]);
+        toolbarParams.height = compact ? Math.round(44 * dip) : ViewGroup.LayoutParams.WRAP_CONTENT;
+        toolbar.setLayoutParams(toolbarParams);
+        tabParams.height = compact ? Math.round(30 * dip) : portraitChrome[1];
+        binding.tabLayout.setLayoutParams(tabParams);
+        int pad = compact ? Math.round(dip) : portraitChrome[2];
+        binding.bottomBar.setPadding(binding.bottomBar.getPaddingLeft(), pad, binding.bottomBar.getPaddingRight(), pad);
+        int buttonHeight = compact ? Math.round(34 * dip) : portraitChrome[3];
+        binding.btnRun.setMinHeight(buttonHeight);
+        binding.btnOptions.setMinHeight(buttonHeight);
+    }
+
+    private int btnRunMinHeight() {
+        return binding.btnRun.getMinHeight();
+    }
+
     /** Focus preview: hides the tabs and the footer so the view preview fills the screen. */
     public void setFocusPreviewUi(boolean focus) {
         int visibility = focus ? View.GONE : View.VISIBLE;
@@ -599,6 +648,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
         coordinatorLayout = binding.layoutCoordinator;
         fileName = binding.fileName;
+
+        propertyDock = new PropertyDock(binding.container, binding.workspaceRow, binding.propertiesResizeHandle, binding.viewProperty);
+        propertyDock.apply(getResources().getConfiguration());
+        applyWorkspaceChrome(getResources().getConfiguration());
 
         binding.fileNameContainer.setOnClickListener(this);
 

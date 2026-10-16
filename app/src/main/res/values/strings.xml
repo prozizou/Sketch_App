@@ -1464,6 +1464,14 @@ ACTION_VIEW
     <string name="src_restore_message">Your hand-edited %1$s will be deleted and the generated version will be used again.</string>
     <string name="src_restore_action">Restore generated</string>
     <string name="view_widget_new_compact">Widget</string>
+    <string name="view_zoom_fit">Fit</string>
+    <string name="view_zoom_50">50%</string>
+    <string name="view_zoom_75">75%</string>
+    <string name="view_zoom_100">100%</string>
+    <string name="view_workspace_toggle_widgets">Show or hide the widget panel</string>
+    <string name="view_workspace_toggle_properties">Show or hide the properties panel</string>
+    <string name="view_properties_resize">Resize properties panel</string>
+    <string name="view_properties_see_all">All properties</string>
     <string name="view_palette_resize">Resize widget panel</string>
     <string name="property_search_hint">Search properties</string>
     <string name="property_section_identity">Identity &amp; accessibility</string>

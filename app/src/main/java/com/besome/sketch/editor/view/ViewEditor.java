@@ -101,6 +101,19 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private TextView dropHint;
     private TextView zoomLabel;
     private float previewZoom = 1f;
+    /** Landscape workspace: the preview is sized from its own panel, zoomed by the bar and panned with two fingers. */
+    private boolean workspaceMode;
+    private View shapeView;
+    private LandscapeWorkspace.Zoom workspaceZoom = LandscapeWorkspace.Zoom.FIT;
+    /** Pinch zoom as a fraction of the real size, or 0 while a bar option (or Fit) decides. */
+    private float customScale;
+    private float appliedScale = 1f;
+    private float panX;
+    private float panY;
+    private float lastFocusX;
+    private float lastFocusY;
+    private boolean updatingZoomBar;
+    private Runnable propertiesToggleListener;
     private float paletteWidthDp = SidebarWidth.DEFAULT_DP;
     private android.view.ScaleGestureDetector pinchDetector;
     private String a;
@@ -287,7 +300,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     @Override
     public void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (isLayoutChanged) a();
+        if (isLayoutChanged || (workspaceMode && changed)) a();
     }
 
     @Override
@@ -544,6 +557,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         applyPaletteExpanded();
         setupPaletteResize(prefs);
         setupPinchZoom(context);
+        setupWorkspaceBar(prefs);
+        applyWorkspaceMode(getResources().getConfiguration());
         android.widget.EditText search = findViewById(R.id.search_widgets);
         search.addTextChangedListener(new com.besome.sketch.editor.logic.PaletteSelector.SimpleTextWatcher(
                 text -> paletteWidget.filter(text.toString())));
@@ -593,16 +608,141 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         });
     }
 
-    /** Two fingers zoom the preview smoothly; one finger still drags widgets as before. */
+    /** Two fingers zoom the preview smoothly (and, in the landscape workspace, move it); one finger still drags widgets. */
     private void setupPinchZoom(Context context) {
         pinchDetector = TwoFingerPinch.create(context,
                 new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
+                    public boolean onScaleBegin(android.view.ScaleGestureDetector detector) {
+                        lastFocusX = detector.getFocusX();
+                        lastFocusY = detector.getFocusY();
+                        return true;
+                    }
+
+                    @Override
                     public boolean onScale(android.view.ScaleGestureDetector detector) {
+                        if (workspaceMode) {
+                            customScale = LandscapeWorkspace.clampZoom(appliedScale * detector.getScaleFactor());
+                            panX += detector.getFocusX() - lastFocusX;
+                            panY += detector.getFocusY() - lastFocusY;
+                            lastFocusX = detector.getFocusX();
+                            lastFocusY = detector.getFocusY();
+                            selectZoomButton(null);
+                            isLayoutChanged = true;
+                            requestLayout();
+                            return true;
+                        }
                         setPreviewZoom(previewZoom * detector.getScaleFactor(), false);
                         return true;
                     }
                 });
+    }
+
+    /** The zoom bar and the panel toggles of the landscape workspace. */
+    private void setupWorkspaceBar(android.content.SharedPreferences prefs) {
+        workspaceZoom = LandscapeWorkspace.Zoom.fromKey(prefs.getString("workspace_zoom", null));
+        com.google.android.material.button.MaterialButtonToggleGroup group = findViewById(R.id.zoom_group);
+        selectZoomButton(workspaceZoom);
+        group.addOnButtonCheckedListener((g, checkedId, isChecked) -> {
+            if (updatingZoomBar) return;
+            if (!isChecked) {
+                // Tapping the chosen option again keeps it chosen; only a pinch leaves every option unchecked
+                if (customScale == 0f) selectZoomButton(workspaceZoom);
+                return;
+            }
+            LandscapeWorkspace.Zoom zoom = checkedId == R.id.zoom_50 ? LandscapeWorkspace.Zoom.PERCENT_50
+                    : checkedId == R.id.zoom_75 ? LandscapeWorkspace.Zoom.PERCENT_75
+                    : checkedId == R.id.zoom_100 ? LandscapeWorkspace.Zoom.PERCENT_100
+                    : LandscapeWorkspace.Zoom.FIT;
+            setWorkspaceZoom(zoom);
+        });
+        findViewById(R.id.btn_toggle_palette).setOnClickListener(v -> {
+            paletteExpanded = !paletteExpanded;
+            prefs.edit().putBoolean("palette_collapsed", !paletteExpanded).apply();
+            applyPaletteExpanded();
+            isLayoutChanged = true;
+            requestLayout();
+        });
+        findViewById(R.id.btn_toggle_properties).setOnClickListener(v -> {
+            if (propertiesToggleListener != null) propertiesToggleListener.run();
+        });
+    }
+
+    private void selectZoomButton(LandscapeWorkspace.Zoom zoom) {
+        com.google.android.material.button.MaterialButtonToggleGroup group = findViewById(R.id.zoom_group);
+        updatingZoomBar = true;
+        try {
+            if (zoom == null) {
+                group.clearChecked();
+                return;
+            }
+            group.check(switch (zoom) {
+                case PERCENT_50 -> R.id.zoom_50;
+                case PERCENT_75 -> R.id.zoom_75;
+                case PERCENT_100 -> R.id.zoom_100;
+                default -> R.id.zoom_fit;
+            });
+        } finally {
+            updatingZoomBar = false;
+        }
+    }
+
+    /** A bar option replaces any pinch zoom and puts the preview back in the middle. */
+    public void setWorkspaceZoom(LandscapeWorkspace.Zoom zoom) {
+        workspaceZoom = zoom;
+        customScale = 0f;
+        panX = 0f;
+        panY = 0f;
+        selectZoomButton(zoom);
+        if (uiPrefs != null) uiPrefs.edit().putString("workspace_zoom", zoom.name()).apply();
+        isLayoutChanged = true;
+        requestLayout();
+    }
+
+    public LandscapeWorkspace.Zoom getWorkspaceZoom() {
+        return workspaceZoom;
+    }
+
+    public boolean isWorkspaceMode() {
+        return workspaceMode;
+    }
+
+    /** Called when the properties toggle of the bar is tapped; the host owns that panel. */
+    public void setOnPropertiesToggleListener(Runnable listener) {
+        propertiesToggleListener = listener;
+    }
+
+    /** Turns the landscape workspace on or off: the bar shows, and the preview sizing follows the panel. */
+    private void applyWorkspaceMode(android.content.res.Configuration configuration) {
+        boolean landscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+        boolean enabled = LandscapeWorkspace.isEnabled(landscape, configuration.screenWidthDp);
+        View bar = findViewById(R.id.workspace_bar);
+        if (bar != null) bar.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        if (enabled == workspaceMode) return;
+        workspaceMode = enabled;
+        if (enabled) {
+            // The palette may have been collapsed in an earlier landscape session
+            if (uiPrefs != null && uiPrefs.getBoolean("palette_collapsed", false) && !focusPreview) {
+                paletteExpanded = false;
+                applyPaletteExpanded();
+            }
+        } else {
+            paletteExpanded = true;
+            applyPaletteExpanded();
+            customScale = 0f;
+            panX = 0f;
+            panY = 0f;
+        }
+        isLayoutChanged = true;
+        requestLayout();
+    }
+
+    @Override
+    protected void onConfigurationChanged(android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applyWorkspaceMode(newConfig);
+        isLayoutChanged = true;
+        requestLayout();
     }
 
     @Override
@@ -717,6 +857,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         deleteText = findViewById(R.id.text_delete);
         deleteView = findViewById(R.id.delete_view);
         FrameLayout shape = findViewById(R.id.shape);
+        shapeView = shape;
         paletteGroup = findViewById(R.id.palette_group);
 
         addPaletteGroupItems();
@@ -1139,22 +1280,45 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
             var4 = Math.max(var4, (int) Math.ceil(Math.max(currentFrame.insetLeft(), currentFrame.insetRight()) * frameScale) + 2);
             var5 = Math.max(var5, (int) Math.ceil(Math.max(currentFrame.insetTop(), currentFrame.insetBottom()) * frameScale) + 2);
         }
-        final int marginX = var4;
-        final int marginY = var5;
+        final int minMarginX = var4;
+        final int minMarginY = var5;
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
-        int var9 = realWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
-        int var8 = realHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
-        if (screenType == 0 && da) {
-            Log.d("ViewEditor", "hmmm");
-            var8 -= (int) (dip * 56.0F);
+        boolean workspace = workspaceMode && shapeView != null && shapeView.getWidth() > 0 && shapeView.getHeight() > 0;
+        int var9;
+        int var8;
+        if (workspace) {
+            // The preview panel's own size: nothing about the portrait chrome (tabs, footer) is assumed
+            var9 = shapeView.getWidth();
+            var8 = shapeView.getHeight();
+        } else {
+            var9 = realWidth - (paletteExpanded ? Math.round(paletteWidthDp * dip) : 0);
+            var8 = realHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
+            if (screenType == 0 && da) {
+                Log.d("ViewEditor", "hmmm");
+                var8 -= (int) (dip * 56.0F);
+            }
         }
 
         float var11 = Math.min((float) var9 / (float) displayWidth, (float) var8 / (float) displayHeight);
         float var3 = Math.min((float) (var9 - var4 * 2) / (float) displayWidth, (float) (var8 - var5 * 2) / (float) displayHeight);
-        // Manual preview zoom folded into the fit scale so viewPane.getScaleX() (read by hit-testing) stays consistent.
-        var11 *= previewZoom;
-        var3 *= previewZoom;
+        if (workspace) {
+            // Fit follows the free space; 50/75/100% are of the real size; a pinch sets its own
+            var3 = customScale > 0f ? customScale : LandscapeWorkspace.scaleFor(workspaceZoom, var3);
+            var11 = var3;
+            appliedScale = var3;
+            panX = LandscapeWorkspace.clampPan(var9, displayWidth * var3, minMarginX, panX);
+            panY = LandscapeWorkspace.clampPan(var8, displayHeight * var3, minMarginY, panY);
+            // Centred in the panel, or moved by the pan when it is larger than the panel
+            var4 = Math.round(LandscapeWorkspace.origin(var9, displayWidth * var3, minMarginX, panX));
+            var5 = Math.round(LandscapeWorkspace.origin(var8, displayHeight * var3, minMarginY, panY));
+        } else {
+            // Manual preview zoom folded into the fit scale so viewPane.getScaleX() (read by hit-testing) stays consistent.
+            var11 *= previewZoom;
+            var3 *= previewZoom;
+        }
+        final int marginX = var4;
+        final int marginY = var5;
 
         aa.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, displayHeight));
         aa.setScaleX(var11);
