@@ -41,65 +41,177 @@
                 android:forceDarkAllowed="false"
                 tools:ignore="UnusedAttribute" />
 
-            <!-- The Java the blocks turn into, shown in place of the canvas (toolbar action switches). -->
-            <FrameLayout
+            <!-- The Java of the blocks, in place of the canvas (toolbar action switches). It can be edited: the status row
+                 says whether it matches the blocks, and "Apply to blocks" turns it into blocks after a review. -->
+            <LinearLayout
                 android:id="@+id/code_panel"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_margin="2dp"
                 android:background="?attr/colorSurfaceContainerLowest"
+                android:orientation="vertical"
                 android:visibility="gone">
 
-                <io.github.rosemoe.sora.widget.CodeEditor
-                    android:id="@+id/code_editor"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-
-                <TextView
-                    android:id="@+id/code_message"
+                <!-- Shown when the blocks changed while the Java holds edits that were not applied. -->
+                <LinearLayout
+                    android:id="@+id/code_banner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:gravity="center"
-                    android:padding="32dp"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_gravity="top|end"
-                    android:layout_margin="8dp"
-                    android:alpha="0.92"
-                    android:background="@drawable/canvas_control_bg"
-                    android:elevation="3dp"
+                    android:background="?attr/colorSecondaryContainer"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="2dp">
+                    android:paddingStart="12dp"
+                    android:paddingEnd="4dp"
+                    android:visibility="gone">
 
-                    <ImageButton
-                        android:id="@+id/btn_code_copy"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/logic_code_copy"
-                        android:padding="7dp"
-                        android:src="@drawable/ic_mtrl_copy"
-                        app:tint="?attr/colorOnSurface" />
+                    <TextView
+                        android:id="@+id/code_banner_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:paddingVertical="6dp"
+                        android:text="@string/logic_sync_banner_blocks_changed"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:textSize="12sp" />
 
-                    <ImageButton
-                        android:id="@+id/btn_code_maximize"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/logic_code_maximize"
-                        android:padding="7dp"
-                        android:src="@drawable/ic_focus_preview"
-                        app:tint="?attr/colorOnSurface" />
+                    <Button
+                        android:id="@+id/code_banner_action"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:text="@string/logic_sync_banner_show_new"
+                        android:textSize="12sp" />
                 </LinearLayout>
-            </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <io.github.rosemoe.sora.widget.CodeEditor
+                        android:id="@+id/code_editor"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <TextView
+                        android:id="@+id/code_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:padding="32dp"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="8dp"
+                        android:alpha="0.92"
+                        android:background="@drawable/canvas_control_bg"
+                        android:elevation="3dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp">
+
+                        <ImageButton
+                            android:id="@+id/btn_code_copy"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/logic_code_copy"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_mtrl_copy"
+                            app:tint="?attr/colorOnSurface" />
+
+                        <ImageButton
+                            android:id="@+id/btn_code_maximize"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/logic_code_maximize"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_focus_preview"
+                            app:tint="?attr/colorOnSurface" />
+                    </LinearLayout>
+                </FrameLayout>
+
+                <!-- Status, undo and redo of applied Java, save, and the button that applies it to the blocks. -->
+                <LinearLayout
+                    android:id="@+id/code_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:background="?attr/colorSurfaceContainer"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/code_status"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:accessibilityLiveRegion="polite"
+                        android:background="?attr/selectableItemBackground"
+                        android:drawablePadding="6dp"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:maxLines="1"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12sp"
+                        tools:text="Line 3: Missing ';'" />
+
+                    <ImageButton
+                        android:id="@+id/btn_code_undo"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/logic_sync_undo"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_mtrl_undo"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                    <ImageButton
+                        android:id="@+id/btn_code_redo"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/logic_sync_redo"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_mtrl_redo"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                    <ImageButton
+                        android:id="@+id/btn_code_save"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/logic_sync_save"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_mtrl_save"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                    <Button
+                        android:id="@+id/btn_code_apply"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="4dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="@string/logic_sync_apply"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
