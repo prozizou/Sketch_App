@@ -183,6 +183,15 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private LogicViewMode viewMode = LogicViewMode.BLOCKS;
     /** The project's build settings, read once: the code view regenerates often. */
     private jq codeBuildConfig;
+    /** The Java under the blocks: editable, with its own history and draft. */
+    private pro.sketchware.logic.sync.ui.JavaPanel javaPanel;
+    /** The event's parameters by name to type letter, for turning Java back into blocks. */
+    private final java.util.Map<String, String> eventArgs = new java.util.LinkedHashMap<>();
+    /**
+     * Blocks that were put in place by the Java panel: they are what gets saved from now on, until the editor reloads, so
+     * the old blocks still on the canvas can't overwrite them.
+     */
+    private ArrayList<BlockBean> externalBlocks;
     private final android.os.Handler codeHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable codeRefresher = this::refreshCode;
     private ObjectAnimator U, V, ba, ca, fa, ga;
@@ -414,12 +423,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             if (viewMode == LogicViewMode.CODE) {
                 e(false);
             }
-            refreshCode();
             if (!before.showsCode()) {
                 code.setAlpha(0f);
                 code.setVisibility(View.VISIBLE);
                 code.animate().alpha(1f).setDuration(150).start();
             }
+            javaPanel.onShown();
         } else {
             codeHandler.removeCallbacks(codeRefresher);
             code.animate().alpha(0f).setDuration(150).withEndAction(() -> {
@@ -444,50 +453,108 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         view.setLayoutParams(params);
     }
 
-    private String generateCode() {
+    private jq buildConfig() {
         if (codeBuildConfig == null) {
             yq project = new yq(this, scId);
             project.a(jC.c(scId), jC.b(scId), jC.a(scId));
             codeBuildConfig = project.N;
         }
-        return GeneratedCode.forEvent(M.getActivityName(), codeBuildConfig, o.getBlocks(),
+        return codeBuildConfig;
+    }
+
+    private String generateCode() {
+        return generateCode(o.getBlocks());
+    }
+
+    private String generateCode(ArrayList<BlockBean> blocks) {
+        return GeneratedCode.forEvent(M.getActivityName(), buildConfig(), blocks,
                 isViewBindingEnabled, M.fileName.contains("_fragment"));
     }
 
+    /** Blocks changed or the code view opened: the Java panel shows the code the blocks make now (or keeps the person's edits). */
     private void refreshCode() {
         if (!viewMode.showsCode()) {
             return;
         }
-        String message = null;
-        String code = "";
-        try {
-            code = generateCode();
-            if (code.isEmpty()) {
-                message = getString(R.string.logic_code_empty);
-            }
-        } catch (Exception e) {
-            message = getString(R.string.logic_code_error);
+        javaPanel.onBlocksChanged();
+    }
+
+    /** What the Java panel needs from this editor. */
+    private final pro.sketchware.logic.sync.ui.JavaPanel.Host javaPanelHost = new pro.sketchware.logic.sync.ui.JavaPanel.Host() {
+        @Override
+        public android.app.Activity activity() {
+            return LogicEditorActivity.this;
         }
-        binding.codeMessage.setText(message);
-        binding.codeMessage.setVisibility(message == null ? View.GONE : View.VISIBLE);
-        binding.codeEditor.setVisibility(message == null ? View.VISIBLE : View.INVISIBLE);
-        if (message == null) {
-            // Keep the reader's place when the code is replaced by a newer version.
-            int offsetX = binding.codeEditor.getOffsetX();
-            int offsetY = binding.codeEditor.getOffsetY();
-            binding.codeEditor.setText(code);
-            if (offsetX != 0 || offsetY != 0) {
-                binding.codeEditor.post(() -> binding.codeEditor.getScroller().startScroll(0, 0, offsetX, offsetY, 0));
-            }
+
+        @Override
+        public View messageAnchor() {
+            return binding.getRoot();
         }
+
+        @Override
+        public String eventKey() {
+            return M.getJavaName() + "_" + id + "_" + eventName;
+        }
+
+        @Override
+        public java.io.File syncFolder() {
+            return new java.io.File(android.os.Environment.getExternalStorageDirectory(), ".sketch_nws/data/" + scId + "/logic_sync");
+        }
+
+        @Override
+        public ArrayList<BlockBean> blocks() {
+            return pro.sketchware.logic.sync.BlockJson.copyOf(externalBlocks != null ? externalBlocks : o.getBlocks());
+        }
+
+        @Override
+        public String generate(ArrayList<BlockBean> blocks) {
+            return generateCode(blocks);
+        }
+
+        @Override
+        public pro.sketchware.logic.sync.ProjectContext projectContext() {
+            return pro.sketchware.logic.sync.ui.SyncContextLoader.load(scId, M, isViewBindingEnabled, eventArgs);
+        }
+
+        @Override
+        public jq buildConfig() {
+            return LogicEditorActivity.this.buildConfig();
+        }
+
+        @Override
+        public pro.sketchware.logic.sync.BlockSpecs.Strings strings() {
+            return name -> {
+                int resource = getResources().getIdentifier(name, "string", getPackageName());
+                return resource == 0 ? null : getString(resource);
+            };
+        }
+
+        @Override
+        public void replaceBlocks(ArrayList<BlockBean> blocks) {
+            replaceEventBlocks(blocks);
+        }
+    };
+
+    /**
+     * Makes {@code blocks} the event's blocks. They are stored first, then the editor reloads from the store, so the canvas
+     * can never write its old blocks over the new ones; if anything fails before the reload the old blocks are untouched.
+     */
+    private void replaceEventBlocks(ArrayList<BlockBean> blocks) {
+        externalBlocks = pro.sketchware.logic.sync.BlockJson.copyOf(blocks);
+        jC.a(scId).a(M.getJavaName(), id + "_" + eventName, externalBlocks);
+        jC.a(scId).k();
+        // the editor's own undo steps refer to blocks that no longer exist
+        bC.d(scId).b(s());
+        recreate();
     }
 
     private void setupCodePanel() {
         binding.codeEditor.setTypefaceText(pro.sketchware.utility.EditorUtils.getTypeface(this));
         binding.codeEditor.setTextSize(13);
-        binding.codeEditor.setEditable(false);
         binding.codeEditor.setWordwrap(false);
         pro.sketchware.utility.EditorUtils.loadJavaConfig(binding.codeEditor);
+        javaPanel = new pro.sketchware.logic.sync.ui.JavaPanel(binding, javaPanelHost);
+        javaPanel.attach();
         binding.btnCodeCopy.setOnClickListener(v -> {
             android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             clipboard.setPrimaryClip(android.content.ClipData.newPlainText("code", binding.codeEditor.getText().toString()));
@@ -499,7 +566,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     public void E() {
         eC a2 = jC.a(scId);
         String javaName = M.getJavaName();
-        a2.a(javaName, id + "_" + eventName, o.getBlocks());
+        a2.a(javaName, id + "_" + eventName, externalBlocks != null ? externalBlocks : o.getBlocks());
     }
 
     public void G() {
@@ -2429,6 +2496,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         for (int i = 0; i < spec.size(); i++) {
             String specBit = spec.get(i);
             if (specBit.charAt(0) == '%') {
+                rememberEventArgument(specBit);
                 Rs block = BlockUtil.getVariableBlock(this, blockId + 1, specBit, "getArg");
                 if (block != null) {
                     block.setBlockType(1);
@@ -2450,6 +2518,30 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         z();
     }
 
+    /** Remembers an event parameter ({@code %d.position}) so the Java that uses {@code _position} can become an argument block. */
+    private void rememberEventArgument(String specBit) {
+        if (specBit.length() < 4) return;
+        char type = specBit.charAt(1);
+        if (type == 'b' || type == 'd' || type == 's') {
+            eventArgs.put(specBit.substring(3), String.valueOf(type));
+        } else if (type == 'm' && specBit.contains(".") && specBit.lastIndexOf('.') > specBit.indexOf('.')) {
+            String kind = specBit.substring(specBit.indexOf('.') + 1, specBit.lastIndexOf('.'));
+            eventArgs.put(specBit.substring(specBit.lastIndexOf('.') + 1), a.a.a.kq.a(kind));
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (javaPanel != null) javaPanel.flush();
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (javaPanel != null) javaPanel.destroy();
+        super.onDestroy();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -2465,7 +2557,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         bundle.putString("event", eventName);
         bundle.putParcelable("project_file", M);
         super.onSaveInstanceState(bundle);
-        ArrayList<BlockBean> blocks = o.getBlocks();
+        ArrayList<BlockBean> blocks = externalBlocks != null ? externalBlocks : o.getBlocks();
         eC a2 = jC.a(scId);
         String javaName = M.getJavaName();
         a2.a(javaName, id + "_" + eventName, blocks);

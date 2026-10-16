@@ -85,6 +85,31 @@ public class ExcludeBuiltInLibrariesActivity extends BaseAppCompatActivity {
         FileUtil.writeFile(getConfigPath(sc_id).getAbsolutePath(), new Gson().toJson(config));
     }
 
+    /** Adds libraries to the project's exclusions and turns excluding on, as the screen does; unknown names are ignored. */
+    public static void excludeLibraries(String sc_id, java.util.Collection<String> names) {
+        List<BuiltInLibraries.BuiltInLibrary> libraries = new java.util.ArrayList<>(getExcludedLibraries(sc_id));
+        for (String name : names) {
+            BuiltInLibraries.BuiltInLibrary.ofName(name).ifPresent(library -> {
+                if (!libraries.contains(library)) libraries.add(library);
+            });
+        }
+        saveConfig(sc_id, true, libraries);
+    }
+
+    /** The saved exclusions exactly as stored, or null when there is none; for taking a change back. */
+    @Nullable
+    public static String readRawConfig(String sc_id) {
+        File path = getConfigPath(sc_id);
+        return path.isFile() ? FileUtil.readFile(path.getAbsolutePath()) : null;
+    }
+
+    /** Puts back what {@link #readRawConfig} returned (null deletes the file). */
+    public static void restoreRawConfig(String sc_id, @Nullable String raw) {
+        File path = getConfigPath(sc_id);
+        if (raw == null) FileUtil.deleteFile(path.getAbsolutePath());
+        else FileUtil.writeFile(path.getAbsolutePath(), raw);
+    }
+
     @Nullable
     private static Pair<Boolean, List<BuiltInLibraries.BuiltInLibrary>> readConfig(String sc_id) {
         File configPath = getConfigPath(sc_id);

@@ -37,7 +37,7 @@ public final class JavaDiagnostics {
 
     /** Packages whose classes the SDK index knows completely; anything else may come from a library. */
     private static final List<String> CHECKED_IMPORT_ROOTS = List.of("android.", "java.", "javax.");
-    private static final Pattern FOUND_TOKEN = Pattern.compile("Found (\"(?:[^\"\\\\]|\\\\.)*\"|<EOF>)");
+    private static final Pattern FOUND_TOKEN = Pattern.compile("Found\\s+(\"(?:[^\"\\\\]|\\\\.)*\"|<EOF>)");
     private static final Pattern EXPECTED_TOKENS = Pattern.compile("expected (?:one of )?(.*)$", Pattern.DOTALL);
     private static final Pattern LEXICAL_ERROR = Pattern.compile("Lexical error at line (\\d+), column (\\d+)\\.\\s+Encountered: (.*)");
     private static final int MAX_EXPECTED_SHOWN = 8;

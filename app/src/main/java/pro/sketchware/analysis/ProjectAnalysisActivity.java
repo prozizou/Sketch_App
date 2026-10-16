@@ -390,6 +390,117 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
         }
     }
 
+    /** Works out, off the main thread, how to resolve a library problem, then asks before changing anything. */
+    private void resolveLibraries(Finding finding) {
+        if (loaded == null) return;
+        ProjectFactsLoader.Loaded snapshot = loaded;
+        binding.progress.setVisibility(View.VISIBLE);
+        try {
+            executor.execute(() -> {
+                try {
+                    pro.sketchware.analysis.fix.LibraryFixes.Plan plan = pro.sketchware.analysis.fix.LibraryFixes.plan(finding.id(),
+                            ProjectFactsLoader.libraryFixInput(scId, snapshot));
+                    runOnUiThread(() -> {
+                        binding.progress.setVisibility(View.INVISIBLE);
+                        showLibraryPlan(finding, plan);
+                    });
+                } catch (Throwable t) {
+                    AppLog.e("ProjectAnalysis", "Library fix failed: " + t);
+                    runOnUiThread(() -> {
+                        binding.progress.setVisibility(View.INVISIBLE);
+                        new MaterialAlertDialogBuilder(this)
+                                .setMessage(getString(R.string.analysis_autofix_failed, t.getMessage() != null ? t.getMessage() : t.toString()))
+                                .setPositiveButton(android.R.string.ok, null).show();
+                    });
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closed) {
+            // The screen is gone
+        }
+    }
+
+    private void showLibraryPlan(Finding finding, pro.sketchware.analysis.fix.LibraryFixes.Plan plan) {
+        StringBuilder undecided = new StringBuilder();
+        for (String line : plan.unresolved()) undecided.append("\n\u2022 ").append(line);
+        if (plan.isEmpty()) {
+            new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_resolve_title)
+                    .setMessage(getString(R.string.analysis_resolve_nothing) + undecided)
+                    .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        int pad = SketchwareUtil.dpToPx(20);
+        android.widget.LinearLayout content = new android.widget.LinearLayout(this);
+        content.setOrientation(android.widget.LinearLayout.VERTICAL);
+        content.setPadding(pad, pad / 2, pad, 0);
+        TextView intro = new TextView(this);
+        intro.setText(R.string.analysis_resolve_intro);
+        content.addView(intro);
+        List<android.widget.CheckBox> boxes = new ArrayList<>();
+        for (pro.sketchware.analysis.fix.LibraryFixes.Action action : plan.actions()) {
+            android.widget.CheckBox box = new android.widget.CheckBox(this);
+            box.setText(getString(action.kind() == pro.sketchware.analysis.fix.LibraryFixes.Kind.REMOVE_LOCAL
+                    ? R.string.analysis_resolve_remove_local : R.string.analysis_resolve_exclude, action.library(), action.reason()));
+            box.setChecked(true);
+            boxes.add(box);
+            content.addView(box);
+        }
+        if (undecided.length() > 0) {
+            TextView rest = new TextView(this);
+            rest.setText(getString(R.string.analysis_resolve_undecided) + undecided);
+            rest.setPadding(0, pad / 2, 0, 0);
+            content.addView(rest);
+        }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(content);
+        new MaterialAlertDialogBuilder(this).setTitle(R.string.analysis_resolve_title).setView(scroll)
+                .setPositiveButton(R.string.analysis_resolve_apply, (dialog, which) -> {
+                    List<pro.sketchware.analysis.fix.LibraryFixes.Action> chosen = new ArrayList<>();
+                    for (int i = 0; i < boxes.size(); i++) if (boxes.get(i).isChecked()) chosen.add(plan.actions().get(i));
+                    if (!chosen.isEmpty()) applyLibraryPlan(new pro.sketchware.analysis.fix.LibraryFixes.Plan(plan.findingId(), chosen, plan.unresolved()));
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void applyLibraryPlan(pro.sketchware.analysis.fix.LibraryFixes.Plan plan) {
+        binding.progress.setVisibility(View.VISIBLE);
+        try {
+            executor.execute(() -> {
+                try {
+                    pro.sketchware.analysis.fix.LibraryFixApplier.Result result = pro.sketchware.analysis.fix.LibraryFixApplier.apply(scId, plan);
+                    runOnUiThread(() -> {
+                        com.google.android.material.snackbar.Snackbar.make(binding.getRoot(),
+                                        getResources().getQuantityString(R.plurals.analysis_resolve_done, result.removed() + result.excluded(), result.removed() + result.excluded()), com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                                .setAction(R.string.analysis_resolve_undo, v -> undoLibraryFix(result.snapshot()))
+                                .show();
+                        analyse();
+                    });
+                } catch (Throwable t) {
+                    AppLog.e("ProjectAnalysis", "Library fix failed: " + t);
+                    runOnUiThread(() -> {
+                        binding.progress.setVisibility(View.INVISIBLE);
+                        new MaterialAlertDialogBuilder(this)
+                                .setMessage(getString(R.string.analysis_autofix_failed, t.getMessage() != null ? t.getMessage() : t.toString()))
+                                .setPositiveButton(android.R.string.ok, null).show();
+                    });
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closed) {
+            // The screen is gone
+        }
+    }
+
+    private void undoLibraryFix(pro.sketchware.analysis.fix.LibraryFixApplier.Snapshot snapshot) {
+        binding.progress.setVisibility(View.VISIBLE);
+        try {
+            executor.execute(() -> {
+                pro.sketchware.analysis.fix.LibraryFixApplier.undo(scId, snapshot);
+                runOnUiThread(this::analyse);
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closed) {
+            // The screen is gone
+        }
+    }
+
     /** One location opens at once; several are offered in a list. */
     private void openFirstOrChoose(Finding finding) {
         List<Location> locations = finding.locations();
@@ -508,6 +619,9 @@ public class ProjectAnalysisActivity extends BaseAppCompatActivity {
             holder.item.subtitle.setText(categoryLabel(finding.category()) + " · " + finding.cause());
             holder.itemView.setOnClickListener(v -> FindingsDialog.show(ProjectAnalysisActivity.this, finding.title(), List.of(finding), "",
                     ProjectAnalysisActivity.this::open));
+            boolean resolvable = pro.sketchware.analysis.fix.LibraryFixes.handles(finding.id());
+            holder.item.resolve.setVisibility(resolvable ? View.VISIBLE : View.GONE);
+            holder.item.resolve.setOnClickListener(v -> resolveLibraries(finding));
             holder.item.open.setVisibility(finding.locations().isEmpty() ? View.GONE : View.VISIBLE);
             holder.item.open.setOnClickListener(v -> openFirstOrChoose(finding));
         }

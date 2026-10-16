@@ -1,0 +1,310 @@
+# opcode<TAB>block type<TAB>parameter types (from a.a.a.lq.a). Built-in blocks of the palette; kept in step by BlockCatalogTest.
+%	d	%d,%d
+&&	b	%b,%b
+*	d	%d,%d
++	d	%d,%d
+-	d	%d,%d
+/	d	%d,%d
+<	b	%d,%d
+=	b	%d,%d
+>	b	%d,%d
+addListInt	 	%d,%m.listInt
+addListMap	 	%s,%s,%m.listMap
+addListStr	 	%s,%m.listStr
+addMapToList	 	%m.varMap,%m.listMap
+addSourceDirectly	 	%s.inputOnly
+bluetoothConnectActivateBluetooth	 	%m.bluetoothconnect
+bluetoothConnectGetPairedDevices	 	%m.bluetoothconnect,%m.listMap
+bluetoothConnectGetRandomUuid	s	%m.bluetoothconnect
+bluetoothConnectIsBluetoothActivated	b	%m.bluetoothconnect
+bluetoothConnectIsBluetoothEnabled	b	%m.bluetoothconnect
+bluetoothConnectReadyConnection	 	%m.bluetoothconnect,%s
+bluetoothConnectReadyConnectionToUuid	 	%m.bluetoothconnect,%s,%s
+bluetoothConnectSendData	 	%m.bluetoothconnect,%s,%s
+bluetoothConnectStartConnection	 	%m.bluetoothconnect,%s,%s
+bluetoothConnectStartConnectionToUuid	 	%m.bluetoothconnect,%s,%s,%s
+bluetoothConnectStopConnection	 	%m.bluetoothconnect,%s
+break	f	
+calendarAdd	 	%m.calendar,%m.calendarField,%d
+calendarDiff	d	%m.calendar,%m.calendar
+calendarFormat	s	%m.calendar,%s
+calendarGetNow	 	%m.calendar
+calendarGetTime	d	%m.calendar
+calendarSet	 	%m.calendar,%m.calendarField,%d
+calendarSetTime	 	%m.calendar,%d
+calendarViewSetDate	 	%m.calendarview,%d
+calendarViewSetMinDate	 	%m.calendarview,%d
+calnedarViewSetMaxDate	 	%m.calendarview,%d
+camerastarttakepicture	 	%m.camera
+clearList	 	%m.list
+closeDrawer	 	
+containListInt	b	%m.listInt,%d
+containListMap	b	%m.listMap,%d,%s
+containListStr	b	%m.listStr,%s
+copyToClipboard	 	%s
+cropBitmapFileFromCenter	 	%s,%s,%d,%d
+decreaseInt	 	%m.varInt
+deleteList	 	%d,%m.list
+dialogCancelButton	c	%m.dialog,%s
+dialogNeutralButton	c	%m.dialog,%s
+dialogOkButton	c	%m.dialog,%s
+dialogSetMessage	 	%m.dialog,%s
+dialogSetTitle	 	%m.dialog,%s
+dialogShow	 	%m.dialog
+doToast	 	%s
+else	c	
+false	b	
+fileGetData	s	%m.file,%s
+fileRemoveData	 	%m.file,%s
+fileSetData	 	%m.file,%s,%s
+filepickerstartpickfiles	 	%m.filepicker
+fileutilEndsWith	b	%s,%s
+fileutilGetLastSegmentPath	s	%s
+fileutilStartsWith	b	%s,%s
+fileutilcopy	 	%s,%s
+fileutildelete	 	%s
+fileutilisdir	b	%s
+fileutilisexist	b	%s
+fileutilisfile	b	%s
+fileutillength	d	%s
+fileutillistdir	 	%s,%m.listStr
+fileutilmakedir	 	%s
+fileutilmove	 	%s,%s
+fileutilread	s	%s
+fileutilwrite	 	%s,%s
+finishActivity	f	
+firebaseAdd	 	%m.firebase,%s,%m.varMap
+firebaseDelete	 	%m.firebase,%s
+firebaseGetChildren	c	%m.firebase,%m.listMap
+firebaseGetPushKey	s	%m.firebase
+firebasePush	 	%m.firebase,%m.varMap
+firebaseStartListen	 	%m.firebase
+firebaseStopListen	 	%m.firebase
+firebaseauthCreateUser	 	%m.firebaseauth,%s,%s
+firebaseauthGetCurrentUser	s	
+firebaseauthGetUid	s	
+firebaseauthIsLoggedIn	b	
+firebaseauthResetPassword	 	%m.firebaseauth,%s
+firebaseauthSignInAnonymously	 	%m.firebaseauth
+firebaseauthSignInUser	 	%m.firebaseauth,%s,%s
+firebaseauthSignOutUser	 	
+firebasestorageDelete	 	%m.firebasestorage,%s
+firebasestorageDownloadFile	 	%m.firebasestorage,%s,%s
+firebasestorageUploadFile	 	%m.firebasestorage,%s,%s
+forever	c	
+getAlpha	d	%m.view
+getAtListInt	d	%d,%m.listInt
+getAtListMap	s	%d,%s,%m.listMap
+getAtListStr	s	%d,%m.listStr
+getChecked	b	%m.checkbox
+getEnable	b	%m.view
+getExternalStorageDir	s	
+getJpegRotate	d	%s
+getLocationX	d	%m.view
+getLocationY	d	%m.view
+getMapInList	 	%d,%m.listMap,%m.varMap
+getPackageDataDir	s	
+getPublicDir	s	%m.directoryType
+getRotate	d	%m.view
+getScaleX	d	%m.view
+getScaleY	d	%m.view
+getText	s	%m.textview
+getTranslationX	d	%m.view
+getTranslationY	d	%m.view
+gyroscopeStartListen	 	%m.gyroscope
+gyroscopeStopListen	 	%m.gyroscope
+if	c	%b
+ifElse	e	%b
+increaseInt	 	%m.varInt
+indexListInt	d	%d,%m.listInt
+indexListStr	d	%s,%m.listStr
+insertListInt	 	%d,%d,%m.listInt
+insertListMap	 	%s,%s,%d,%m.listMap
+insertListStr	 	%s,%d,%m.listStr
+insertMapToList	 	%m.varMap,%d,%m.listMap
+intentGetString	s	%s
+intentPutExtra	 	%m.intent,%s,%s
+intentSetAction	 	%m.intent,%m.intentAction
+intentSetData	 	%m.intent,%s.intentData
+intentSetFlags	 	%m.intent,%m.intentFlags
+intentSetScreen	 	%m.intent,%m.activity
+isDrawerOpen	b	
+lengthList	d	%m.list
+listMapToStr	s	%m.listMap
+listRefresh	 	%m.listview
+listSetCustomViewData	 	%m.listview,%m.listMap
+listSetData	 	%m.listview,%m.listStr
+listSmoothScrollTo	 	%m.listview,%d
+locationManagerRemoveUpdates	 	%m.locationmanager
+locationManagerRequestLocationUpdates	 	%m.locationmanager,%m.providerType,%d,%d
+mapClear	 	%m.varMap
+mapContainKey	b	%m.varMap,%s
+mapCreateNew	 	%m.varMap
+mapGet	s	%m.varMap,%s
+mapGetAllKeys	 	%m.varMap,%m.listStr
+mapIsEmpty	b	%m.varMap
+mapPut	 	%m.varMap,%s,%s
+mapRemoveKey	 	%m.varMap,%s
+mapSize	d	%m.varMap
+mapToStr	s	%m.varMap
+mapViewAddMarker	 	%m.mapview,%s,%d,%d
+mapViewMoveCamera	 	%m.mapview,%d,%d
+mapViewSetMapType	 	%m.mapview,%m.mapType
+mapViewSetMarkerColor	 	%m.mapview,%s,%m.markerColor,%d
+mapViewSetMarkerIcon	 	%m.mapview,%s,%m.resource
+mapViewSetMarkerInfo	 	%m.mapview,%s,%s,%s
+mapViewSetMarkerPosition	 	%m.mapview,%s,%d,%d
+mapViewSetMarkerVisible	 	%m.mapview,%s,%b
+mapViewZoomIn	 	%m.mapview
+mapViewZoomOut	 	%m.mapview
+mapViewZoomTo	 	%m.mapview,%d
+mathAbs	d	%d
+mathAcos	d	%d
+mathAsin	d	%d
+mathAtan	d	%d
+mathCeil	d	%d
+mathCos	d	%d
+mathE	d	
+mathExp	d	%d
+mathFloor	d	%d
+mathGetDip	d	%d
+mathGetDisplayHeight	d	
+mathGetDisplayWidth	d	
+mathLog	d	%d
+mathLog10	d	%d
+mathMax	d	%d,%d
+mathMin	d	%d,%d
+mathPi	d	
+mathPow	d	%d,%d
+mathRound	d	%d
+mathSin	d	%d
+mathSqrt	d	%d
+mathTan	d	%d
+mathToDegree	d	%d
+mathToRadian	d	%d
+mediaplayerCreate	 	%m.mediaplayer,%m.sound
+mediaplayerGetCurrent	d	%m.mediaplayer
+mediaplayerGetDuration	d	%m.mediaplayer
+mediaplayerIsLooping	b	%m.mediaplayer
+mediaplayerIsPlaying	b	%m.mediaplayer
+mediaplayerPause	 	%m.mediaplayer
+mediaplayerRelease	 	%m.mediaplayer
+mediaplayerReset	 	%m.mediaplayer
+mediaplayerSeek	 	%m.mediaplayer,%d
+mediaplayerSetLooping	 	%m.mediaplayer,%b
+mediaplayerStart	 	%m.mediaplayer
+not	b	%b
+objectanimatorCancel	 	%m.objectanimator
+objectanimatorIsRunning	b	%m.objectanimator
+objectanimatorSetDuration	 	%m.objectanimator,%d
+objectanimatorSetFromTo	 	%m.objectanimator,%d,%d
+objectanimatorSetInterpolator	 	%m.objectanimator,%m.aniInterpolator
+objectanimatorSetProperty	 	%m.objectanimator,%m.animatorproperty
+objectanimatorSetRepeatCount	 	%m.objectanimator,%d
+objectanimatorSetRepeatMode	 	%m.objectanimator,%m.aniRepeatMode
+objectanimatorSetTarget	 	%m.objectanimator,%m.view
+objectanimatorSetValue	 	%m.objectanimator,%d
+objectanimatorStart	 	%m.objectanimator
+openDrawer	 	
+progressBarSetIndeterminate	 	%m.progressbar,%b
+random	d	%d,%d
+repeat	c	%d
+requestFocus	 	%m.view
+requestnetworkSetHeaders	 	%m.requestnetwork,%m.varMap
+requestnetworkSetParams	 	%m.requestnetwork,%m.varMap,%m.requestType
+requestnetworkStartRequestNetwork	 	%m.requestnetwork,%m.method,%s,%s
+resizeBitmapFileRetainRatio	 	%s,%s,%d
+resizeBitmapFileToCircle	 	%s,%s
+resizeBitmapFileToSquare	 	%s,%s,%d
+resizeBitmapFileWithRoundedBorder	 	%s,%s,%d
+rotateBitmapFile	 	%s,%s,%d
+scaleBitmapFile	 	%s,%s,%d,%d
+seekBarGetMax	d	%m.seekbar
+seekBarGetProgress	d	%m.seekbar
+seekBarSetMax	 	%m.seekbar,%d
+seekBarSetProgress	 	%m.seekbar,%d
+setAlpha	 	%m.view,%d
+setBgColor	 	%m.view,%m.color
+setBgResource	 	%m.view,%m.resource_bg
+setBitmapFileBrightness	 	%s,%s,%d
+setBitmapFileColorFilter	 	%s,%s,%m.color
+setBitmapFileContrast	 	%s,%s,%d
+setChecked	 	%m.checkbox,%b
+setColorFilter	 	%m.imageview,%m.color
+setEnable	 	%m.view,%b
+setHint	 	%m.edittext,%s
+setHintTextColor	 	%m.edittext,%m.color
+setImage	 	%m.imageview,%m.resource
+setImageFilePath	 	%m.imageview,%s
+setImageUrl	 	%m.imageview,%s
+setListMap	 	%s,%s,%d,%m.listMap
+setRotate	 	%m.view,%d
+setScaleX	 	%m.view,%d
+setScaleY	 	%m.view,%d
+setText	 	%m.textview,%s
+setTextColor	 	%m.textview,%m.color
+setTitle	 	%s
+setTranslationX	 	%m.view,%d
+setTranslationY	 	%m.view,%d
+setTypeface	 	%m.textview,%m.font,%m.typeface
+setVarBoolean	 	%m.varBool,%b
+setVarInt	 	%m.varInt,%d
+setVarString	 	%m.varStr,%s
+setVisible	 	%m.view,%m.visible
+skewBitmapFile	 	%s,%s,%d,%d
+soundpoolCreate	 	%m.soundpool,%d
+soundpoolLoad	d	%m.soundpool,%m.sound
+soundpoolStreamPlay	d	%m.soundpool,%d,%d
+soundpoolStreamStop	 	%m.soundpool,%d
+speechToTextShutdown	 	%m.speechtotext
+speechToTextStartListening	 	%m.speechtotext
+speechToTextStopListening	 	%m.speechtotext
+spnGetSelection	d	%m.spinner
+spnRefresh	 	%m.spinner
+spnSetData	 	%m.spinner,%m.listStr
+spnSetSelection	 	%m.spinner,%d
+startActivity	 	%m.intent
+strToListMap	 	%s,%m.listMap
+strToMap	 	%s,%m.varMap
+stringContains	b	%s,%s
+stringEquals	b	%s,%s
+stringIndex	d	%s,%s
+stringJoin	s	%s,%s
+stringLastIndex	d	%s,%s
+stringLength	d	%s
+stringReplace	s	%s,%s,%s
+stringReplaceAll	s	%s,%s,%s
+stringReplaceFirst	s	%s,%s,%s
+stringSub	s	%s,%d,%d
+textToSpeechIsSpeaking	b	%m.texttospeech
+textToSpeechSetPitch	 	%m.texttospeech,%d
+textToSpeechSetSpeechRate	 	%m.texttospeech,%d
+textToSpeechShutdown	 	%m.texttospeech
+textToSpeechSpeak	 	%m.texttospeech,%s
+textToSpeechStop	 	%m.texttospeech
+timerAfter	c	%m.timer,%d
+timerCancel	 	%m.timer
+timerEvery	c	%m.timer,%d,%d
+toLowerCase	s	%s
+toNumber	d	%s
+toString	s	%d
+toStringFormat	s	%d,%s
+toStringWithDecimal	s	%d
+toUpperCase	s	%s
+trim	s	%s
+true	b	
+vibratorAction	 	%m.vibrator,%d
+viewOnClick	c	%m.view
+webViewCanGoBack	b	%m.webview
+webViewCanGoForward	b	%m.webview
+webViewClearCache	 	%m.webview
+webViewClearHistory	 	%m.webview
+webViewGetUrl	s	%m.webview
+webViewGoBack	 	%m.webview
+webViewGoForward	 	%m.webview
+webViewLoadUrl	 	%m.webview,%s.url
+webViewSetCacheMode	 	%m.webview,%m.cacheMode
+webViewStopLoading	 	%m.webview
+webViewZoomIn	 	%m.webview
+webViewZoomOut	 	%m.webview
+||	b	%b,%b
