@@ -110,6 +110,42 @@ public final class DependencyInspector {
                 String.join("\n", pairs)));
     }
 
+    /** Libraries grouped by name without version: {@code base -> (version -> library name)}, in version order. */
+    public static Map<String, Map<String, String>> versionGroups(Collection<String> libraryNames) {
+        Map<String, Map<String, String>> groups = new TreeMap<>();
+        for (String name : libraryNames) {
+            Matcher matcher = VERSIONED.matcher(name);
+            if (matcher.matches()) {
+                groups.computeIfAbsent(matcher.group(1), k -> new TreeMap<>(DependencyInspector::compareVersions)).put(matcher.group(2), name);
+            }
+        }
+        return groups;
+    }
+
+    /** Orders versions by their numbers ({@code 1.9.0 < 1.17.0}); a qualifier ({@code -alpha01}) makes a version older than the plain one. */
+    public static int compareVersions(String a, String b) {
+        String[] x = a.split("[.-]");
+        String[] y = b.split("[.-]");
+        for (int i = 0; i < Math.max(x.length, y.length); i++) {
+            String left = i < x.length ? x[i] : null;
+            String right = i < y.length ? y[i] : null;
+            if (left == null) return isNumber(right) ? -1 : 1;
+            if (right == null) return isNumber(left) ? 1 : -1;
+            boolean leftNumber = isNumber(left);
+            boolean rightNumber = isNumber(right);
+            int result;
+            if (leftNumber && rightNumber) result = Long.compare(Long.parseLong(left), Long.parseLong(right));
+            else if (leftNumber != rightNumber) result = leftNumber ? 1 : -1;
+            else result = left.compareToIgnoreCase(right);
+            if (result != 0) return result;
+        }
+        return 0;
+    }
+
+    private static boolean isNumber(String text) {
+        return !text.isEmpty() && text.length() < 18 && text.chars().allMatch(Character::isDigit);
+    }
+
     /** The same library present in several versions, judged from the names ({@code core-1.9.0} and {@code core-1.17.0}). */
     public static List<Finding> findVersionConflicts(Collection<String> libraryNames) {
         Map<String, Set<String>> versionsByBase = new TreeMap<>();

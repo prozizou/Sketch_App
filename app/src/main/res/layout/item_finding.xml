@@ -36,6 +36,17 @@
     </LinearLayout>
 
     <Button
+        android:id="@+id/resolve"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:minWidth="0dp"
+        android:text="@string/analysis_resolve"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <Button
         android:id="@+id/open"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="wrap_content"

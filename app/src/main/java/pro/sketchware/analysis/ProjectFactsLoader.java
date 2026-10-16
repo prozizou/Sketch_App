@@ -119,6 +119,19 @@ public final class ProjectFactsLoader {
 
     // ---- libraries
 
+    /** What the library fixes need, from a loaded project. Reads the project's local library list. */
+    public static pro.sketchware.analysis.fix.LibraryFixes.Libraries libraryFixInput(String scId, Loaded loaded) {
+        Set<String> local = new TreeSet<>();
+        for (HashMap<String, Object> library : LocalLibrariesUtil.getLocalLibraries(scId)) {
+            Object name = library.get("name");
+            if (name != null) local.add(name.toString());
+        }
+        Set<String> builtIn = new TreeSet<>(loaded.libraryNames());
+        builtIn.removeAll(local);
+        return new pro.sketchware.analysis.fix.LibraryFixes.Libraries(loaded.classesByLibrary(), local, builtIn, loaded.builtInGraph(),
+                loaded.builtInRoots(), loaded.excludedBuiltIn());
+    }
+
     /** The built-in libraries the Library Manager's switches ask for (AppCompat and Material, Firebase, AdMob, Maps). */
     public static List<String> builtInRoots(String scId) {
         List<String> roots = new ArrayList<>();

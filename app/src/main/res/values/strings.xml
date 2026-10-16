@@ -1135,6 +1135,19 @@ ACTION_VIEW
     <string name="analysis_menu_rerun">Run again</string>
     <string name="analysis_tree_title">Dependency tree</string>
     <string name="analysis_menu_navigation">Navigation graph</string>
+    <string name="analysis_resolve">Fix</string>
+    <string name="analysis_resolve_title">Fix the libraries</string>
+    <string name="analysis_resolve_intro">These libraries will be left out of this project. Their files are not deleted: Library Manager can bring them back, and Undo restores the project right away.</string>
+    <string name="analysis_resolve_remove_local">Remove %1$s from the project\n%2$s</string>
+    <string name="analysis_resolve_exclude">Exclude built-in %1$s\n%2$s</string>
+    <string name="analysis_resolve_undecided">Left for you:</string>
+    <string name="analysis_resolve_nothing">Nothing here has one safe answer. Choose in Library Manager which library to keep.</string>
+    <string name="analysis_resolve_apply">Apply</string>
+    <plurals name="analysis_resolve_done">
+        <item quantity="one">%d library changed</item>
+        <item quantity="other">%d libraries changed</item>
+    </plurals>
+    <string name="analysis_resolve_undo">Undo</string>
     <string name="analysis_open">Open</string>
     <string name="analysis_autofix">Auto-fix</string>
     <plurals name="analysis_autofix_intro">
