@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import a.a.a.eC;
 import a.a.a.jC;
 import mod.hilal.saif.activities.tools.ConfigActivity;
+import pro.sketchware.admobads.AdMobBlocks;
 import pro.sketchware.unityads.UnityAdsBlocks;
 
 public class ExtraBlocks {
@@ -76,6 +77,8 @@ public class ExtraBlocks {
         arrayList.add(addBlock("rewardedVideoAdShow", " ", "", "%1s.show(%2$s.this, _%1$s_on_user_earned_reward_listener);", "#2ca5e2", "%m.videoad show in %m.activity"));
         // Unity Ads
         UnityAdsBlocks.addTo(arrayList);
+        // AdMob (interstitial, rewarded, app open, native, ...)
+        AdMobBlocks.addTo(arrayList);
     }
 
     /**
