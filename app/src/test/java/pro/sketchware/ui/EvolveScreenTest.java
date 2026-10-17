@@ -60,15 +60,17 @@ public class EvolveScreenTest {
     }
 
     @Test
-    public void theThirdTabIsEvolveAndTheComponentsTabIsGone() {
+    public void theTabsAreBlocksAndEvolveOnly() {
         AppCompatActivity activity = activity();
         Menu menu = new PopupMenu(activity, new View(activity)).getMenu();
         new MenuInflater(activity).inflate(R.menu.logic_bottom_nav, menu);
-        assertEquals(3, menu.size());
-        assertEquals(R.id.nav_variables, menu.getItem(0).getItemId());
-        assertEquals(R.id.nav_blocks, menu.getItem(1).getItemId());
-        assertEquals(R.id.nav_evolve, menu.getItem(2).getItemId());
-        assertEquals("Evolve", menu.getItem(2).getTitle().toString());
+        assertEquals(2, menu.size());
+        assertEquals(R.id.nav_blocks, menu.getItem(0).getItemId());
+        assertEquals(R.id.nav_evolve, menu.getItem(1).getItemId());
+        assertEquals("Evolve", menu.getItem(1).getTitle().toString());
+        for (int i = 0; i < menu.size(); i++) {
+            assertFalse("Variables live in Blocks, not in a tab", "My Variables".contentEquals(menu.getItem(i).getTitle()));
+        }
         for (int i = 0; i < menu.size(); i++) {
             assertFalse("Components is no longer a tab", "Components".contentEquals(menu.getItem(i).getTitle()));
         }

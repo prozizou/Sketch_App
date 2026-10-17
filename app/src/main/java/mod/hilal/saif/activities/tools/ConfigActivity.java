@@ -80,6 +80,8 @@ public class ConfigActivity extends BaseAppCompatActivity implements PreferenceF
     public static final String SETTING_BACKUP_FILENAME = "backup-filename";
     public static final String SETTING_SHOW_BUILT_IN_BLOCKS = "built-in-blocks";
     public static final String SETTING_SHOW_EVERY_SINGLE_BLOCK = "show-every-single-block";
+    /** Leaves out the palette blocks and section titles that have nothing to act on in the current project. */
+    public static final String SETTING_HIDE_UNRELATED_BLOCKS = "hide-unrelated-blocks";
     public static final String SETTING_USE_NEW_VERSION_CONTROL = "use-new-version-control";
     public static final String SETTING_USE_ASD_HIGHLIGHTER = "use-asd-highlighter";
     public static final String SETTING_CRITICAL_UPDATE_REMINDER = "critical-update-reminder";
@@ -121,6 +123,7 @@ public class ConfigActivity extends BaseAppCompatActivity implements PreferenceF
         DEFAULTS.put(SETTING_ROOT_AUTO_OPEN_AFTER_INSTALLING, true);
         DEFAULTS.put(SETTING_SHOW_BUILT_IN_BLOCKS, false);
         DEFAULTS.put(SETTING_SHOW_EVERY_SINGLE_BLOCK, false);
+        DEFAULTS.put(SETTING_HIDE_UNRELATED_BLOCKS, false);
         DEFAULTS.put(SETTING_USE_NEW_VERSION_CONTROL, false);
         DEFAULTS.put(SETTING_USE_ASD_HIGHLIGHTER, false);
         DEFAULTS.put(SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH, "/.sketch_nws/resources/block/My Block/palette.json");

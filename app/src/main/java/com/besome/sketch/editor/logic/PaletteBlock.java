@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -17,6 +18,7 @@ import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import a.a.a.Rs;
 import a.a.a.Ts;
@@ -26,6 +28,8 @@ import pro.sketchware.R;
 import pro.sketchware.databinding.PaletteBlockBinding;
 
 public class PaletteBlock extends LinearLayout {
+
+    private static final String SECTION_TITLE_TAG = "palette_section_title";
 
     public float f = 0.0F;
     private PaletteBlockBinding binding;
@@ -117,6 +121,26 @@ public class PaletteBlock extends LinearLayout {
         return textView;
     }
 
+    /** Drops the section titles that have no block under them (see {@link PalettePruning}). */
+    public void removeEmptySections() {
+        LinearLayout rows = binding.blockBuilder;
+        List<Boolean> titles = new ArrayList<>();
+        for (int i = 0; i < rows.getChildCount(); i++) {
+            titles.add(SECTION_TITLE_TAG.equals(rows.getChildAt(i).getTag()));
+        }
+        List<Integer> empty = PalettePruning.emptySections(titles);
+        for (int i = empty.size() - 1; i >= 0; i--) {
+            rows.removeViewAt(empty.get(i));
+        }
+        // The first remaining title sits at the top: no gap above it
+        if (rows.getChildCount() > 0 && SECTION_TITLE_TAG.equals(rows.getChildAt(0).getTag())) {
+            ViewGroup.LayoutParams params = rows.getChildAt(0).getLayoutParams();
+            if (params instanceof LinearLayout.LayoutParams linear) {
+                linear.topMargin = 0;
+            }
+        }
+    }
+
     public void a() {
         binding.blockBuilder.removeAllViews();
         binding.actionsContainer.removeAllViews();
@@ -130,6 +154,7 @@ public class PaletteBlock extends LinearLayout {
         cardView.setLayoutParams(params);
         cardView.setCardBackgroundColor(color);
         cardView.setRadius(f * 8f);
+        cardView.setTag(SECTION_TITLE_TAG);
 
         TextView textView = new TextView(context);
         textView.setText(title);

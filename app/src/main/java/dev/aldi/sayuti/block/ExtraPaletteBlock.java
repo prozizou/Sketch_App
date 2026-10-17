@@ -397,6 +397,18 @@ public class ExtraPaletteBlock {
     }
 
     public void setBlock(int paletteId, int paletteColor) {
+        fillPalette(paletteId, paletteColor);
+        if (hidesUnrelatedBlocks()) {
+            logicEditor.m.removeEmptySections();
+        }
+    }
+
+    private boolean hidesUnrelatedBlocks() {
+        return ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_HIDE_UNRELATED_BLOCKS)
+                && !ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_SHOW_EVERY_SINGLE_BLOCK);
+    }
+
+    private void fillPalette(int paletteId, int paletteColor) {
         // Remove previous palette's blocks
         logicEditor.m.a();
 
@@ -521,6 +533,10 @@ public class ExtraPaletteBlock {
                 return;
 
             case 6:
+                if (hidesUnrelatedBlocks() && !isWidgetUsed("View") && !extraBlocks.isCustomVarUsed("View")) {
+                    // Nothing on this screen to apply view blocks to
+                    return;
+                }
                 logicEditor.a(" ", "setEnable");
                 logicEditor.a("b", "getEnable");
                 logicEditor.a(" ", "setVisible");

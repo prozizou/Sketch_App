@@ -2275,7 +2275,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 showEvolve();
                 return false;
             }
-            showPaletteCategory(item.getItemId());
+            showPalettes();
             return true;
         });
         // Tapping the tab of the open palette again closes it.
@@ -2283,7 +2283,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             if (X) {
                 e(false);
             } else {
-                showPaletteCategory(item.getItemId());
+                showPalettes();
             }
         });
         viewLogicEditor.setOnZoomChangedListener(zoom -> binding.tvZoom.setText(Math.round(zoom * 100) + "%"));
@@ -2300,19 +2300,11 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         viewLogicEditor.setZoom(zoom);
     }
 
-    private void showPaletteCategory(int navItemId) {
+    private void showPalettes() {
         if (viewMode == LogicViewMode.CODE) {
             setViewMode(LogicViewMode.SPLIT);
         }
         e(true);
-        boolean variables = navItemId == R.id.nav_variables;
-        // "My Variables" is the Variable palette alone: no category chips and no category search.
-        paletteSelector.setVariablesOnly(variables);
-        if (variables) setPaletteSearchOpen(false);
-        paletteBlockBinding.paletteRow.setVisibility(variables ? View.GONE : View.VISIBLE);
-        if (variables) {
-            paletteSelector.performClickPalette(PaletteSelector.VARIABLES_PALETTE);
-        }
     }
 
     /**
