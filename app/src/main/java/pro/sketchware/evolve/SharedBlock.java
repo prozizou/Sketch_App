@@ -140,6 +140,17 @@ public record SharedBlock(
                 opCodes, Boolean.TRUE.equals(map.get(USES_RAW_CODE)), number(map.get(DOWNLOADS)), blocksJson, kind, spec, xml, meta);
     }
 
+    /** @return every field, as it is stored on this device between runs (publishing leaves some out, see above) */
+    public Map<String, Object> toStoredMap() {
+        Map<String, Object> map = toPublishMap();
+        map.put(CREATED_AT, createdAt);
+        map.put(DOWNLOADS, downloads);
+        map.put(PostMeta.LIKES, meta.likes());
+        map.put(PostMeta.COMMENT_COUNT, meta.commentCount());
+        if (meta.updatedAt() > 0) map.put(PostMeta.UPDATED_AT, meta.updatedAt());
+        return map;
+    }
+
     /** @return the text of a Java, Kotlin, component or XML entry, "" for blocks */
     public String payloadText() {
         return kind == SharedKind.VIEW ? xml : meta.code();

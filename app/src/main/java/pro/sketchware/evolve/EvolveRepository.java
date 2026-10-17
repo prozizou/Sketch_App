@@ -48,12 +48,12 @@ public final class EvolveRepository {
         void onError(@NonNull String message);
     }
 
-    private static DatabaseReference node() {
+    static DatabaseReference node() {
         return FirebaseDatabase.getInstance().getReference(NODE);
     }
 
     /** Answers once: the first of the real result and the timeout wins. */
-    private static final class Once<T> {
+    static final class Once<T> {
         private final AtomicBoolean done = new AtomicBoolean();
         private final Callback<T> callback;
         private final Runnable timeout;
@@ -81,7 +81,7 @@ public final class EvolveRepository {
         }
     }
 
-    private static String describe(@Nullable DatabaseError error) {
+    static String describe(@Nullable DatabaseError error) {
         if (error == null) {
             return "unknown error";
         }
@@ -203,11 +203,18 @@ public final class EvolveRepository {
         }
     }
 
-    /** Removes a block the signed-in user published; the database rules refuse anybody else. */
+    /**
+     * Removes a post the signed-in user published, with its comments and likes in the same update; the database rules
+     * refuse anybody else (a moderator may remove any).
+     */
     public static void delete(String id, String timeoutMessage, Callback<Void> callback) {
         Once<Void> once = new Once<>(callback, timeoutMessage);
         try {
-            node().child(id).removeValue((error, ref) -> {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put(NODE + "/" + id, null);
+            updates.put(EvolveSocialRepository.COMMENTS + "/" + id, null);
+            updates.put(EvolveSocialRepository.LIKES + "/" + id, null);
+            FirebaseDatabase.getInstance().getReference().updateChildren(updates, (error, ref) -> {
                 if (error != null) {
                     once.error(describe(error));
                 } else {
