@@ -81,10 +81,15 @@ public class PostRulesTest {
         assertEquals(Problem.NONE, PostRules.checkCode(SharedKind.KOTLIN, "fun main() { println(\"hi\") }"));
     }
 
+    private static final String COMPONENT = "[{\"name\":\"X\",\"id\":\"1\",\"icon\":\"i\",\"varName\":\"x\",\"typeName\":\"X\",\"buildClass\":\"X\",\"class\":\"X\","
+            + "\"description\":\"d\",\"url\":\"u\",\"additionalVar\":\"\",\"defineAdditionalVar\":\"\",\"imports\":\"\"}]";
+
     @Test
-    public void aComponentIsOneJsonObject() {
-        assertEquals(Problem.NONE, PostRules.checkCode(SharedKind.COMPONENT, "{\"name\":\"X\"}"));
+    public void aComponentIsAListOfCompleteComponents() {
+        assertEquals(Problem.NONE, PostRules.checkCode(SharedKind.COMPONENT, COMPONENT));
         assertEquals(Problem.COMPONENT_INVALID, PostRules.checkCode(SharedKind.COMPONENT, "[1,2]"));
+        assertEquals(Problem.COMPONENT_INVALID, PostRules.checkCode(SharedKind.COMPONENT, "[]"));
+        assertEquals(Problem.COMPONENT_INVALID, PostRules.checkCode(SharedKind.COMPONENT, "{\"name\":\"X\"}"));
         assertEquals(Problem.COMPONENT_INVALID, PostRules.checkCode(SharedKind.COMPONENT, "{broken"));
     }
 

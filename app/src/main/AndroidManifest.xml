@@ -331,6 +331,20 @@
             android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Evolve, the community page -->
+        <activity
+            android:name="pro.sketchware.evolve.EvolveActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="pro.sketchware.evolve.EvolvePostActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="pro.sketchware.evolve.EvolvePublishActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".activities.editor.view.ViewCodeEditorActivity"
             android:configChanges="orientation|screenSize"

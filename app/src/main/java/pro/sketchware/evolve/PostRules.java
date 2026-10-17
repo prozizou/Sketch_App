@@ -5,8 +5,6 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 
-import com.google.gson.JsonParser;
-import com.google.gson.JsonParseException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -153,14 +151,14 @@ public final class PostRules {
 
     /**
      * @return the first reason {@code code} can't be shared as {@code kind}: it must not be empty or too large, Java
-     * must parse, a component must be one JSON object. Kotlin has no parser here, so it only has the size limits.
+     * must parse, a component must be a list of components with the keys the component manager needs. Kotlin has no parser here, so it only has the size limits.
      */
     public static Problem checkCode(SharedKind kind, String code) {
         if (code == null || code.isBlank()) return Problem.CODE_EMPTY;
         if (code.length() > SharedBlockRules.MAX_JSON_LENGTH) return Problem.CODE_TOO_LARGE;
         return switch (kind) {
             case JAVA -> javaParses(code) ? Problem.NONE : Problem.JAVA_SYNTAX;
-            case COMPONENT -> isJsonObject(code) ? Problem.NONE : Problem.COMPONENT_INVALID;
+            case COMPONENT -> ImportPlanner.readComponents(code, new ArrayList<>(), new ArrayList<>()) ? Problem.NONE : Problem.COMPONENT_INVALID;
             default -> Problem.NONE;
         };
     }
@@ -171,14 +169,6 @@ public final class PostRules {
             ParseResult<CompilationUnit> result = new JavaParser(configuration).parse(code);
             return result.isSuccessful() && result.getResult().isPresent();
         } catch (RuntimeException | StackOverflowError e) {
-            return false;
-        }
-    }
-
-    private static boolean isJsonObject(String text) {
-        try {
-            return JsonParser.parseString(text).isJsonObject();
-        } catch (JsonParseException e) {
             return false;
         }
     }

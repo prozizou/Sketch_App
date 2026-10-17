@@ -276,6 +276,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             Intent intent = null;
             if (id == R.id.app_settings) {
                 intent = new Intent(this, mod.hilal.saif.activities.tools.AppSettings.class);
+            } else if (id == R.id.evolve_community) {
+                startActivity(pro.sketchware.evolve.EvolveActivity.intent(this));
+                return true;
             } else if (id == R.id.whats_new) {
                 pro.sketchware.control.WhatsNewDialog.show(this);
                 return true;

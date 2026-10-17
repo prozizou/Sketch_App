@@ -180,15 +180,26 @@ public final class EvolveRepository {
         }
     }
 
+    /** @return a fresh key for a post, so files that belong to it (screenshots) can be stored under it before it is published */
+    public static String newId() {
+        String id = node().push().getKey();
+        return id == null ? String.valueOf(System.currentTimeMillis()) : id;
+    }
+
     /**
      * Publishes {@code block} as a new child; the server stamps {@code createdAt}.
      *
      * @return through the callback, the new node's id
      */
     public static void publish(SharedBlock block, String timeoutMessage, Callback<String> callback) {
+        publish(null, block, timeoutMessage, callback);
+    }
+
+    /** As {@link #publish(SharedBlock, String, Callback)}, under {@code id} when it is not null (see {@link #newId()}). */
+    public static void publish(@Nullable String id, SharedBlock block, String timeoutMessage, Callback<String> callback) {
         Once<String> once = new Once<>(callback, timeoutMessage);
         try {
-            DatabaseReference child = node().push();
+            DatabaseReference child = id == null ? node().push() : node().child(id);
             Map<String, Object> map = new HashMap<>(block.toPublishMap());
             map.put(SharedBlock.CREATED_AT, ServerValue.TIMESTAMP);
             child.setValue(map, (error, ref) -> {

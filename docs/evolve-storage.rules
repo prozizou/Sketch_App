@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Screenshots of Evolve posts: evolve/<uid>/<postId>/<file>.jpg
+// Anyone signed in can see them; only their owner can add or remove them, as small JPEG pictures.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /evolve/{uid}/{postId}/{file} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.size < 500 * 1024
+                    && request.resource.contentType == 'image/jpeg'
+                    && file.matches('[0-9A-Za-z_-]{1,40}\\.jpg');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow update: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -81,6 +81,7 @@ firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-database = { module = "com.google.firebase:firebase-database" }
+firebase-storage = { module = "com.google.firebase:firebase-storage" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
@@ -154,5 +155,5 @@ bundletool = ["bundletool", "protobuf-java"]
 shrinker = ["r8", "proguard-core"]
 kotlin_compiler = ["kotlinc-for1-sketchware", "woodstox-core"]
 editor_and_lang = ["editor", "language-java", "language-textmate"]
-firebase = ["firebase-analytics", "firebase-crashlytics", "firebase-messaging", "firebase-auth", "firebase-database"]
+firebase = ["firebase-analytics", "firebase-crashlytics", "firebase-messaging", "firebase-auth", "firebase-database", "firebase-storage"]
 google_sign_in = ["androidx-credentials", "androidx-credentials-play-services-auth", "googleid"]
