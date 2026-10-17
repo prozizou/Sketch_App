@@ -1760,6 +1760,9 @@ ACTION_VIEW
     <string name="evolve_kind_blocks">Blocks</string>
     <string name="evolve_kind_moreblock">More blocks</string>
     <string name="evolve_kind_view">XML layouts</string>
+    <string name="evolve_kind_java">Java</string>
+    <string name="evolve_kind_kotlin">Kotlin</string>
+    <string name="evolve_kind_component">Components</string>
     <string name="evolve_origin_collection">My Block Collection</string>
     <string name="evolve_origin_canvas">On this canvas</string>
     <string name="evolve_origin_moreblock">This screen\u2019s more blocks</string>
@@ -1779,6 +1782,9 @@ ACTION_VIEW
     <string name="evolve_xml_kind_badge">XML layout</string>
     <string name="evolve_blocks_kind_badge">Blocks</string>
     <string name="evolve_moreblock_kind_badge">More block</string>
+    <string name="evolve_java_kind_badge">Java</string>
+    <string name="evolve_kotlin_kind_badge">Kotlin</string>
+    <string name="evolve_component_kind_badge">Component</string>
     <string name="evolve_subtitle_short">Shared by the community</string>
     <string name="evolve_search_clear">Clear search</string>
     <string name="evolve_filter_all">All</string>

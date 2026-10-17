@@ -28,6 +28,7 @@ import java.util.Map;
  * @param kind        what the entry holds
  * @param spec        for a {@link SharedKind#MOREBLOCK}, the more block's spec ("" otherwise)
  * @param xml         for a {@link SharedKind#VIEW}, the layout's XML ("" otherwise)
+ * @param meta        what the community page adds: tags, version, compatibility, screenshots, counters, source text
  */
 public record SharedBlock(
         String id,
@@ -44,14 +45,23 @@ public record SharedBlock(
         String blocksJson,
         SharedKind kind,
         String spec,
-        String xml) {
+        String xml,
+        PostMeta meta) {
+
+    /** An entry without community data, which is what the editors' share flow publishes. */
+    public SharedBlock(String id, String name, String description, String authorUid, String authorName, long createdAt,
+                       int appVersion, int blockCount, List<String> opCodes, boolean usesRawCode, long downloads,
+                       String blocksJson, SharedKind kind, String spec, String xml) {
+        this(id, name, description, authorUid, authorName, createdAt, appVersion, blockCount, opCodes, usesRawCode,
+                downloads, blocksJson, kind, spec, xml, PostMeta.EMPTY);
+    }
 
     /** A plain block stack, which is what Evolve held before kinds existed. */
     public SharedBlock(String id, String name, String description, String authorUid, String authorName, long createdAt,
                        int appVersion, int blockCount, List<String> opCodes, boolean usesRawCode, long downloads,
                        String blocksJson) {
         this(id, name, description, authorUid, authorName, createdAt, appVersion, blockCount, opCodes, usesRawCode,
-                downloads, blocksJson, SharedKind.BLOCKS, "", "");
+                downloads, blocksJson, SharedKind.BLOCKS, "", "", PostMeta.EMPTY);
     }
 
     /** Keys of a node, kept in one place so the code, the docs and the database rules agree. */
@@ -88,13 +98,13 @@ public record SharedBlock(
         map.put(KIND, kind.key());
         if (kind.hasBlocks()) {
             map.put(BLOCKS_JSON, blocksJson);
-        } else {
+        } else if (kind == SharedKind.VIEW) {
             map.put(XML, xml);
         }
         if (kind == SharedKind.MOREBLOCK) {
             map.put(SPEC, spec);
         }
-        return map;
+        return meta.toPublishMap(map);
     }
 
     /**
@@ -112,9 +122,9 @@ public record SharedBlock(
         String xml = text(map.get(XML));
         SharedKind kind = SharedKind.fromKey(text(map.get(KIND)));
         String spec = text(map.get(SPEC));
-        if (name.isEmpty() || authorUid.isEmpty()
-                || (kind.hasBlocks() ? blocksJson.isEmpty() : xml.isEmpty())
-                || (kind == SharedKind.MOREBLOCK && spec.isEmpty())) {
+        PostMeta meta = PostMeta.fromMap(map);
+        boolean noPayload = kind.hasBlocks() ? blocksJson.isEmpty() : kind.isCode() ? meta.code().isEmpty() : xml.isEmpty();
+        if (name.isEmpty() || authorUid.isEmpty() || noPayload || (kind == SharedKind.MOREBLOCK && spec.isEmpty())) {
             return null;
         }
         List<String> opCodes = new ArrayList<>();
@@ -127,7 +137,12 @@ public record SharedBlock(
         }
         return new SharedBlock(id, name, text(map.get(DESCRIPTION)), authorUid, text(map.get(AUTHOR_NAME)),
                 number(map.get(CREATED_AT)), (int) number(map.get(APP_VERSION)), (int) number(map.get(BLOCK_COUNT)),
-                opCodes, Boolean.TRUE.equals(map.get(USES_RAW_CODE)), number(map.get(DOWNLOADS)), blocksJson, kind, spec, xml);
+                opCodes, Boolean.TRUE.equals(map.get(USES_RAW_CODE)), number(map.get(DOWNLOADS)), blocksJson, kind, spec, xml, meta);
+    }
+
+    /** @return the text of a Java, Kotlin, component or XML entry, "" for blocks */
+    public String payloadText() {
+        return kind == SharedKind.VIEW ? xml : meta.code();
     }
 
     private static String text(Object value) {

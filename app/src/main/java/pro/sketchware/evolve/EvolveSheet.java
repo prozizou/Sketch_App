@@ -292,6 +292,9 @@ public class EvolveSheet extends BottomSheetDialogFragment {
             case BLOCKS -> R.string.evolve_kind_blocks;
             case MOREBLOCK -> R.string.evolve_kind_moreblock;
             case VIEW -> R.string.evolve_kind_view;
+            case JAVA -> R.string.evolve_kind_java;
+            case KOTLIN -> R.string.evolve_kind_kotlin;
+            case COMPONENT -> R.string.evolve_kind_component;
         };
     }
 
@@ -301,6 +304,9 @@ public class EvolveSheet extends BottomSheetDialogFragment {
             case BLOCKS -> R.string.evolve_blocks_kind_badge;
             case MOREBLOCK -> R.string.evolve_moreblock_kind_badge;
             case VIEW -> R.string.evolve_xml_kind_badge;
+            case JAVA -> R.string.evolve_java_kind_badge;
+            case KOTLIN -> R.string.evolve_kotlin_kind_badge;
+            case COMPONENT -> R.string.evolve_component_kind_badge;
         };
     }
 
