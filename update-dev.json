@@ -1,10 +1,10 @@
 {
   "versionCode": 159,
-  "versionName": "v7.2.6-dev (c9a813b)",
-  "commit": "c9a813b4448fe6afda736e6078aef7830ad76099",
+  "versionName": "v7.2.6-dev (7f8c22e)",
+  "commit": "7f8c22e75847b89fa075a8f356fd4e108b211f14",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-376",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-376/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "0ca5325a6d62d8c611f96b68854c08ad22d02fcffec425b6222d672ca62cf43d",
-  "notes": "Dev build (arm64): Logic editor: Blocks and Evolve tabs only + \"Hide unrelated blocks\" option (#85)"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-382",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-382/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "bc2defc643839b5b46ea27aff1aed867b98108b4138f6b161ce50ec2b87d2d6c",
+  "notes": "Dev build (arm64): Evolve: community page (publish, discover, comment, import) (#86)"
 }
