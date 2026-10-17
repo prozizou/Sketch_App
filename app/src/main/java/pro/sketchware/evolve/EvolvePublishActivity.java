@@ -326,7 +326,7 @@ public class EvolvePublishActivity extends AppCompatActivity {
                     out.write(buffer, 0, read);
                     if (out.size() > SharedBlockRules.MAX_JSON_LENGTH * 4) throw new IOException(getString(R.string.evolve_publish_problem_large));
                 }
-                String text = out.toString(StandardCharsets.UTF_8);
+                String text = new String(out.toByteArray(), StandardCharsets.UTF_8);
                 runOnUiThread(() -> binding.publishCode.setText(text));
             } catch (IOException | RuntimeException e) {
                 runOnUiThread(() -> SketchwareUtil.toastError(String.valueOf(e.getMessage())));

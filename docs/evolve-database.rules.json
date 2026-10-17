@@ -60,7 +60,7 @@
         "$uid": {
           ".write": "auth != null && $uid === auth.uid",
           ".validate": "newData.hasChildren(['reason', 'createdAt']) && newData.child('reason').isString() && newData.child('reason').val().length <= 40 && newData.child('createdAt').val() === now",
-          "$other": { ".validate": false }
+          "$field": { ".validate": "$field === 'reason' || $field === 'createdAt'" }
         }
       }
     },

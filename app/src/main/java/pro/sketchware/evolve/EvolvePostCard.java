@@ -133,7 +133,8 @@ public final class EvolvePostCard {
     private static void bindContent(EvolvePostItemBinding item, SharedBlock post, @Nullable ArrayList<BlockBean> blocks) {
         Context context = item.getRoot().getContext();
         String screenshot = post.meta().screenshots().isEmpty() ? null : post.meta().screenshots().get(0);
-        if (screenshot != null && PostRules.isStorageUrl(screenshot)) {
+        boolean hasScreenshot = screenshot != null && PostRules.isStorageUrl(screenshot);
+        if (hasScreenshot) {
             item.postScreenshot.setVisibility(View.VISIBLE);
             Glide.with(context).load(screenshot).override(720, 360).centerCrop().diskCacheStrategy(DiskCacheStrategy.RESOURCE).into(item.postScreenshot);
         } else {
@@ -142,7 +143,7 @@ public final class EvolvePostCard {
         }
         boolean text = !post.kind().hasBlocks();
         String code = text ? post.payloadText() : "";
-        if (text && !code.isEmpty() && screenshot == null) {
+        if (text && !code.isEmpty() && !hasScreenshot) {
             item.postCode.setText(HighlightedText.of(context, CodeHighlighter.languageOf(post.kind()), code, HighlightedText.CARD_CHARS));
             item.postCode.setVisibility(View.VISIBLE);
         } else {
@@ -151,7 +152,7 @@ public final class EvolvePostCard {
         }
         item.postPreview.removeAllViews();
         item.postPreview.setVisibility(View.GONE);
-        if (!text && blocks != null && !blocks.isEmpty() && screenshot == null) {
+        if (!text && blocks != null && !blocks.isEmpty() && !hasScreenshot) {
             try {
                 BlockBean first = blocks.get(0);
                 View stack = new Us(context, first.type, first.typeName, first.opCode, post.name(), blocks);

@@ -381,6 +381,7 @@ public class EvolveViewModel extends AndroidViewModel {
             @Override
             public void onSuccess(Void value) {
                 EvolveCache.clear();
+                EvolveStorage.delete(post.meta().screenshots());
                 feed.remove(post.id());
                 recompute();
                 callback.onSuccess(null);

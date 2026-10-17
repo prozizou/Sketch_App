@@ -5,6 +5,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.List;
 import com.besome.sketch.beans.BlockBean;
@@ -17,6 +20,8 @@ import pro.sketchware.evolve.ImportPlanner.Plan;
 import pro.sketchware.evolve.ImportPlanner.Severity;
 import pro.sketchware.evolve.ImportPlanner.Target;
 
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 35, application = android.app.Application.class)
 public class ImportPlannerTest {
     private static final String JAVA = "package com.other.app;\n\nimport android.os.Bundle;\nimport okhttp3.OkHttpClient;\n\npublic class Helper {\n    void f() {}\n}\n";
 

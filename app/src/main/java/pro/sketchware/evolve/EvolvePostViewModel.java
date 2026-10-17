@@ -215,10 +215,12 @@ public class EvolvePostViewModel extends AndroidViewModel {
     }
 
     public void delete(EvolveRepository.Callback<Void> callback) {
+        SharedBlock deleted = post.getValue();
         EvolveRepository.delete(postId, timeout(), new EvolveRepository.Callback<>() {
             @Override
             public void onSuccess(Void value) {
                 EvolveCache.clear();
+                if (deleted != null) EvolveStorage.delete(deleted.meta().screenshots());
                 callback.onSuccess(null);
             }
 
