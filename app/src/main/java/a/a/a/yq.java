@@ -29,6 +29,8 @@ import mod.hey.studios.util.ProjectFile;
 import mod.hilal.saif.blocks.CommandBlock;
 import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.SketchApplication;
+import pro.sketchware.admobads.AdMobAds;
+import pro.sketchware.admobads.AdMobHelperSource;
 import pro.sketchware.unityads.UnityAdsConfig;
 import pro.sketchware.unityads.UnityAdsHelperSource;
 import pro.sketchware.unityads.UnityAdsStore;
@@ -869,6 +871,10 @@ public class yq {
         if (unityAds.isActive() && !javaFiles.contains(new File(javaDir + UnityAdsHelperSource.FILE_NAME))) {
             srcCodeBeans.add(new SrcCodeBean(UnityAdsHelperSource.FILE_NAME,
                     UnityAdsHelperSource.generate(packageName, unityAds)));
+        }
+
+        if (AdMobAds.isActive(sc_id) && !javaFiles.contains(new File(javaDir + AdMobHelperSource.FILE_NAME))) {
+            srcCodeBeans.add(new SrcCodeBean(AdMobHelperSource.FILE_NAME, AdMobAds.helperSource(packageName, jC.c(sc_id).b())));
         }
 
         String manifestOverride = readManifestOverride();
