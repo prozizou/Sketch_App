@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +25,7 @@ final class GuidesOverlay extends View {
     private final Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float dip;
 
+    private ViewTreeObserver.OnScrollChangedListener scrollListener;
     private Box target;
     private List<GuideEngine.Guide> guides = Collections.emptyList();
     private List<GuideEngine.Gap> gaps = Collections.emptyList();
@@ -41,6 +43,30 @@ final class GuidesOverlay extends View {
         pill.setColor(0xcc1e88e5);
         text.setColor(0xffffffff);
         text.setTextSize(10f * dip);
+    }
+
+    /** Called when something in the window scrolls (a ScrollView widget of the previewed layout, say), so the guides can follow. */
+    void onContentScrolled(Runnable refresh) {
+        this.scrollListener = refresh::run;
+        if (isAttachedToWindow()) {
+            getViewTreeObserver().addOnScrollChangedListener(scrollListener);
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (scrollListener != null) {
+            getViewTreeObserver().addOnScrollChangedListener(scrollListener);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (scrollListener != null) {
+            getViewTreeObserver().removeOnScrollChangedListener(scrollListener);
+        }
+        super.onDetachedFromWindow();
     }
 
     void show(Box target, List<GuideEngine.Guide> guides, List<GuideEngine.Gap> gaps) {

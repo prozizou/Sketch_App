@@ -937,6 +937,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
 
         guidesOverlay = new GuidesOverlay(context);
         shape.addView(guidesOverlay, new FrameLayout.LayoutParams(displayWidth, displayHeight));
+        guidesOverlay.onContentScrolled(this::refreshGuides);
 
         dropHint = new TextView(context);
         dropHint.setText(R.string.view_drop_components_here);
@@ -1441,7 +1442,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         }
         if (!pro.sketchware.flags.FeatureFlags.isEnabled(pro.sketchware.flags.FeatureFlag.LAYOUT_GUIDES)
                 || !(selectedItem instanceof View selected) || selected.getWidth() == 0
-                || !(selected.getParent() instanceof ViewGroup parent) || !selected.isAttachedToWindow()) {
+                || !(selected.getParent() instanceof ViewGroup parent) || !selected.isAttachedToWindow()
+                || !selected.getGlobalVisibleRect(new android.graphics.Rect())) {
             guidesOverlay.clear();
             return;
         }
