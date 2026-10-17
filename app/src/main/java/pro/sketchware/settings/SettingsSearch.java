@@ -102,6 +102,7 @@ public final class SettingsSearch {
         KEYWORDS.put("ff-memory-aware-build", "ram memory threads oom d8 r8 dex memoire");
         KEYWORDS.put("ff-force-low-memory-build", "ram memory slow oom memoire");
         KEYWORDS.put("show-every-single-block", "palette blocks slow lent blocs");
+        KEYWORDS.put("hide-unrelated-blocks", "palette blocks hide unused masquer blocs inutilises");
         KEYWORDS.put("app-version", "version about a propos");
         KEYWORDS.put("update-channel", "beta stable dev canal");
         KEYWORDS.put("check-updates", "update new version mise a jour");

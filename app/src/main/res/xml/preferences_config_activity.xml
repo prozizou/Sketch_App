@@ -421,6 +421,12 @@
                 app:key="show-every-single-block"
                 app:summary="Show every palette block. Slower to open palettes."
                 app:title="Show all palette blocks" />
+
+            <SwitchPreferenceCompat
+                app:iconSpaceReserved="false"
+                app:key="hide-unrelated-blocks"
+                app:summary="Hide palette blocks and sections that have nothing to act on in this project, such as view blocks on a screen without views."
+                app:title="Hide unrelated blocks" />
         </PreferenceCategory>
     </PreferenceScreen>
 
