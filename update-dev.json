@@ -1,10 +1,10 @@
 {
   "versionCode": 159,
-  "versionName": "v7.2.6-dev (c5c9a01)",
-  "commit": "c5c9a01a98aea7837f155d30b2c16553e1b24cb4",
+  "versionName": "v7.2.6-dev (e4140db)",
+  "commit": "e4140db7b7f0cec0512b06f68cc773015569ef2c",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-370",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-370/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "79eb9109d0f70ca78f75a2b00a780aa24440c303965ae7c99b9c5d42f2ff15d8",
-  "notes": "Dev build (arm64): Landscape View editor workspace + release v7.2.6 (#83)"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-373",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-373/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "04a0be8bc68b78f6276b43ace994be7c6b6a38f638ce376f41b5827efadbd10c",
+  "notes": "Dev build (arm64): AdMob blocks and generated helper (all ad formats) (#84)"
 }
