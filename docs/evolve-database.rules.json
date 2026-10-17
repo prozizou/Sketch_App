@@ -1,0 +1,174 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "Blocks_share": {
+      ".indexOn": ["createdAt", "downloads", "authorUid", "likes"],
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && ( (!data.exists() && newData.child('authorUid').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorUid').val() === auth.uid || root.child('Evolve_moderators').child(auth.uid).val() === true)) || (data.exists() && newData.exists() && data.child('authorUid').val() === auth.uid) )",
+        ".validate": "newData.hasChildren(['name', 'authorUid', 'createdAt']) && ( (newData.child('kind').val() === 'view' && newData.hasChild('xml')) || ((newData.child('kind').val() === 'java' || newData.child('kind').val() === 'kotlin' || newData.child('kind').val() === 'component') && newData.hasChild('code')) || ((newData.child('kind').val() === 'blocks' || newData.child('kind').val() === 'moreblock' || !newData.hasChild('kind')) && newData.hasChild('blocksJson')) )",
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
+        "description": { ".validate": "newData.isString() && newData.val().length <= 300" },
+        "authorUid": { ".validate": "newData.val() === auth.uid || (data.exists() && newData.val() === data.val())" },
+        "authorName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "createdAt": { ".validate": "(!data.exists() && newData.val() === now) || (data.exists() && newData.val() === data.val())" },
+        "updatedAt": { ".validate": "newData.val() === now" },
+        "appVersion": { ".validate": "newData.isNumber()" },
+        "blockCount": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
+        "kind": { ".validate": "newData.isString() && (newData.val() === 'blocks' || newData.val() === 'moreblock' || newData.val() === 'view' || newData.val() === 'java' || newData.val() === 'kotlin' || newData.val() === 'component')" },
+        "spec": { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "xml": { ".validate": "newData.isString() && newData.val().length <= 200000" },
+        "code": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200000" },
+        "fileName": { ".validate": "newData.isString() && newData.val().length <= 64 && newData.val().matches(/^[A-Za-z_][A-Za-z0-9_]*\\.(java|kt)$/)" },
+        "blocksJson": { ".validate": "newData.isString() && newData.val().length <= 200000" },
+        "opCodes": { ".validate": "newData.hasChildren()" },
+        "usesRawCode": { ".validate": "newData.isBoolean()" },
+        "version": { ".validate": "newData.isString() && newData.val().length <= 16 && newData.val().matches(/^[0-9A-Za-z][0-9A-Za-z._+-]*$/)" },
+        "minSdk": { ".validate": "newData.isNumber() && newData.val() >= 21 && newData.val() <= 40" },
+        "tags": {
+          ".validate": "newData.hasChildren() && !newData.hasChild('5')",
+          "$i": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 24 && newData.val().matches(/^[a-z0-9][a-z0-9+#._-]*$/)" }
+        },
+        "dependencies": {
+          ".validate": "newData.hasChildren() && !newData.hasChild('10')",
+          "$i": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 120 && newData.val().matches(/^[A-Za-z0-9][A-Za-z0-9._:+@\\/-]*$/)" }
+        },
+        "screenshots": {
+          ".validate": "newData.hasChildren() && !newData.hasChild('4')",
+          "$i": { ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^https:\\/\\/(firebasestorage\\.googleapis\\.com|[A-Za-z0-9.-]+\\.firebasestorage\\.app)\\/.*$/)" }
+        },
+        "downloads": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === 0) || newData.val() === data.val() + 1)"
+        },
+        "likes": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && newData.val() >= 0 && ( (!data.exists() && newData.val() === 0) || (data.exists() && newData.val() === data.val()) || (newData.val() === data.val() + 1 && !root.child('Evolve_likes').child($id).child(auth.uid).exists() && newData.parent().parent().parent().child('Evolve_likes').child($id).child(auth.uid).exists()) || (newData.val() === data.val() - 1 && root.child('Evolve_likes').child($id).child(auth.uid).exists() && !newData.parent().parent().parent().child('Evolve_likes').child($id).child(auth.uid).exists()) )"
+        },
+        "commentCount": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && newData.val() >= 0 && ( (!data.exists() && newData.val() === 0) || (data.exists() && newData.val() === data.val()) || newData.val() === data.val() + 1 || newData.val() === data.val() - 1 )"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "Blocks_share_reports": {
+      "$id": {
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid",
+          ".validate": "newData.hasChildren(['reason', 'createdAt']) && newData.child('reason').isString() && newData.child('reason').val().length <= 40 && newData.child('createdAt').val() === now",
+          "$field": { ".validate": "$field === 'reason' || $field === 'createdAt'" }
+        }
+      }
+    },
+
+    "Evolve_moderators": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid"
+      }
+    },
+
+    "Evolve_likes": {
+      "$postId": {
+        ".read": "auth != null",
+        ".write": "auth != null && !newData.exists() && (root.child('Blocks_share').child($postId).child('authorUid').val() === auth.uid || root.child('Evolve_moderators').child(auth.uid).val() === true)",
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid && root.child('Blocks_share').child($postId).exists()",
+          ".validate": "newData.val() === true"
+        }
+      }
+    },
+
+    "Evolve_liked": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid",
+        "$postId": { ".validate": "newData.val() === true" }
+      }
+    },
+
+    "Evolve_saved": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid",
+        ".indexOn": [".value"],
+        "$postId": { ".validate": "newData.isNumber()" }
+      }
+    },
+
+    "Evolve_follows": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid",
+        "$author": { ".validate": "newData.val() === true && $author !== auth.uid" }
+      }
+    },
+
+    "Evolve_followers": {
+      "$author": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid",
+          ".validate": "newData.val() === true && $uid !== $author"
+        }
+      }
+    },
+
+    "Evolve_comments": {
+      "$postId": {
+        ".read": "auth != null",
+        ".indexOn": ["createdAt"],
+        ".write": "auth != null && !newData.exists() && (root.child('Blocks_share').child($postId).child('authorUid').val() === auth.uid || root.child('Evolve_moderators').child(auth.uid).val() === true)",
+        "$commentId": {
+          ".write": "auth != null && ( (!data.exists() && newData.child('authorUid').val() === auth.uid && root.child('Blocks_share').child($postId).exists()) || (data.exists() && !newData.exists() && (data.child('authorUid').val() === auth.uid || root.child('Blocks_share').child($postId).child('authorUid').val() === auth.uid || root.child('Evolve_moderators').child(auth.uid).val() === true)) )",
+          ".validate": "newData.hasChildren(['authorUid', 'text', 'createdAt']) && newData.child('authorUid').val() === auth.uid",
+          "authorUid": { ".validate": "newData.val() === auth.uid" },
+          "authorName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "text": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 500" },
+          "parentId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "createdAt": { ".validate": "newData.val() === now" },
+          "mentions": {
+            ".validate": "newData.hasChildren() && !newData.hasChild('10')",
+            "$i": { ".validate": "newData.isString() && newData.val().length <= 40" }
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "Evolve_notifications": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".indexOn": ["createdAt"],
+        "$nid": {
+          ".write": "auth != null && ( $uid === auth.uid || (!data.exists() && newData.child('fromUid').val() === auth.uid) )",
+          ".validate": "newData.hasChildren(['type', 'fromUid', 'createdAt', 'read'])",
+          "type": { ".validate": "newData.isString() && (newData.val() === 'like' || newData.val() === 'comment' || newData.val() === 'reply' || newData.val() === 'mention' || newData.val() === 'follow')" },
+          "fromUid": { ".validate": "newData.isString() && newData.val().length <= 64 && ((!data.exists() && newData.val() === auth.uid && $uid !== auth.uid) || (data.exists() && newData.val() === data.val()))" },
+          "fromName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "postId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "postName": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "createdAt": { ".validate": "(!data.exists() && newData.val() === now) || (data.exists() && newData.val() === data.val())" },
+          "read": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "Evolve_profiles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && $uid === auth.uid",
+        ".validate": "newData.hasChild('name')",
+        "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100" },
+        "photoUrl": { ".validate": "newData.isString() && newData.val().length <= 500 && newData.val().beginsWith('https://')" },
+        "bio": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "createdAt": { ".validate": "(!data.exists() && newData.val() === now) || (data.exists() && newData.val() === data.val())" },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

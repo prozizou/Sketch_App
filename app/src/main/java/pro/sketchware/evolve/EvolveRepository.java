@@ -48,12 +48,12 @@ public final class EvolveRepository {
         void onError(@NonNull String message);
     }
 
-    private static DatabaseReference node() {
+    static DatabaseReference node() {
         return FirebaseDatabase.getInstance().getReference(NODE);
     }
 
     /** Answers once: the first of the real result and the timeout wins. */
-    private static final class Once<T> {
+    static final class Once<T> {
         private final AtomicBoolean done = new AtomicBoolean();
         private final Callback<T> callback;
         private final Runnable timeout;
@@ -81,7 +81,7 @@ public final class EvolveRepository {
         }
     }
 
-    private static String describe(@Nullable DatabaseError error) {
+    static String describe(@Nullable DatabaseError error) {
         if (error == null) {
             return "unknown error";
         }
@@ -180,15 +180,26 @@ public final class EvolveRepository {
         }
     }
 
+    /** @return a fresh key for a post, so files that belong to it (screenshots) can be stored under it before it is published */
+    public static String newId() {
+        String id = node().push().getKey();
+        return id == null ? String.valueOf(System.currentTimeMillis()) : id;
+    }
+
     /**
      * Publishes {@code block} as a new child; the server stamps {@code createdAt}.
      *
      * @return through the callback, the new node's id
      */
     public static void publish(SharedBlock block, String timeoutMessage, Callback<String> callback) {
+        publish(null, block, timeoutMessage, callback);
+    }
+
+    /** As {@link #publish(SharedBlock, String, Callback)}, under {@code id} when it is not null (see {@link #newId()}). */
+    public static void publish(@Nullable String id, SharedBlock block, String timeoutMessage, Callback<String> callback) {
         Once<String> once = new Once<>(callback, timeoutMessage);
         try {
-            DatabaseReference child = node().push();
+            DatabaseReference child = id == null ? node().push() : node().child(id);
             Map<String, Object> map = new HashMap<>(block.toPublishMap());
             map.put(SharedBlock.CREATED_AT, ServerValue.TIMESTAMP);
             child.setValue(map, (error, ref) -> {
@@ -203,11 +214,18 @@ public final class EvolveRepository {
         }
     }
 
-    /** Removes a block the signed-in user published; the database rules refuse anybody else. */
+    /**
+     * Removes a post the signed-in user published, with its comments and likes in the same update; the database rules
+     * refuse anybody else (a moderator may remove any).
+     */
     public static void delete(String id, String timeoutMessage, Callback<Void> callback) {
         Once<Void> once = new Once<>(callback, timeoutMessage);
         try {
-            node().child(id).removeValue((error, ref) -> {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put(NODE + "/" + id, null);
+            updates.put(EvolveSocialRepository.COMMENTS + "/" + id, null);
+            updates.put(EvolveSocialRepository.LIKES + "/" + id, null);
+            FirebaseDatabase.getInstance().getReference().updateChildren(updates, (error, ref) -> {
                 if (error != null) {
                     once.error(describe(error));
                 } else {

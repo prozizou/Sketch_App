@@ -1,30 +1,74 @@
-# Evolve: blocks, more blocks and layouts shared by the community
+# Evolve: the developers' community
 
-The third tab of the Logic editor's bottom bar opens **Evolve** (it replaced the "Components" tab, whose blocks are
-all in the Blocks tab). Evolve lists what other users shared, lets you **Pick** an entry, and lets you **Share**
-something of yours. Three kinds of entries exist, and each screen offers the kinds it can use:
+**Evolve** is a community page inside Sketchware NWS: publish blocks, more blocks, XML layouts, Java and Kotlin
+files and custom components; discover, like, comment, follow, save and import what others published.
+It opens from the main screen's menu (**Evolve community**). The Logic editor's Evolve tab still offers its quick
+sheet (pick / share blocks) over the same data.
 
-| Kind (`kind`) | Shared from | Pick does |
+## The page
+
+| Part | What it does |
+|---|---|
+| Header | instant search (title, description, author, tags, file name, code), notifications bell with unread badge |
+| Chips | All, Blocks, XML, Java, More blocks, Kotlin, Components |
+| Tabs | Popular (likes + comments + downloads, then recency), Recent, Following (people you follow) |
+| Cards | avatar, author, date, kind, tags, description, syntax-highlighted code (or the first screenshot), like, comment, save, share counters |
+| Bottom navigation | Explore, Saved (your favorites), Profile (your posts, followers / following, bio) |
+| Floating button | **Publish**: title, description, kind, tags (5 max), version, minimum Android, dependencies, up to 4 screenshots, content picked from the project |
+| Post page | full code with copy, screenshots, comments with replies and @mentions, follow author, report, edit / delete (author), import |
+| Notifications | likes, comments, replies, mentions, followers; swipe / mark read; live |
+
+Everything is live (Realtime Database listeners). Loading is paged (20 per page, "load more" at the end of the
+list), the last 40 posts are cached on disk so the page opens offline (a banner says so), and `DiffUtil` updates
+only the cards that changed.
+
+## Importing
+
+A post is never executed: it is text. **Add to project** shows a preview and a list of checks before anything is
+written, and everything it writes can be undone:
+
+| Kind | Added to | Checks |
 |---|---|---|
-| `blocks` (a stack) | Logic editor: a block of *My Block Collection*, or **any stack on the canvas** (control, list, view, component, more block calls...) | adds it to My Block Collection and the drawer |
-| `moreblock` | Logic editor: one of the open screen's more blocks | imports it into the screen (the importer asks about name clashes and adds missing variables and resources) |
-| `view` (XML) | **XML editor** (menu, "Evolve"): the layout as it is in the editor | asks: replace the layout, insert at the cursor (both can be undone), or copy the XML |
+| `blocks` | My Block Collection (global) | name clash -> free name; raw Java blocks ask for confirmation |
+| `moreblock` | More Block collection (global) | same |
+| `view` | a new layout file of the chosen project | XML well-formed, name clash -> renamed (or replace), lists the `@drawable/..` the XML needs |
+| `java` / `kotlin` | the chosen project's Java files | must parse (Java), package rewritten to the project's, third-party imports not in the project's libraries listed, minSdk vs the project's, file clash -> explicit **Replace** |
+| `component` | custom components (global) | JSON checked, name clash -> explicit **Replace** |
 
-In the Logic editor, chips filter the list (All, Blocks, More blocks). The XML editor shows XML layouts only.
+**Copy** puts the code on the clipboard; **Download** saves the file in the app's folder.
 
-## Using it
+## Firebase setup (once)
 
-- **Pick** (blocks): adds the stack to My Block Collection (under a free name: "Login", "Login (2)"...) and to the
-  drawer. Nothing is added to your event until you drag it from the drawer, as for any collection block.
-- **Share**: choose what to share (the list says where each item comes from), give it a name and an optional
-  description, confirm.
-  The sheet shows your name (Google display name, never your e-mail address), the date, the number of blocks and the
-  number of downloads. You can delete what you shared.
-- A stack that contains **raw Java code** blocks ("Add source directly", "Custom import") is flagged, and picking it
-  asks for confirmation: those blocks write the author's Java straight into your app.
-- Needs the Google sign-in and a build with Firebase configured; otherwise the sheet says so.
+1. Realtime Database and Authentication (Google) are already needed by the app.
+2. Enable **Storage** (screenshots) in the Firebase console.
+3. Deploy the rules: `docs/evolve-database.rules.json` (Realtime Database > Rules) and `docs/evolve-storage.rules`
+   (Storage > Rules), or `firebase deploy --only database,storage` with those files.
+4. Moderators: add their uid as `true` under `Evolve_moderators/<uid>` (console only; the app can't write it).
+   Moderators can delete any post or comment. Reports land in `Blocks_share_reports/<postId>/<uid>`
+   (read them in the console).
+5. Indexes are declared in the rules file (`.indexOn`).
 
-## Data: node `Blocks_share`
+## Security
+
+- Every read and write needs a signed-in user; authors are checked against `auth.uid`.
+- The server validates every field (lengths, kinds, tags, URLs only from Firebase Storage, counters).
+  A like or an unlike must carry the matching like record in the same update; downloads and comments move one step
+  at a time.
+- Screenshots: JPEG under 500 KB, in the owner's own folder only. Text is shown as text (no HTML, no links
+  followed), mentions and tags are restricted to safe characters, spam (repeated text, link floods) is refused by
+  the app, and users can report posts.
+- Shared code is never compiled or run by the app on its own.
+
+## Tests
+
+- App: `./gradlew :app:testDebugUnitTest --tests 'pro.sketchware.evolve.*'` (rules, feed, cache, import planner,
+  highlighter) and `pro.sketchware.ui.EvolveCommunityScreenTest` (cards, post page, layouts in both themes).
+- Rules: `cd scripts/evolve-rules-test && npm install && npm test` runs the database and storage rules against the
+  Firebase emulators (Java 11+ needed).
+
+## Data (below: the original description, still valid for the base fields)
+
+### Node `Blocks_share`
 
 One child per shared block, keyed by a push id.
 
@@ -47,64 +91,18 @@ One child per shared block, keyed by a push id.
 
 The app never trusts `usesRawCode`: it recomputes it from the decoded blocks before picking.
 
-## Database rules to publish
+## Database rules
 
-The app can't set these; they go in Firebase console > Realtime Database > Rules. Without rules that allow it,
-loading and sharing fail with "permission denied by the database rules". Try them in the Rules Playground first.
+The full rules are `docs/evolve-database.rules.json` (publish in Firebase console > Realtime Database > Rules) and
+`docs/evolve-storage.rules` (Storage > Rules); they cover every node below, and `scripts/evolve-rules-test` checks
+them on the emulators. Nodes: `Blocks_share` (posts), `Evolve_likes/<post>/<uid>` and `Evolve_liked/<uid>/<post>`,
+`Evolve_saved/<uid>/<post>`, `Evolve_follows/<uid>/<other>`, `Evolve_followers/<other>/<uid>`,
+`Evolve_comments/<post>/<id>`, `Evolve_notifications/<uid>/<id>`, `Evolve_profiles/<uid>`,
+`Blocks_share_reports/<post>/<uid>` (write-only for users) and `Evolve_moderators/<uid>`. Post fields added to the
+table above: `tags`, `version`, `minSdk`, `dependencies`, `screenshots`, `updatedAt`, `likes`, `commentCount`, `code`
+and `fileName` (kinds `java`, `kotlin`, `component` keep their text in `code`).
 
-```json
-{
-  "rules": {
-    "Blocks_share": {
-      ".indexOn": ["createdAt"],
-      ".read": "auth != null",
-      "$id": {
-        ".write": "auth != null && (!data.exists() ? newData.child('authorUid').val() === auth.uid : (!newData.exists() && (data.child('authorUid').val() === auth.uid || root.child('Evolve_moderators').child(auth.uid).val() === true)))",
-        ".validate": "newData.hasChildren(['name', 'authorUid', 'createdAt']) && (newData.hasChild('blocksJson') || newData.hasChild('xml'))",
-        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
-        "description": { ".validate": "newData.isString() && newData.val().length <= 300" },
-        "authorUid": { ".validate": "newData.val() === auth.uid" },
-        "authorName": { ".validate": "newData.isString() && newData.val().length <= 100" },
-        "createdAt": { ".validate": "newData.val() === now" },
-        "appVersion": { ".validate": "newData.isNumber()" },
-        "blockCount": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
-        "kind": { ".validate": "newData.isString() && (newData.val() === 'blocks' || newData.val() === 'moreblock' || newData.val() === 'view')" },
-        "spec": { ".validate": "newData.isString() && newData.val().length <= 500" },
-        "xml": { ".validate": "newData.isString() && newData.val().length <= 200000" },
-        "opCodes": { ".validate": "newData.hasChildren()" },
-        "usesRawCode": { ".validate": "newData.isBoolean()" },
-        "downloads": {
-          ".write": "auth != null",
-          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === 0) || newData.val() === data.val() + 1)"
-        },
-        "blocksJson": { ".validate": "newData.isString() && newData.val().length <= 200000" },
-        "$other": { ".validate": false }
-      }
-    },
-    "Blocks_share_reports": {
-      "$id": {
-        "$uid": {
-          ".write": "auth != null && $uid === auth.uid",
-          ".validate": "newData.hasChildren(['reason', 'createdAt']) && newData.child('reason').isString() && newData.child('reason').val().length <= 40 && newData.child('createdAt').val() === now",
-          "$other": { ".validate": false }
-        }
-      }
-    },
-    "Evolve_moderators": {
-      "$uid": {
-        ".read": "auth != null && $uid === auth.uid"
-      }
-    }
-  }
-}
-```
-
-What they do: any signed-in user reads; a user can create entries only as themselves and delete only their own (or any,
-if listed as a moderator); entries can't be edited; the only change anyone else may make is `downloads` going up by one;
-unknown fields are refused. Reports are write-only for users (one per user and entry, read them in the console), and a
-user can read only their own line of `Evolve_moderators`.
-
-## The Evolve page
+## The Logic editor sheet (quick access)
 
 - **Header**: title, refresh, Share. **Search** (instant) matches title, author, description, identifier and opcodes (and
   the XML of layouts). **Chips**: All (newest first), Popular (most picked first), Recent (last 7 days), My uploads, and,
@@ -132,7 +130,7 @@ drop a block on the collection area, and, for a more block, through the **Evolve
 A moderator is a uid set by hand in the console: `Evolve_moderators/<uid>: true`. The app shows Delete on every entry to
 them and the rules let the delete through.
 
-## Not covered yet
+## Limits
 
-There is no report button and no moderation tool: a harmful entry has to be deleted in the Firebase console (or by its
-author). Entries are not versioned, and a shared stack can't be updated: delete it and share it again.
+Posts are not versioned (the author can edit text, tags and screenshots, or delete and publish again), comment counters
+are only checked to move one step at a time, and the reports are read in the Firebase console.

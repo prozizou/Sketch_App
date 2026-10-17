@@ -15,4 +15,12 @@
     <color name="evolve_warning">#B3261E</color>
     <color name="evolve_warning_bg">#FCE8E6</color>
     <color name="evolve_accent_tint">#FFF1EE</color>
+    <!-- Code previews -->
+    <color name="evolve_code_comment">#6A737D</color>
+    <color name="evolve_code_string">#0B7A3E</color>
+    <color name="evolve_code_number">#B35A00</color>
+    <color name="evolve_code_keyword">#B3261E</color>
+    <color name="evolve_code_annotation">#7B5EA7</color>
+    <color name="evolve_code_type">#1A62B8</color>
+    <color name="evolve_code_attribute">#0F7C8A</color>
 </resources>

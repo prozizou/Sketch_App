@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/evolve_nav_explore"
+        android:icon="@drawable/ic_evolve_explore"
+        android:title="@string/evolve_nav_explore" />
+    <item
+        android:id="@+id/evolve_nav_saved"
+        android:icon="@drawable/ic_evolve_bookmark_border"
+        android:title="@string/evolve_nav_saved" />
+    <item
+        android:id="@+id/evolve_nav_profile"
+        android:icon="@drawable/ic_evolve_person"
+        android:title="@string/evolve_nav_profile" />
+</menu>

@@ -8,6 +8,10 @@
         android:icon="@drawable/ic_mtrl_settings"
         android:title="@string/common_word_settings" />
     <item
+        android:id="@+id/evolve_community"
+        android:icon="@drawable/ic_mtrl_public"
+        android:title="@string/evolve_menu_community" />
+    <item
         android:id="@+id/whats_new"
         android:icon="@drawable/ic_mtrl_history"
         android:title="@string/whats_new_menu" />
