@@ -1,10 +1,10 @@
 {
   "versionCode": 159,
-  "versionName": "v7.2.6-dev (e4140db)",
-  "commit": "e4140db7b7f0cec0512b06f68cc773015569ef2c",
+  "versionName": "v7.2.6-dev (c9a813b)",
+  "commit": "c9a813b4448fe6afda736e6078aef7830ad76099",
   "mandatory": false,
-  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-373",
-  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-373/NewWorldSketchware-dev-arm64.apk",
-  "sha256": "04a0be8bc68b78f6276b43ace994be7c6b6a38f638ce376f41b5827efadbd10c",
-  "notes": "Dev build (arm64): AdMob blocks and generated helper (all ad formats) (#84)"
+  "url": "https://github.com/prozizou/Sketch_App/releases/tag/dev-376",
+  "apkUrl": "https://github.com/prozizou/Sketch_App/releases/download/dev-376/NewWorldSketchware-dev-arm64.apk",
+  "sha256": "0ca5325a6d62d8c611f96b68854c08ad22d02fcffec425b6222d672ca62cf43d",
+  "notes": "Dev build (arm64): Logic editor: Blocks and Evolve tabs only + \"Hide unrelated blocks\" option (#85)"
 }
