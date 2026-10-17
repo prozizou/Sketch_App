@@ -1360,6 +1360,7 @@ ACTION_VIEW
 
     <string name="logic_nav_blocks">Blocks</string>
     <string name="logic_canvas_fit">Fit</string>
+    <string name="logic_pinned_parameters">Parameters</string>
     <string name="logic_code_show">Code</string>
     <string name="logic_code_hide">Blocks</string>
     <string name="logic_sync_apply">Apply to blocks</string>

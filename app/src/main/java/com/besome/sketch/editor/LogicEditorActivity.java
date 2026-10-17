@@ -37,6 +37,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -197,6 +198,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private ObjectAnimator U, V, ba, ca, fa, ga;
     private ExtraPaletteBlock extraPaletteBlock;
     private ViewLogicEditor viewLogicEditor;
+    private HorizontalScrollView pinnedArgumentsStrip;
+    private ArrayList<Rs> pinnedRootArguments;
     private ViewDummy dummy;
     private PaletteSelector paletteSelector;
     private PaletteBlockBinding paletteBlockBinding;
@@ -2266,6 +2269,77 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         svgUtils = new SvgUtils(this);
     }
 
+    /**
+     * The parameters of a MoreBlock (or the arguments of an event) sit on the first block, so they scroll away with
+     * the rest of the logic. This keeps a strip of the same draggable chips on screen once the originals are out of
+     * view, so a parameter can be dropped wherever it is needed without scrolling back up.
+     */
+    private void setupPinnedArguments(ArrayList<Rs> rootArguments, ArrayList<String> argumentSpecs) {
+        if (rootArguments.isEmpty()) return;
+        float density = wB.a(this, 1.0f);
+        pinnedRootArguments = rootArguments;
+
+        LinearLayout chips = new LinearLayout(this);
+        chips.setOrientation(LinearLayout.HORIZONTAL);
+        chips.setGravity(Gravity.CENTER_VERTICAL);
+        chips.setPadding((int) (8 * density), (int) (4 * density), (int) (8 * density), (int) (4 * density));
+        for (int i = 0; i < argumentSpecs.size(); i++) {
+            Rs chip = BlockUtil.getVariableBlock(this, i + 1, argumentSpecs.get(i), "getArg");
+            if (chip == null) continue;
+            chip.setBlockType(1);
+            chip.setOnTouchListener(this);
+            LinearLayout.LayoutParams chipParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            chipParams.setMarginEnd((int) (6 * density));
+            chips.addView(chip, chipParams);
+        }
+
+        HorizontalScrollView strip = new HorizontalScrollView(this);
+        strip.setHorizontalScrollBarEnabled(false);
+        strip.setBackgroundResource(R.drawable.canvas_control_bg);
+        strip.setElevation(3 * density);
+        strip.setContentDescription(getString(R.string.logic_pinned_parameters));
+        strip.addView(chips);
+        strip.setVisibility(View.GONE);
+
+        TypedValue actionBarSize = new TypedValue();
+        float toolbarHeight = getTheme().resolveAttribute(androidx.appcompat.R.attr.actionBarSize, actionBarSize, true)
+                ? actionBarSize.getDimension(getResources().getDisplayMetrics()) : 56 * density;
+        RelativeLayout.LayoutParams stripParams = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        stripParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+        stripParams.setMarginStart((int) (12 * density));
+        // Leaves the top end to the zoom bar.
+        stripParams.setMarginEnd((int) (170 * density));
+        stripParams.topMargin = (int) (toolbarHeight + 8 * density);
+        binding.layout.addView(strip, stripParams);
+        pinnedArgumentsStrip = strip;
+
+        viewLogicEditor.getViewTreeObserver().addOnScrollChangedListener(this::updatePinnedArguments);
+        viewLogicEditor.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> updatePinnedArguments());
+        viewLogicEditor.post(this::updatePinnedArguments);
+    }
+
+    /** Shows the pinned parameters only while at least one of the originals on the first block is out of view. */
+    private void updatePinnedArguments() {
+        if (pinnedArgumentsStrip == null || pinnedRootArguments == null) return;
+        float zoom = viewLogicEditor.getZoom();
+        Rect visible = new Rect();
+        boolean originalsOutOfView = false;
+        for (Rs original : pinnedRootArguments) {
+            if (!original.getGlobalVisibleRect(visible)
+                    || visible.width() < original.getWidth() * zoom * 0.9f
+                    || visible.height() < original.getHeight() * zoom * 0.9f) {
+                originalsOutOfView = true;
+                break;
+            }
+        }
+        int visibility = originalsOutOfView && viewMode.showsBlocks() ? View.VISIBLE : View.GONE;
+        if (pinnedArgumentsStrip.getVisibility() != visibility) {
+            pinnedArgumentsStrip.setVisibility(visibility);
+        }
+    }
+
     private void setupBottomNavAndCanvasControls() {
         // Start on "Blocks", the tab used most; set before the listeners so it doesn't open the palette.
         binding.bottomNav.setSelectedItemId(R.id.nav_blocks);
@@ -2286,7 +2360,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 showPalettes();
             }
         });
-        viewLogicEditor.setOnZoomChangedListener(zoom -> binding.tvZoom.setText(Math.round(zoom * 100) + "%"));
+        viewLogicEditor.setOnZoomChangedListener(zoom -> {
+            binding.tvZoom.setText(Math.round(zoom * 100) + "%");
+            updatePinnedArguments();
+        });
         binding.btnCanvasFit.setOnClickListener(v -> viewLogicEditor.fitToContent());
         float density = wB.a(this, 1.0f);
         TypedValue actionBarSize = new TypedValue();
@@ -2485,6 +2562,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
         ArrayList<String> spec = FB.c(e1);
         int blockId = 0;
+        ArrayList<Rs> rootArguments = new ArrayList<>();
+        ArrayList<String> argumentSpecs = new ArrayList<>();
         for (int i = 0; i < spec.size(); i++) {
             String specBit = spec.get(i);
             if (specBit.charAt(0) == '%') {
@@ -2495,10 +2574,13 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                     o.addView(block);
                     o.getRoot().a((Ts) o.getRoot().V.get(blockId), block);
                     block.setOnTouchListener(this);
+                    rootArguments.add(block);
+                    argumentSpecs.add(specBit);
                     blockId++;
                 }
             }
         }
+        setupPinnedArguments(rootArguments, argumentSpecs);
 
         o.getRoot().k();
         g(getResources().getConfiguration().orientation);
@@ -2950,6 +3032,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             }
 
             isDragged = true;
+            if (currentTouchedView.getParent() != null) {
+                // A chip dragged out of the pinned strip must not be taken over by the strip's own scrolling.
+                currentTouchedView.getParent().requestDisallowInterceptTouchEvent(true);
+            }
             if (((Rs) currentTouchedView).getBlockType() == 0) {
                 a((Rs) currentTouchedView);
                 f(true);
